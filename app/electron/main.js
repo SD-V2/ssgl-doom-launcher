@@ -45,6 +45,7 @@ app.on('activate', function() {
 });
 
 require('./handlers/main');
+require('./handlers/mods');
 require('./handlers/sourceports');
 require('./handlers/settings');
 require('./handlers/packages');

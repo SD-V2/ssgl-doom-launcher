@@ -182,6 +182,29 @@ export function reducer(state, action) {
         mods: state.mods.map(item => (item.id === action.id ? newItem : item))
       });
 
+    case 'mods/drop': {
+      // mods dropped from the file manager: add unknown ones to the list and
+      // append everything to the load order of the current package
+      const knownIds = new Set(state.mods.map(m => m.id));
+      const fresh = action.mods.filter(m => !knownIds.has(m.id));
+      const already = new Set(state.package.selected);
+      const append = action.ids.filter(
+        (id, i, arr) => !already.has(id) && arr.indexOf(id) === i
+      );
+      const appendSet = new Set(append);
+
+      return act({
+        ...state,
+        mods: [...state.mods, ...fresh].map(m =>
+          appendSet.has(m.id) ? { ...m, active: true } : m
+        ),
+        package: {
+          ...state.package,
+          selected: [...state.package.selected, ...append]
+        }
+      });
+    }
+
     default:
       return initState;
   }

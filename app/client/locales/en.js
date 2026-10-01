@@ -23,6 +23,8 @@ export default {
   wads: {
     filter: 'Search in {{size}} Mods',
     toastIndex: 'Reindexed Mod Directory',
+    toastDrop: 'Added to load order: {{count}}',
+    toastDropSkipped: 'Skipped (not a mod file): {{names}}',
     packEdit: 'Edit',
     packSaveAs: 'Save as',
     packSave: 'Save',

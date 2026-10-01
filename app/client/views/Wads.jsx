@@ -24,6 +24,7 @@ const Wads = () => {
   const { gstate, dispatch } = useContext(StoreContext);
   const [poActive, setPoActive] = useState(false);
   const [sort, setSort] = useState('new');
+  const [dragging, setDragging] = useState(false);
   const [ipc, loading] = useIpc();
   const { t } = useTranslation(['common', 'wads']);
   const [toast] = useToast();
@@ -66,6 +67,57 @@ const Wads = () => {
 
   const onClear = () => setFilter('');
 
+  const hasFiles = e =>
+    Array.from(e.dataTransfer.types || []).indexOf('Files') > -1;
+
+  const onDragOver = e => {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+    setDragging(true);
+  };
+
+  const onDragLeave = e => {
+    if (!e.currentTarget.contains(e.relatedTarget)) setDragging(false);
+  };
+
+  // Drop mod files from the file manager into the package / load order
+  const onDrop = async e => {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    setDragging(false);
+
+    const paths = Array.from(e.dataTransfer.files)
+      .map(f => f.path)
+      .filter(Boolean);
+    if (!paths.length) return;
+
+    try {
+      const res = await ipc('mods/add', {
+        paths,
+        known: gstate.mods.map(m => m.id)
+      });
+      dispatch({ type: 'mods/drop', mods: res.mods, ids: res.ids });
+      if (res.ids.length) {
+        play('soundModSelect');
+        toast(
+          'ok',
+          t('common:success'),
+          t('wads:toastDrop', { count: res.ids.length })
+        );
+      }
+      if (res.skipped.length) {
+        toast(
+          'danger',
+          t('common:error'),
+          t('wads:toastDropSkipped', { names: res.skipped.join(', ') })
+        );
+      }
+    } catch (err) {
+      toast('danger', t('common:error'), String(err));
+    }
+  };
+
   const openDrawer = () => {
     setPoActive(true);
     play('soundDrawer');
@@ -97,7 +149,16 @@ const Wads = () => {
             }
           ></ModBox>
         </Flex.Col>
-        <Flex.Col>
+        <Flex.Col
+          onDragOver={onDragOver}
+          onDragLeave={onDragLeave}
+          onDrop={onDrop}
+          style={
+            dragging
+              ? { outline: '2px dashed #a4d31f', outlineOffset: '-2px' }
+              : undefined
+          }
+        >
           <Box fixed={<PackageAreaNew />}>
             <ul>
               <AnimatePresence>
