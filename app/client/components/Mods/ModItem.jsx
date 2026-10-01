@@ -74,6 +74,19 @@ const ItemStyle = styled.div`
   &:hover h1 {
     color: ${({ theme }) => theme.color.active};
   }
+
+  ${({ dragState, theme }) => {
+    switch (dragState) {
+      case 'dragging':
+        return 'opacity: 0.35;';
+      case 'above':
+        return `box-shadow: 0 -4px 0 0 ${theme.color.active};`;
+      case 'below':
+        return `box-shadow: 0 4px 0 0 ${theme.color.active};`;
+      default:
+        return '';
+    }
+  }}
 `;
 
 const ModItem = ({
@@ -84,7 +97,9 @@ const ModItem = ({
   onDown,
   onCircle = () => null,
   onTag = null,
-  selected = false
+  selected = false,
+  dragProps = {},
+  dragState = null
 }) => {
   const { gstate } = useContext(StoreContext);
 
@@ -101,7 +116,7 @@ const ModItem = ({
         type: 'tween'
       }}
     >
-      <ItemStyle>
+      <ItemStyle {...dragProps} dragState={dragState}>
         <Check
           theme={gstate.settings.theme}
           size="50"
@@ -144,7 +159,9 @@ ModItem.propTypes = {
   onCircle: PropTypes.func,
   onSelect: PropTypes.func.isRequired,
   onTag: PropTypes.any,
-  selected: PropTypes.bool
+  selected: PropTypes.bool,
+  dragProps: PropTypes.object,
+  dragState: PropTypes.string
 };
 
 export default ModItem;

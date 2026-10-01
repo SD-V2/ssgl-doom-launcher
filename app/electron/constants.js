@@ -11,7 +11,7 @@ const MOD_EXTENSIONS = [
   'CLD',
   'ZIP',
   'RAR',
-  '7z'
+  '7Z'
 ];
 
 const AVAILABLE_IWADS = [

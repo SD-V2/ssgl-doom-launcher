@@ -154,6 +154,15 @@ export function reducer(state, action) {
         }
       });
 
+    case 'mod/reorder':
+      return act({
+        ...state,
+        package: {
+          ...state.package,
+          selected: move(state.package.selected, action.from, action.to)
+        }
+      });
+
     case 'mod/select':
       const newItem = state.mods.find(item => action.id === item.id);
 

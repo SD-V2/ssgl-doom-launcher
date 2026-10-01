@@ -25,6 +25,8 @@ const Wads = () => {
   const [poActive, setPoActive] = useState(false);
   const [sort, setSort] = useState('new');
   const [dragging, setDragging] = useState(false);
+  const [dragFrom, setDragFrom] = useState(null);
+  const [dragOver, setDragOver] = useState(null);
   const [ipc, loading] = useIpc();
   const { t } = useTranslation(['common', 'wads']);
   const [toast] = useToast();
@@ -67,6 +69,44 @@ const Wads = () => {
 
   const onClear = () => setFilter('');
 
+  // Drag items of the load order up and down to reorder them
+  const itemDragProps = index => ({
+    draggable: true,
+    onDragStart: e => {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', String(index));
+      // defer so the drag image is taken before the item is dimmed
+      setTimeout(() => setDragFrom(index), 0);
+    },
+    onDragOver: e => {
+      if (dragFrom === null) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      if (dragOver !== index) setDragOver(index);
+    },
+    onDrop: e => {
+      if (dragFrom === null) return;
+      e.preventDefault();
+      if (dragFrom !== index) {
+        dispatch({ type: 'mod/reorder', from: dragFrom, to: index });
+        play('soundModSelect');
+      }
+      setDragFrom(null);
+      setDragOver(null);
+    },
+    onDragEnd: () => {
+      setDragFrom(null);
+      setDragOver(null);
+    }
+  });
+
+  const itemDragState = index => {
+    if (dragFrom === null) return null;
+    if (index === dragFrom) return 'dragging';
+    if (index === dragOver) return dragFrom < index ? 'below' : 'above';
+    return null;
+  };
+
   const hasFiles = e =>
     Array.from(e.dataTransfer.types || []).indexOf('Files') > -1;
 
@@ -98,13 +138,13 @@ const Wads = () => {
         known: gstate.mods.map(m => m.id)
       });
       dispatch({ type: 'mods/drop', mods: res.mods, ids: res.ids });
-      if (res.ids.length) {
+      const added = res.ids.filter(
+        (id, i, all) =>
+          all.indexOf(id) === i && gstate.package.selected.indexOf(id) < 0
+      ).length;
+      if (added) {
         play('soundModSelect');
-        toast(
-          'ok',
-          t('common:success'),
-          t('wads:toastDrop', { count: res.ids.length })
-        );
+        toast('ok', t('common:success'), t('wads:toastDrop', { count: added }));
       }
       if (res.skipped.length) {
         toast(
@@ -174,6 +214,8 @@ const Wads = () => {
                         onCircle={onCircle(item.path)}
                         onDown={onSort(itemindex, 'down')}
                         onTag={onTag}
+                        dragProps={itemDragProps(itemindex)}
+                        dragState={itemDragState(itemindex)}
                         selected
                       />
                     ) : (
