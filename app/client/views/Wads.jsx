@@ -19,11 +19,32 @@ import { setTitle, sortList, useIpc, useToast, useTranslation } from '../utils';
 import { useSound } from '../utils';
 import AnimatedView from './AnimatedView';
 
+const FOLDERS_KEY = 'ssgl.openFolders';
+const SORT_KEY = 'ssgl.sort';
+
+const loadOpenFolders = () => {
+  try {
+    return JSON.parse(localStorage.getItem(FOLDERS_KEY)) || [];
+  } catch (e) {
+    return [];
+  }
+};
+
+const loadSort = () => {
+  try {
+    // only the folder view is remembered, the other sorts start fresh
+    return localStorage.getItem(SORT_KEY) === 'folder' ? 'folder' : 'new';
+  } catch (e) {
+    return 'new';
+  }
+};
+
 const Wads = () => {
   setTitle('wads');
   const { gstate, dispatch } = useContext(StoreContext);
   const [poActive, setPoActive] = useState(false);
-  const [sort, setSort] = useState('new');
+  const [sort, setSort] = useState(loadSort);
+  const [openFolders, setOpenFolders] = useState(loadOpenFolders);
   const [dragging, setDragging] = useState(false);
   const [dragFrom, setDragFrom] = useState(null);
   const [dragOver, setDragOver] = useState(null);
@@ -50,7 +71,26 @@ const Wads = () => {
     toast('ok', t('common:success'), t('wads:toastIndex'));
   };
 
-  const onSortList = ({ value }) => setSort(value);
+  const onSortList = ({ value }) => {
+    setSort(value);
+    try {
+      localStorage.setItem(SORT_KEY, value);
+    } catch (e) {}
+  };
+
+  const saveOpenFolders = list => {
+    setOpenFolders(list);
+    try {
+      localStorage.setItem(FOLDERS_KEY, JSON.stringify(list));
+    } catch (e) {}
+  };
+
+  const onToggleFolder = folder =>
+    saveOpenFolders(
+      openFolders.indexOf(folder) > -1
+        ? openFolders.filter(f => f !== folder)
+        : [...openFolders, folder]
+    );
 
   const onFilterInput = (e, { value }) => {
     if (sort === 'tag') {
@@ -175,6 +215,11 @@ const Wads = () => {
             data={show}
             onClick={onSelect}
             onTag={onTag}
+            grouped={sort === 'folder'}
+            openFolders={openFolders}
+            forceOpen={filter.trim() !== ''}
+            onToggleFolder={onToggleFolder}
+            onSetFolders={saveOpenFolders}
             fixed={
               <ModFilter
                 filterValue={rawFilter}

@@ -9,6 +9,7 @@ export default {
     lastplayed: 'Last played',
     oldest: 'Oldest first',
     newest: 'Newest first',
+    folders: 'By folder',
     active: 'Active first'
   },
   oblige: {
@@ -24,6 +25,12 @@ export default {
     filter: 'Search in {{size}} Mods',
     toastIndex: 'Reindexed Mod Directory',
     toastDrop: 'Added to load order: {{count}}',
+    expandAll: 'Expand all',
+    collapseAll: 'Collapse all',
+    noFolder: 'No folder',
+    folderCount: '{{count}} mod',
+    folderCount_plural: '{{count}} mods',
+    folderActive: '{{count}} active',
     toastDropSkipped: 'Skipped (no mod files found): {{names}}',
     packEdit: 'Edit',
     packSaveAs: 'Save as',

@@ -45,6 +45,10 @@ const ModFilter = ({
     {
       label: t('filters:tag'),
       value: 'tag'
+    },
+    {
+      label: t('filters:folders'),
+      value: 'folder'
     }
   ];
 

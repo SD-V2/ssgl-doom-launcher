@@ -57,12 +57,13 @@ const getMetaData = (item, dir) => {
   const name = path.parse(item.path).name.replace(/_/g, ' ');
   const ext = getExt(item.path);
 
-  let tags = item.path
+  const parts = item.path
     .substring(0, item.path.lastIndexOf(path.sep))
     .replace(`${dir}`, '')
-    .toLowerCase()
     .split(path.sep)
     .filter(i => i.trim() !== '');
+
+  let tags = parts.map(i => i.toLowerCase());
 
   if (tags.length > 3) {
     tags = tags.slice(0, 3);
@@ -72,7 +73,9 @@ const getMetaData = (item, dir) => {
     id: `${name}${item.stats.size}${ext}`,
     name: name,
     ext: getExt(item.path),
-    tags: tags
+    tags: tags,
+    // first folder below the WAD directory, original spelling ('' = no folder)
+    folder: parts[0] || ''
   };
 };
 
@@ -108,6 +111,7 @@ const modItem = (item, dir) => {
     id: meta.id,
     lastdir: path.basename(path.dirname(item.path)).toLowerCase(),
     tags: meta.tags,
+    folder: meta.folder,
     name: meta.name,
     kind: meta.ext,
     path: item.path,
