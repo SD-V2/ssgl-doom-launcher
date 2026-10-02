@@ -1,6 +1,6 @@
 import './global.css';
 
-import React, { useEffect, useReducer } from 'react';
+import React, { useEffect, useMemo, useReducer } from 'react';
 import ReactDOM from 'react-dom';
 import { ThemeProvider } from 'styled-components';
 
@@ -9,12 +9,20 @@ import AudioProvider from './components/Audio';
 import Update from './components/Update';
 import i18n from './i18n';
 import { initState, reducer, StoreContext } from './state';
-import themes from './Theme';
+import themes, { customTheme } from './Theme';
 import { useIpc } from './utils';
 import { useHashLocation } from './utils';
 
 const App = () => {
   const [gstate, dispatch] = useReducer(reducer, initState);
+
+  const activeTheme = useMemo(
+    () =>
+      gstate.settings.theme === 'custom'
+        ? customTheme(gstate.settings.accent)
+        : themes[gstate.settings.theme] || themes.hell,
+    [gstate.settings.theme, gstate.settings.accent]
+  );
   const [fetch, loading] = useIpc({ delayLoad: 1000 });
   // eslint-disable-next-line no-unused-vars
   const [location, navigate] = useHashLocation();
@@ -59,7 +67,7 @@ const App = () => {
   return (
     <StoreContext.Provider value={{ gstate, dispatch }}>
       <AudioProvider>
-        <ThemeProvider theme={themes[gstate.settings.theme || 'hell']}>
+        <ThemeProvider theme={activeTheme}>
           <ToastContainer>
             {loading ? (
               <MainLoader />

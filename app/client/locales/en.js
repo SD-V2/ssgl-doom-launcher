@@ -62,6 +62,7 @@ export default {
     titleCustomization: 'Customization',
     titleOblige: 'Oblige Integration',
     colorTheme: 'Color Theme',
+    accentColor: 'Custom accent color',
     favouriteSourceport: 'Favourite Sourceport',
     obligeConfigPath: 'Oblige Build Configs',
     obligeBinary: 'Oblige Binary',

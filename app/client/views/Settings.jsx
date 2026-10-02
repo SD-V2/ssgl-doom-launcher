@@ -6,6 +6,7 @@ import {
   Checkbox,
   Dropdown,
   FormCollection,
+  Label,
   Range,
   SelectFile,
   SubmitArea
@@ -61,7 +62,15 @@ const Settings = () => {
     {
       label: 'Pinkie',
       value: 'pinkie'
-    }
+    },
+    { label: 'Plasma', value: 'plasma' },
+    { label: 'Nightmare', value: 'nightmare' },
+    { label: 'Lost Soul', value: 'lostsoul' },
+    { label: 'Arch-Vile', value: 'archvile' },
+    { label: 'Toxic', value: 'toxic' },
+    { label: 'Berserk', value: 'berserk' },
+    { label: 'Steel', value: 'steel' },
+    { label: 'Custom color...', value: 'custom' }
   ];
   const viewOptions = [
     {
@@ -209,6 +218,25 @@ const Settings = () => {
                   value={form.theme}
                   onChange={onComponent}
                 />
+                {form.theme === 'custom' ? (
+                  <>
+                    <Label>{t('settings:accentColor')}</Label>
+                    <input
+                      type="color"
+                      name="accent"
+                      value={form.accent || '#ff7a00'}
+                      onChange={onInput}
+                      style={{
+                        width: '100%',
+                        height: '38px',
+                        marginBottom: '15px',
+                        cursor: 'pointer',
+                        background: 'transparent',
+                        border: 'none'
+                      }}
+                    />
+                  </>
+                ) : null}
                 {gstate.sourceports.length > 0 ? (
                   <Dropdown
                     name="defaultsourceport"

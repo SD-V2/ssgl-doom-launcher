@@ -293,12 +293,104 @@ export const slayer = {
   `
 };
 
+// Builds a full theme from three colors (same look as the built-in ones)
+const makeTheme = ({ active, glow, dark }) => ({
+  ...hell,
+  font: { ...hell.font, glow: `0 0 5px ${glow}, 0 0 15px ${glow};` },
+  svg: {
+    ...hell.svg,
+    glow: `drop-shadow(0 -1px 4px ${glow}) drop-shadow(0 0 10px ${glow})`,
+    dark,
+    bright: active
+  },
+  color: { ...hell.color, glow, active },
+  border: { ...hell.border, active },
+  scrollbar: hell.scrollbar.replace(/#ffa800/g, active)
+});
+
+const toRgb = hex => {
+  const h = hex.replace('#', '');
+  return [0, 2, 4].map(i => parseInt(h.substr(i, 2), 16));
+};
+
+// mix two hex colors, amount = share of the second color (0..1)
+const mix = (a, b, amount) => {
+  const ca = toRgb(a);
+  const cb = toRgb(b);
+  return (
+    '#' +
+    ca
+      .map((v, i) => Math.round(v * (1 - amount) + cb[i] * amount))
+      .map(v => v.toString(16).padStart(2, '0'))
+      .join('')
+  );
+};
+
+// Theme from one freely chosen accent color
+export const customTheme = accent => {
+  const color = /^#[0-9a-f]{6}$/i.test(accent || '') ? accent : '#ff7a00';
+  return makeTheme({
+    active: color,
+    glow: mix(color, '#808080', 0.35),
+    dark: mix(color, '#1d2025', 0.7)
+  });
+};
+
+const plasma = makeTheme({
+  active: '#3FA9FF',
+  glow: '#5B8DB8',
+  dark: '#26394A'
+});
+
+const nightmare = makeTheme({
+  active: '#A56BFF',
+  glow: '#8467B8',
+  dark: '#3A2F52'
+});
+
+const lostsoul = makeTheme({
+  active: '#FF6A1F',
+  glow: '#D4541A',
+  dark: '#4D2A19'
+});
+
+const archvile = makeTheme({
+  active: '#FFE14D',
+  glow: '#C9B44A',
+  dark: '#4D4524'
+});
+
+const toxic = makeTheme({
+  active: '#1FF2B0',
+  glow: '#4FB79B',
+  dark: '#1F4A3F'
+});
+
+const berserk = makeTheme({
+  active: '#FF2E7A',
+  glow: '#B8456F',
+  dark: '#4D1F34'
+});
+
+const steel = makeTheme({
+  active: '#E6EDF5',
+  glow: '#9AA5B1',
+  dark: '#3E454C'
+});
+
 const themes = {
   slayer,
   hell,
   uac,
   bfg,
-  pinkie
+  pinkie,
+  plasma,
+  nightmare,
+  lostsoul,
+  archvile,
+  toxic,
+  berserk,
+  steel
 };
 
 export default themes;
