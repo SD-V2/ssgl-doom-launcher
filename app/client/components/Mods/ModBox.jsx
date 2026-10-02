@@ -152,8 +152,16 @@ const ModBox = ({
     [rows]
   );
 
-  const renderRow = ({ index, style }) => {
+  const INDENT = 16;
+
+  const renderRow = ({ index, style: baseStyle }) => {
     const row = rows[index];
+    // nested folders / mods are pushed to the right
+    const indent = (row.depth || 0) * INDENT;
+    const style =
+      indent > 0
+        ? { ...baseStyle, left: indent, width: `calc(100% - ${indent}px)` }
+        : baseStyle;
 
     if (row.type === 'toolbar') {
       return (
@@ -168,8 +176,8 @@ const ModBox = ({
 
     if (row.type === 'folder') {
       return (
-        <li key={`folder_${row.folder}`} style={style}>
-          <FolderStyle onClick={() => onToggleFolder(row.folder)}>
+        <li key={`folder_${row.key}`} style={style}>
+          <FolderStyle onClick={() => onToggleFolder(row.key)}>
             <Arrow open={row.open} />
             <h2>{row.folder || t('wads:noFolder')}</h2>
             <span>

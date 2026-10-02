@@ -75,7 +75,9 @@ const getMetaData = (item, dir) => {
     ext: getExt(item.path),
     tags: tags,
     // first folder below the WAD directory, original spelling ('' = no folder)
-    folder: parts[0] || ''
+    folder: parts[0] || '',
+    // the whole folder path below the WAD directory, original spelling
+    folders: parts
   };
 };
 
@@ -112,6 +114,7 @@ const modItem = (item, dir) => {
     lastdir: path.basename(path.dirname(item.path)).toLowerCase(),
     tags: meta.tags,
     folder: meta.folder,
+    folders: meta.folders,
     name: meta.name,
     kind: meta.ext,
     path: item.path,
