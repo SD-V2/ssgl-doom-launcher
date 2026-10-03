@@ -26,7 +26,7 @@ const PackageTransfer = () => {
 
       const names = {};
       gstate.mods.forEach(m => {
-        names[m.id] = `${m.name}.${m.ext.toLowerCase()}`;
+        names[m.id] = `${m.name}.${String(m.kind || '').toLowerCase()}`;
       });
 
       const res = await ipcRenderer.invoke('packages/export', {
@@ -95,16 +95,27 @@ const PackageTransfer = () => {
       }
     };
 
-    const onCurrent = () => exportPackages(true);
-    const onAll = () => exportPackages(false);
+    // never fail silently: any error becomes a message
+    const guard = fn => async () => {
+      try {
+        await fn();
+      } catch (err) {
+        const { toast, t } = latest.current;
+        toast('danger', t('common:error'), String((err && err.message) || err));
+      }
+    };
+
+    const onCurrent = guard(() => exportPackages(true));
+    const onAll = guard(() => exportPackages(false));
+    const onImport = guard(importPackages);
 
     ipcRenderer.on('menu/export-current', onCurrent);
     ipcRenderer.on('menu/export-all', onAll);
-    ipcRenderer.on('menu/import', importPackages);
+    ipcRenderer.on('menu/import', onImport);
     return () => {
       ipcRenderer.removeListener('menu/export-current', onCurrent);
       ipcRenderer.removeListener('menu/export-all', onAll);
-      ipcRenderer.removeListener('menu/import', importPackages);
+      ipcRenderer.removeListener('menu/import', onImport);
     };
   }, []);
 
