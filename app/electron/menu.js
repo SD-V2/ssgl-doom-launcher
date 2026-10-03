@@ -104,20 +104,24 @@ const createMenu = (win, url) => {
         }
       ]
     },
-    {
-      // not shown on Windows / Linux, keeps copy & paste shortcuts alive
-      label: 'Edit',
-      visible: isMac,
-      submenu: [
-        { role: 'undo' },
-        { role: 'redo' },
-        { type: 'separator' },
-        { role: 'cut' },
-        { role: 'copy' },
-        { role: 'paste' },
-        { role: 'selectAll' }
-      ]
-    },
+    // Edit menu only exists on macOS (needed there for copy & paste);
+    // on Windows / Linux the shortcuts work without it
+    ...(isMac
+      ? [
+          {
+            label: 'Edit',
+            submenu: [
+              { role: 'undo' },
+              { role: 'redo' },
+              { type: 'separator' },
+              { role: 'cut' },
+              { role: 'copy' },
+              { role: 'paste' },
+              { role: 'selectAll' }
+            ]
+          }
+        ]
+      : []),
     {
       label: 'View',
       submenu: [
