@@ -20,7 +20,8 @@ import {
 import { StoreContext } from '../state';
 import { setTitle, sortList, useIpc, useToast, useTranslation } from '../utils';
 import { useSound } from '../utils';
-import { modsInFolder } from '../utils/groupByFolder';
+import { trackFirstSeen } from '../utils/firstSeen';
+import { modsInFolder, sortByFolder } from '../utils/groupByFolder';
 import AnimatedView from './AnimatedView';
 
 const FAV_KEY = 'ssgl.favorites';
@@ -42,6 +43,24 @@ const NotesStyle = styled.div`
     font-size: 12px;
     text-transform: uppercase;
     color: ${({ theme }) => theme.color.meta};
+  }
+`;
+
+const ToolbarStyle = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+  font-size: 14px;
+  user-select: none;
+
+  a {
+    cursor: pointer;
+    margin-left: 16px;
+    color: ${({ theme }) => theme.color.active};
+  }
+
+  a:hover {
+    text-decoration: underline;
   }
 `;
 
@@ -85,6 +104,7 @@ const Wads = () => {
   const [removeHover, setRemoveHover] = useState(false);
   const [dupesOpen, setDupesOpen] = useState(false);
   const [favorites, setFavorites] = useState(loadFavorites);
+  const [orderBackup, setOrderBackup] = useState(null);
   const [ipc, loading] = useIpc();
   const { t } = useTranslation(['common', 'wads']);
   const [toast] = useToast();
@@ -92,6 +112,8 @@ const Wads = () => {
   const [rawFilter, setFilter] = useState('');
   const [filter] = useDebounce(rawFilter, 200);
   const favSet = useMemo(() => new Set(favorites), [favorites]);
+  // mods SSGL saw for the first time within the last week
+  const recentIds = useMemo(() => trackFirstSeen(gstate.mods), [gstate.mods]);
 
   const onSelect = id => () => {
     play('soundModSelect');
@@ -127,6 +149,27 @@ const Wads = () => {
   };
 
   const onShowMod = path => () => remote.shell.showItemInFolder(path);
+
+  // arrange the load order by folder (1_xx first); can be undone right after
+  const onSortByFolder = () => {
+    const before = gstate.package.selected;
+    const sorted = sortByFolder(before, gstate.mods);
+    setOrderBackup({ before, sorted });
+    dispatch({ type: 'mods/setOrder', ids: sorted });
+    play('soundModSelect');
+    toast('ok', t('common:success'), t('wads:toastSorted'));
+  };
+
+  const onUndoSort = () => {
+    dispatch({ type: 'mods/setOrder', ids: orderBackup.before });
+    setOrderBackup(null);
+    play('soundModSelect');
+  };
+
+  // undo is offered only while the order is still the one the sort produced
+  const canUndoSort =
+    orderBackup !== null &&
+    orderBackup.sorted.join('|') === gstate.package.selected.join('|');
 
   // move a mod file to the Recycle Bin (after asking)
   const onDeleteMod = (path, name, id = null) => async () => {
@@ -361,14 +404,17 @@ const Wads = () => {
 
   const show = useMemo(() => {
     // always work on a copy, sortList sorts in place
-    const base =
-      sort === 'starred'
-        ? gstate.mods.filter(m => favSet.has(m.id))
-        : [...gstate.mods];
+    let base = [...gstate.mods];
+    if (sort === 'starred') base = base.filter(m => favSet.has(m.id));
+    if (sort === 'recent') base = base.filter(m => recentIds.has(m.id));
 
     const sorted = sortList(
       base,
-      sort === 'fav' ? 'new' : sort === 'starred' ? 'asc' : sort,
+      sort === 'fav' || sort === 'recent'
+        ? 'new'
+        : sort === 'starred'
+        ? 'asc'
+        : sort,
       filter,
       (i, fuzz) =>
         fuzz(
@@ -383,7 +429,7 @@ const Wads = () => {
           ...sorted.filter(m => !favSet.has(m.id))
         ]
       : sorted;
-  }, [gstate.mods, sort, filter, favSet]);
+  }, [gstate.mods, sort, filter, favSet, recentIds]);
 
   const totalBytes = useMemo(
     () => gstate.mods.reduce((n, m) => n + (m.bytes || 0), 0),
@@ -418,6 +464,8 @@ const Wads = () => {
             onFavorite={onFavorite}
             onShow={onShowMod}
             onDelete={item => onDeleteMod(item.path, item.name, item.id)}
+            compact={!!gstate.settings.compactList}
+            recentIds={recentIds}
             footer={
               <ModStats
                 count={gstate.mods.length}
@@ -456,6 +504,14 @@ const Wads = () => {
                 <b>{t('wads:notesTitle')}</b>
                 {gstate.package.notes}
               </NotesStyle>
+            ) : null}
+            {gstate.package.selected.length > 1 || canUndoSort ? (
+              <ToolbarStyle>
+                {canUndoSort ? (
+                  <a onClick={onUndoSort}>{t('wads:undoSort')}</a>
+                ) : null}
+                <a onClick={onSortByFolder}>{t('wads:sortByFolder')}</a>
+              </ToolbarStyle>
             ) : null}
             <ul>
               <AnimatePresence>

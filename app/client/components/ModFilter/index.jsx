@@ -51,6 +51,10 @@ const ModFilter = ({
       value: 'folder'
     },
     {
+      label: t('filters:recent'),
+      value: 'recent'
+    },
+    {
       label: t('filters:favFirst'),
       value: 'fav'
     },

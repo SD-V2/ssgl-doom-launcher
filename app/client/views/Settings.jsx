@@ -199,6 +199,12 @@ const Settings = () => {
                   value={form.background}
                   fluid
                 />
+                <Checkbox
+                  value={form.compactList}
+                  label={t('settings:compactList')}
+                  name="compactList"
+                  onChange={onComponent}
+                />
                 <Dropdown
                   name="language"
                   options={AVAILABLE_LOCALES}

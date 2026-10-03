@@ -150,7 +150,9 @@ const ModBox = ({
   onFavorite = () => () => {},
   onShow = () => () => {},
   onDelete = () => () => {},
-  footer = null
+  footer = null,
+  compact = false,
+  recentIds = new Set()
 }) => {
   const { t } = useTranslation(['wads']);
   const boxRef = useRef(null);
@@ -189,10 +191,10 @@ const ModBox = ({
         case 'toolbar':
           return 30;
         default:
-          return 77;
+          return compact ? 45 : 77;
       }
     },
-    [rows]
+    [rows, compact]
   );
 
   const INDENT = 16;
@@ -273,6 +275,8 @@ const ModBox = ({
         onShow={onShow(row.item.path)}
         onDelete={onDelete(row.item)}
         dragProps={modDragProps(row.item)}
+        isNew={recentIds.has(row.item.id)}
+        compact={compact}
       />
     );
   };
@@ -299,6 +303,8 @@ ModBox.propTypes = {
   data: PropTypes.any,
   fixed: PropTypes.element,
   footer: PropTypes.element,
+  compact: PropTypes.bool,
+  recentIds: PropTypes.any,
   favorites: PropTypes.any,
   onFavorite: PropTypes.func,
   onShow: PropTypes.func,

@@ -112,4 +112,31 @@ export const modsInFolder = (data, folderKey) => {
   return found;
 };
 
+// Arranges mod ids by folder (1_BP before 2_X, subfolders before the loose
+// mods of their parent, mods without a folder last). Inside the same folder the
+// existing order is kept, so manual fine tuning survives. Unknown ids go last.
+export const sortByFolder = (ids, mods) => {
+  const byId = new Map(mods.map(m => [m.id, m]));
+  const pathOf = id => {
+    const m = byId.get(id);
+    return m ? m.folders || (m.folder ? [m.folder] : []) : null;
+  };
+
+  const known = ids
+    .map((id, index) => ({ id, index, path: pathOf(id) }))
+    .filter(i => i.path !== null);
+  const unknown = ids.filter(id => pathOf(id) === null);
+
+  known.sort((a, b) => {
+    const n = Math.min(a.path.length, b.path.length);
+    for (let i = 0; i < n; i++) {
+      const c = natural(a.path[i], b.path[i]);
+      if (c !== 0) return c;
+    }
+    return b.path.length - a.path.length || a.index - b.index;
+  });
+
+  return [...known.map(i => i.id), ...unknown];
+};
+
 export default groupByFolder;

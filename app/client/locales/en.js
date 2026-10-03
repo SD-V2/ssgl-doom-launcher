@@ -12,6 +12,7 @@ export default {
     folders: 'By folder',
     favFirst: 'Favorites first',
     starred: 'Favorites only',
+    recent: 'Recently added',
     active: 'Active first'
   },
   oblige: {
@@ -55,6 +56,10 @@ export default {
     dupesShow: 'Show',
     dupesDelete: 'Delete',
     notesTitle: 'Notes',
+    newBadge: 'new',
+    sortByFolder: 'Sort by folder',
+    undoSort: 'Undo sort',
+    toastSorted: 'Load order sorted by folder',
     toastDropSkipped: 'Skipped (no mod files found): {{names}}',
     packEdit: 'Edit',
     packSaveAs: 'Save as',
@@ -95,6 +100,7 @@ export default {
     colorTheme: 'Color Theme',
     accentColor: 'Custom accent color',
     autoRefresh: 'Refresh mod list automatically when files change',
+    compactList: 'Compact mod list (more mods on screen)',
     favouriteSourceport: 'Favourite Sourceport',
     obligeConfigPath: 'Oblige Build Configs',
     obligeBinary: 'Oblige Binary',

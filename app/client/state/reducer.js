@@ -50,6 +50,7 @@ export const initState = {
     savepath: '',
     background: '',
     autoRefresh: true,
+    compactList: false,
     volume: 0.5
   }
 };
@@ -258,6 +259,12 @@ export function reducer(state, action) {
         package: { ...state.package, selected }
       });
     }
+
+    case 'mods/setOrder':
+      return act({
+        ...state,
+        package: { ...state.package, selected: action.ids }
+      });
 
     case 'mods/remove': {
       const gone = new Set(action.ids);

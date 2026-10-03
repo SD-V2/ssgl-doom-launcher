@@ -42,6 +42,18 @@ const Content = styled.div`
   }
 `;
 
+const NewTag = styled.span`
+  display: inline-block;
+  margin-right: 8px;
+  padding: 0 6px;
+  font-size: 11px;
+  line-height: 16px;
+  text-transform: uppercase;
+  border-radius: 4px;
+  color: ${({ theme }) => theme.color.active};
+  border: 1px solid ${({ theme }) => theme.color.active};
+`;
+
 const Meta = styled.span`
   color: ${({ theme }) => theme.color.meta};
   font-size: 14px;
@@ -51,10 +63,11 @@ const Meta = styled.span`
 
 const ActionsStyle = styled.div`
   display: flex;
-  flex-direction: column;
+  flex-direction: ${({ compact }) => (compact ? 'row' : 'column')};
   justify-content: space-between;
   align-items: center;
   margin-left: 8px;
+  ${({ compact }) => (compact ? 'gap: 6px;' : '')}
 
   button {
     background: none;
@@ -129,9 +142,24 @@ const ItemStyle = styled.div`
   border-radius: ${({ theme }) => theme.border.radius};
   border: 1px solid ${({ theme }) => theme.border.idle};
   transition: ${({ theme }) => theme.transition.out};
-  padding: 10px;
-  height: 50px;
+  padding: ${({ compact }) => (compact ? '4px 10px' : '10px')};
+  height: ${({ compact }) => (compact ? '30px' : '50px')};
   display: flex;
+  align-items: ${({ compact }) => (compact ? 'center' : 'stretch')};
+
+  ${({ compact }) =>
+    compact
+      ? `
+    h1 {
+      display: inline-block;
+      margin: 0 10px 0 0;
+      font-size: 15px;
+    }
+    span, ul {
+      margin-bottom: 0;
+    }
+  `
+      : ''}
   user-select: none;
   margin-bottom: 5px;
 
@@ -171,7 +199,9 @@ const ModItem = ({
   fav = false,
   onFav = null,
   onShow = null,
-  onDelete = null
+  onDelete = null,
+  isNew = false,
+  compact = false
 }) => {
   const { gstate } = useContext(StoreContext);
   const { t } = useTranslation(['wads']);
@@ -189,23 +219,24 @@ const ModItem = ({
         type: 'tween'
       }}
     >
-      <ItemStyle {...dragProps} dragState={dragState}>
+      <ItemStyle {...dragProps} dragState={dragState} compact={compact}>
         <Check
           theme={gstate.settings.theme}
-          size="50"
+          size={compact ? '30' : '50'}
           active={item.active}
           onClick={onSelect}
         />
         <Divider />
         <Content className={item.active ? 'active' : undefined}>
           <h1>{item.name}</h1>
+          {isNew && !selected ? <NewTag>{t('wads:newBadge')}</NewTag> : null}
           <Meta>
             {item.size} {item.kind}{' '}
           </Meta>
           <TagList item={item} onTag={onTag} />
         </Content>
         {!selected && onFav ? (
-          <ActionsStyle>
+          <ActionsStyle compact={compact}>
             <button
               type="button"
               className={fav ? 'fav' : undefined}
@@ -261,7 +292,9 @@ ModItem.propTypes = {
   fav: PropTypes.bool,
   onFav: PropTypes.func,
   onShow: PropTypes.func,
-  onDelete: PropTypes.func
+  onDelete: PropTypes.func,
+  isNew: PropTypes.bool,
+  compact: PropTypes.bool
 };
 
 export default ModItem;
