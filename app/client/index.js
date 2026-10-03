@@ -7,6 +7,7 @@ import { ThemeProvider } from 'styled-components';
 
 import { Body, Head, MainLoader, Routes, ToastContainer } from './components';
 import AudioProvider from './components/Audio';
+import PackageTransfer from './components/PackageTransfer';
 import Update from './components/Update';
 import i18n from './i18n';
 import { initState, reducer, StoreContext } from './state';
@@ -87,6 +88,7 @@ const App = () => {
       <AudioProvider>
         <ThemeProvider theme={activeTheme}>
           <ToastContainer>
+            <PackageTransfer />
             {loading ? (
               <MainLoader />
             ) : (

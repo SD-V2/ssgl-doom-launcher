@@ -135,6 +135,9 @@ export function reducer(state, action) {
         }
       });
 
+    case 'packages/set':
+      return act({ ...state, packages: action.packages });
+
     case 'packages/save':
       return act({
         ...state,

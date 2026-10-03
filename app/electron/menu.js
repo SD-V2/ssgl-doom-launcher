@@ -87,7 +87,27 @@ const createMenu = (win, url) => {
       ]
     },
     {
+      label: 'Packages',
+      submenu: [
+        {
+          label: 'Export Current Package...',
+          click: () => win.webContents.send('menu/export-current')
+        },
+        {
+          label: 'Export All Packages...',
+          click: () => win.webContents.send('menu/export-all')
+        },
+        { type: 'separator' },
+        {
+          label: 'Import Packages...',
+          click: () => win.webContents.send('menu/import')
+        }
+      ]
+    },
+    {
+      // not shown on Windows / Linux, keeps copy & paste shortcuts alive
       label: 'Edit',
+      visible: isMac,
       submenu: [
         { role: 'undo' },
         { role: 'redo' },
@@ -95,9 +115,7 @@ const createMenu = (win, url) => {
         { role: 'cut' },
         { role: 'copy' },
         { role: 'paste' },
-        ...(isMac
-          ? [{ role: 'delete' }, { role: 'selectAll' }, { type: 'separator' }]
-          : [{ role: 'delete' }, { type: 'separator' }, { role: 'selectAll' }])
+        { role: 'selectAll' }
       ]
     },
     {
