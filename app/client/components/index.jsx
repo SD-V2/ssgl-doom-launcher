@@ -11,6 +11,7 @@ import ModFilter from './ModFilter';
 import ErrorItem from './Mods/ErrorItem';
 import ModBox from './Mods/ModBox';
 import ConflictsModal from './Mods/ConflictsModal';
+import DiskUsageModal from './Mods/DiskUsageModal';
 import DuplicatesModal from './Mods/DuplicatesModal';
 import ModItem from './Mods/ModItem';
 import ModStats from './Mods/ModStats';
@@ -37,6 +38,7 @@ export {
   ModItem,
   ModStats,
   DuplicatesModal,
+  DiskUsageModal,
   ConflictsModal,
   iWad,
   Routes,

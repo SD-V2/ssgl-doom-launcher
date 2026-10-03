@@ -21,8 +21,12 @@ const StatsStyle = styled.div`
 
   a {
     cursor: pointer;
-    margin-left: auto;
+    margin-left: 14px;
     color: ${({ theme }) => theme.color.active};
+  }
+
+  a.dupes {
+    margin-left: auto;
   }
 
   a:hover {
@@ -30,7 +34,7 @@ const StatsStyle = styled.div`
   }
 `;
 
-const ModStats = ({ count, bytes, groups, onOpen }) => {
+const ModStats = ({ count, bytes, groups, onOpen, onUsage }) => {
   const { t } = useTranslation(['wads']);
 
   return (
@@ -38,8 +42,9 @@ const ModStats = ({ count, bytes, groups, onOpen }) => {
       <span>
         <b>{t('wads:statsMods', { count })}</b> · <b>{byteSize(bytes).toString()}</b>
       </span>
+      <a onClick={onUsage}>{t('wads:statsUsage')}</a>
       {groups > 0 ? (
-        <a onClick={onOpen}>{t('wads:statsDupes', { count: groups })}</a>
+        <a className="dupes" onClick={onOpen}>{t('wads:statsDupes', { count: groups })}</a>
       ) : null}
     </StatsStyle>
   );
@@ -49,7 +54,8 @@ ModStats.propTypes = {
   count: PropTypes.number.isRequired,
   bytes: PropTypes.number.isRequired,
   groups: PropTypes.number.isRequired,
-  onOpen: PropTypes.func.isRequired
+  onOpen: PropTypes.func.isRequired,
+  onUsage: PropTypes.func.isRequired
 };
 
 export default ModStats;

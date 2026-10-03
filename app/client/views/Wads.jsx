@@ -7,6 +7,7 @@ import { useDebounce } from 'use-debounce';
 import {
   Box,
   ConflictsModal,
+  DiskUsageModal,
   DuplicatesModal,
   ErrorItem,
   Flex,
@@ -104,6 +105,7 @@ const Wads = () => {
   const [dragOver, setDragOver] = useState(null);
   const [removeHover, setRemoveHover] = useState(false);
   const [dupesOpen, setDupesOpen] = useState(false);
+  const [usageOpen, setUsageOpen] = useState(false);
   const [favorites, setFavorites] = useState(loadFavorites);
   const [orderBackup, setOrderBackup] = useState(null);
   const [conflictsOpen, setConflictsOpen] = useState(false);
@@ -509,6 +511,7 @@ const Wads = () => {
                 bytes={totalBytes}
                 groups={gstate.duplicates.length + gstate.versions.length}
                 onOpen={() => setDupesOpen(true)}
+                onUsage={() => setUsageOpen(true)}
               />
             }
             fixed={
@@ -582,6 +585,18 @@ const Wads = () => {
           </Box>
         </Flex.Col>
       </Flex.Grid>
+      <DiskUsageModal
+        active={usageOpen}
+        onClose={() => setUsageOpen(false)}
+        mods={gstate.mods}
+        duplicates={gstate.duplicates}
+        onShow={onShowMod}
+        onDelete={mod => onDeleteMod(mod.path, mod.name, mod.id)}
+        onOpenDuplicates={() => {
+          setUsageOpen(false);
+          setDupesOpen(true);
+        }}
+      />
       <ConflictsModal
         active={conflictsOpen}
         onClose={() => setConflictsOpen(false)}

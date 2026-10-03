@@ -63,6 +63,7 @@ const walkWadDir = dir => {
             name: list[0].name,
             kind: list[0].kind,
             size: list[0].size,
+            bytes: list[0].bytes,
             paths: list.map(m => m.path)
           }))
           .sort(natural);
