@@ -47,6 +47,7 @@ app.on('activate', function() {
 require('./handlers/main');
 require('./handlers/mods');
 require('./handlers/transfer');
+require('./handlers/conflicts');
 require('./handlers/sourceports');
 require('./handlers/settings');
 require('./handlers/packages');

@@ -6,6 +6,7 @@ import { useDebounce } from 'use-debounce';
 
 import {
   Box,
+  ConflictsModal,
   DuplicatesModal,
   ErrorItem,
   Flex,
@@ -105,6 +106,8 @@ const Wads = () => {
   const [dupesOpen, setDupesOpen] = useState(false);
   const [favorites, setFavorites] = useState(loadFavorites);
   const [orderBackup, setOrderBackup] = useState(null);
+  const [conflictsOpen, setConflictsOpen] = useState(false);
+  const [conflicts, setConflicts] = useState({ loading: false, result: null, error: null, count: 0 });
   const [ipc, loading] = useIpc();
   const { t } = useTranslation(['common', 'wads']);
   const [toast] = useToast();
@@ -149,6 +152,40 @@ const Wads = () => {
   };
 
   const onShowMod = path => () => remote.shell.showItemInFolder(path);
+
+  // look inside the mods of the load order for files that more than one mod has
+  const checkConflicts = async (ids = gstate.package.selected) => {
+    const byId = new Map(gstate.mods.map(m => [m.id, m]));
+    const items = ids
+      .map(id => byId.get(id))
+      .filter(Boolean)
+      .map(m => ({ id: m.id, name: m.name, path: m.path }));
+
+    setConflictsOpen(true);
+    setConflicts({ loading: true, result: null, error: null, count: items.length });
+    try {
+      const result = await ipc('mods/conflicts', { items });
+      setConflicts({ loading: false, result, error: null, count: items.length });
+    } catch (err) {
+      setConflicts({ loading: false, result: null, error: String(err), count: items.length });
+    }
+  };
+
+  const onConflictSwap = (a, b) => {
+    const order = [...gstate.package.selected];
+    const ia = order.indexOf(a);
+    const ib = order.indexOf(b);
+    if (ia < 0 || ib < 0) return;
+    order[ia] = b;
+    order[ib] = a;
+    dispatch({ type: 'mods/setOrder', ids: order });
+    checkConflicts(order);
+  };
+
+  const onConflictRemove = id => {
+    dispatch({ type: 'mods/remove', ids: [id] });
+    checkConflicts(gstate.package.selected.filter(i => i !== id));
+  };
 
   // arrange the load order by folder (1_xx first); can be undone right after
   const onSortByFolder = () => {
@@ -510,6 +547,7 @@ const Wads = () => {
                 {canUndoSort ? (
                   <a onClick={onUndoSort}>{t('wads:undoSort')}</a>
                 ) : null}
+                <a onClick={() => checkConflicts()}>{t('wads:checkConflicts')}</a>
                 <a onClick={onSortByFolder}>{t('wads:sortByFolder')}</a>
               </ToolbarStyle>
             ) : null}
@@ -544,6 +582,16 @@ const Wads = () => {
           </Box>
         </Flex.Col>
       </Flex.Grid>
+      <ConflictsModal
+        active={conflictsOpen}
+        onClose={() => setConflictsOpen(false)}
+        loading={conflicts.loading}
+        error={conflicts.error}
+        result={conflicts.result}
+        count={conflicts.count}
+        onSwap={onConflictSwap}
+        onRemove={onConflictRemove}
+      />
       <DuplicatesModal
         active={dupesOpen}
         onClose={() => setDupesOpen(false)}
