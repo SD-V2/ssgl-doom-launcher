@@ -6,6 +6,8 @@ import { StoreContext } from '../../state';
 import { useTranslation } from '../../utils';
 import Flex from '../Flex';
 import { Button, Dropdown, Input, SelectFile } from '../Form';
+import Label from '../Form/Label';
+import { InputContainerStyle, InputStyle } from '../Form/Input';
 import Modal from '../Modal';
 
 const Hint = styled.div`
@@ -144,6 +146,18 @@ const PackageModal = ({
           value={form.userparams}
           fluid
         />
+        <Label>{t('packages:notes')}</Label>
+        <InputContainerStyle fluid>
+          <InputStyle
+            as="textarea"
+            name="notes"
+            rows={3}
+            value={form.notes || ''}
+            onChange={onInput}
+            placeholder={t('packages:notesPlaceholder')}
+            style={{ resize: 'vertical' }}
+          />
+        </InputContainerStyle>
         <Hint>
           <span className="code">&lt;package&gt;</span> - References to package
           data directory. <span className="code">&lt;data&gt;</span> -

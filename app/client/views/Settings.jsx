@@ -181,6 +181,12 @@ const Settings = () => {
                 />
               </Flex.Col>
             </Flex.Grid>
+            <Checkbox
+              value={form.autoRefresh}
+              label={t('settings:autoRefresh')}
+              name="autoRefresh"
+              onChange={onComponent}
+            />
           </FormCollection>
 
           <FormCollection title={t('settings:titleCustomization')}>

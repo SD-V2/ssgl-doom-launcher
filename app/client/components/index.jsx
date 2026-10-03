@@ -10,7 +10,9 @@ import Modal from './Modal';
 import ModFilter from './ModFilter';
 import ErrorItem from './Mods/ErrorItem';
 import ModBox from './Mods/ModBox';
+import DuplicatesModal from './Mods/DuplicatesModal';
 import ModItem from './Mods/ModItem';
+import ModStats from './Mods/ModStats';
 import PackageAreaNew from './PackageAreaNew';
 import PlayIcon from './PlayIcon';
 import PlayOverlay from './PlayOverlay';
@@ -32,6 +34,8 @@ export {
   ModFilter,
   ModBox,
   ModItem,
+  ModStats,
+  DuplicatesModal,
   iWad,
   Routes,
   Modal,

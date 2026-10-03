@@ -10,6 +10,8 @@ export const move = (data, from, to) => {
 export const initState = {
   iwads: [],
   mods: [],
+  duplicates: [],
+  versions: [],
   update: {
     available: false,
     download: null,
@@ -47,6 +49,7 @@ export const initState = {
     modpath: '',
     savepath: '',
     background: '',
+    autoRefresh: true,
     volume: 0.5
   }
 };
@@ -210,6 +213,57 @@ export function reducer(state, action) {
         package: {
           ...state.package,
           selected: [...state.package.selected, ...append]
+        }
+      });
+    }
+
+    case 'mods/refresh': {
+      // re-scan result that keeps the current package / load order
+      const inOrder = new Set(state.package.selected);
+      return act({
+        ...state,
+        iwads: action.data.iwads,
+        duplicates: action.data.duplicates || [],
+        versions: action.data.versions || [],
+        mods: action.data.mods.map(m =>
+          inOrder.has(m.id) ? { ...m, active: true } : m
+        )
+      });
+    }
+
+    case 'mod/insert': {
+      // put a mod (dragged from the mod list) at a position of the load order;
+      // index null = at the end. Already in the load order = moved there.
+      const current = state.package.selected;
+      const exists = current.indexOf(action.id) > -1;
+      if (!exists && !state.mods.some(m => m.id === action.id)) return state;
+
+      const without = current.filter(i => i !== action.id);
+      let at = without.length;
+      if (action.index !== null && action.index !== undefined) {
+        const old = current.indexOf(action.id);
+        at = old > -1 && old < action.index ? action.index - 1 : action.index;
+      }
+      at = Math.max(0, Math.min(at, without.length));
+      const selected = [...without.slice(0, at), action.id, ...without.slice(at)];
+
+      return act({
+        ...state,
+        mods: state.mods.map(m =>
+          m.id === action.id ? { ...m, active: true } : m
+        ),
+        package: { ...state.package, selected }
+      });
+    }
+
+    case 'mods/remove': {
+      const gone = new Set(action.ids);
+      return act({
+        ...state,
+        mods: state.mods.map(m => (gone.has(m.id) ? { ...m, active: false } : m)),
+        package: {
+          ...state.package,
+          selected: state.package.selected.filter(i => !gone.has(i))
         }
       });
     }

@@ -42,12 +42,48 @@ const walkWadDir = dir => {
         });
       })
       .on('end', () => {
-        return resolve({
-          mods: Object.values(
-            mods.reduce((acc, cur) => Object.assign(acc, { [cur.id]: cur }), {})
-          ),
-          iwads
+        // same id (name + size + type) found more than once = exact duplicate
+        const byId = new Map();
+        mods.forEach(m => {
+          if (!byId.has(m.id)) byId.set(m.id, []);
+          byId.get(m.id).push(m);
         });
+        const groups = Array.from(byId.values());
+
+        // last one wins - same behaviour as before
+        const unique = groups.map(list => list[list.length - 1]);
+
+        const natural = (a, b) =>
+          a.name.localeCompare(b.name, undefined, { numeric: true });
+
+        const duplicates = groups
+          .filter(list => list.length > 1)
+          .map(list => ({
+            id: list[0].id,
+            name: list[0].name,
+            kind: list[0].kind,
+            size: list[0].size,
+            paths: list.map(m => m.path)
+          }))
+          .sort(natural);
+
+        // same name + type but a different size = probably different versions
+        const byName = new Map();
+        unique.forEach(m => {
+          const key = `${m.name.toLowerCase()}|${m.kind}`;
+          if (!byName.has(key)) byName.set(key, []);
+          byName.get(key).push(m);
+        });
+        const versions = Array.from(byName.values())
+          .filter(list => list.length > 1)
+          .map(list => ({
+            name: list[0].name,
+            kind: list[0].kind,
+            items: list.map(m => ({ id: m.id, path: m.path, size: m.size }))
+          }))
+          .sort(natural);
+
+        return resolve({ mods: unique, iwads, duplicates, versions });
       })
       .on('error', err => reject(err.message));
   });
@@ -120,6 +156,7 @@ const modItem = (item, dir) => {
     path: item.path,
     size: `${sz.value} ${sz.unit}`,
     created: item.stats.birthtimeMs,
+    bytes: item.stats.size,
     active: false
   };
 };

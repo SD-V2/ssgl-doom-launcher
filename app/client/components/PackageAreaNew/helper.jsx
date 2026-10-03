@@ -5,7 +5,8 @@ export const initState = {
   cover: '',
   id: null,
   copy: null,
-  userparams: ''
+  userparams: '',
+  notes: ''
 };
 
 export const createPackage = (form, state, copy) => {
@@ -32,6 +33,7 @@ export const createPackage = (form, state, copy) => {
     created: Date.now(),
     lastplayed: 0,
     userparams: form.userparams,
+    notes: form.notes || '',
     cover
   };
 

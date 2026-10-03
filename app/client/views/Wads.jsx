@@ -1,15 +1,18 @@
 import { remote } from 'electron';
 import { AnimatePresence } from 'framer-motion';
-import React, { useContext, useState } from 'react';
+import React, { useContext, useMemo, useState } from 'react';
+import styled from 'styled-components';
 import { useDebounce } from 'use-debounce';
 
 import {
   Box,
+  DuplicatesModal,
   ErrorItem,
   Flex,
   ModBox,
   ModFilter,
   ModItem,
+  ModStats,
   PackageAreaNew,
   PlayIcon,
   PlayOverlay
@@ -17,7 +20,38 @@ import {
 import { StoreContext } from '../state';
 import { setTitle, sortList, useIpc, useToast, useTranslation } from '../utils';
 import { useSound } from '../utils';
+import { modsInFolder } from '../utils/groupByFolder';
 import AnimatedView from './AnimatedView';
+
+const FAV_KEY = 'ssgl.favorites';
+const MOD_MIME = 'application/x-ssgl-mod';
+
+const NotesStyle = styled.div`
+  margin-bottom: 10px;
+  padding: 6px 10px;
+  font-size: 14px;
+  white-space: pre-wrap;
+  color: #ddd;
+  background: ${({ theme }) => theme.color.backdrop};
+  border-left: 3px solid ${({ theme }) => theme.color.active};
+  border-radius: ${({ theme }) => theme.border.radius};
+
+  b {
+    display: block;
+    font-weight: normal;
+    font-size: 12px;
+    text-transform: uppercase;
+    color: ${({ theme }) => theme.color.meta};
+  }
+`;
+
+const loadFavorites = () => {
+  try {
+    return JSON.parse(localStorage.getItem(FAV_KEY)) || [];
+  } catch (e) {
+    return [];
+  }
+};
 
 const FOLDERS_KEY = 'ssgl.openFolders';
 const SORT_KEY = 'ssgl.sort';
@@ -48,12 +82,16 @@ const Wads = () => {
   const [dragging, setDragging] = useState(false);
   const [dragFrom, setDragFrom] = useState(null);
   const [dragOver, setDragOver] = useState(null);
+  const [removeHover, setRemoveHover] = useState(false);
+  const [dupesOpen, setDupesOpen] = useState(false);
+  const [favorites, setFavorites] = useState(loadFavorites);
   const [ipc, loading] = useIpc();
   const { t } = useTranslation(['common', 'wads']);
   const [toast] = useToast();
   const [play] = useSound();
   const [rawFilter, setFilter] = useState('');
   const [filter] = useDebounce(rawFilter, 200);
+  const favSet = useMemo(() => new Set(favorites), [favorites]);
 
   const onSelect = id => () => {
     play('soundModSelect');
@@ -65,10 +103,72 @@ const Wads = () => {
   const onSort = (index, direction) => () =>
     dispatch({ type: 'mod/move', direction, index });
 
-  const onRefresh = async () => {
+  // re-scan the WAD directory, the current load order stays as it is
+  const refreshMods = async () => {
     const data = await ipc('main/init');
-    dispatch({ type: 'main/init', data: data });
+    dispatch({ type: 'mods/refresh', data });
+    return data;
+  };
+
+  const onRefresh = async () => {
+    await refreshMods();
     toast('ok', t('common:success'), t('wads:toastIndex'));
+  };
+
+  const onFavorite = id => () => {
+    const next =
+      favorites.indexOf(id) > -1
+        ? favorites.filter(f => f !== id)
+        : [...favorites, id];
+    setFavorites(next);
+    try {
+      localStorage.setItem(FAV_KEY, JSON.stringify(next));
+    } catch (e) {}
+  };
+
+  const onShowMod = path => () => remote.shell.showItemInFolder(path);
+
+  // move a mod file to the Recycle Bin (after asking)
+  const onDeleteMod = (path, name, id = null) => async () => {
+    const res = await remote.dialog.showMessageBox({
+      type: 'warning',
+      buttons: [t('wads:deleteYes'), t('wads:deleteNo')],
+      defaultId: 1,
+      cancelId: 1,
+      message: t('wads:confirmDelete', { name }),
+      detail: path
+    });
+    if (res.response !== 0) return;
+
+    if (!remote.shell.moveItemToTrash(path)) {
+      toast('danger', t('common:error'), t('wads:toastDeleteFailed', { name }));
+      return;
+    }
+
+    toast('ok', t('common:success'), t('wads:toastDeleted', { name }));
+    try {
+      const data = await refreshMods();
+      // gone completely? then it leaves the load order too
+      if (id && !data.mods.some(m => m.id === id)) {
+        dispatch({ type: 'mods/remove', ids: [id] });
+      }
+    } catch (e) {}
+  };
+
+  // "+" / "-" on a folder row: whole folder into / out of the load order
+  const onAddFolder = key => {
+    const ids = modsInFolder(show, key).map(m => m.id);
+    const fresh = ids.filter(id => gstate.package.selected.indexOf(id) < 0);
+    if (!fresh.length) return;
+    dispatch({ type: 'mods/drop', mods: [], ids });
+    play('soundModSelect');
+    toast('ok', t('common:success'), t('wads:toastDrop', { count: fresh.length }));
+  };
+
+  const onRemoveFolder = key => {
+    const ids = modsInFolder(show, key).map(m => m.id);
+    dispatch({ type: 'mods/remove', ids });
+    play('soundModSelect');
   };
 
   const onSortList = ({ value }) => {
@@ -119,12 +219,26 @@ const Wads = () => {
       setTimeout(() => setDragFrom(index), 0);
     },
     onDragOver: e => {
-      if (dragFrom === null) return;
+      if (dragFrom === null && !isModDrag(e)) return;
       e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
+      e.dataTransfer.dropEffect = dragFrom === null ? 'copy' : 'move';
       if (dragOver !== index) setDragOver(index);
     },
     onDrop: e => {
+      // a mod dragged in from the mod list: lands in front of this item
+      if (dragFrom === null && isModDrag(e)) {
+        e.preventDefault();
+        e.stopPropagation();
+        dispatch({
+          type: 'mod/insert',
+          id: e.dataTransfer.getData(MOD_MIME),
+          index
+        });
+        play('soundModSelect');
+        setDragOver(null);
+        setDragging(false);
+        return;
+      }
       if (dragFrom === null) return;
       e.preventDefault();
       if (dragFrom !== index) {
@@ -141,7 +255,7 @@ const Wads = () => {
   });
 
   const itemDragState = index => {
-    if (dragFrom === null) return null;
+    if (dragFrom === null) return dragging && dragOver === index ? 'above' : null;
     if (index === dragFrom) return 'dragging';
     if (index === dragOver) return dragFrom < index ? 'below' : 'above';
     return null;
@@ -150,19 +264,37 @@ const Wads = () => {
   const hasFiles = e =>
     Array.from(e.dataTransfer.types || []).indexOf('Files') > -1;
 
+  const isModDrag = e =>
+    Array.from(e.dataTransfer.types || []).indexOf(MOD_MIME) > -1;
+
   const onDragOver = e => {
-    if (!hasFiles(e)) return;
+    if (!hasFiles(e) && !isModDrag(e)) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = 'copy';
     setDragging(true);
   };
 
   const onDragLeave = e => {
-    if (!e.currentTarget.contains(e.relatedTarget)) setDragging(false);
+    if (!e.currentTarget.contains(e.relatedTarget)) {
+      setDragging(false);
+      setDragOver(null);
+    }
   };
 
-  // Drop mod files from the file manager into the package / load order
+  // Drop mod files from the file manager (or a mod from the list) into the load order
   const onDrop = async e => {
+    if (isModDrag(e)) {
+      e.preventDefault();
+      setDragging(false);
+      setDragOver(null);
+      dispatch({
+        type: 'mod/insert',
+        id: e.dataTransfer.getData(MOD_MIME),
+        index: null
+      });
+      play('soundModSelect');
+      return;
+    }
     if (!hasFiles(e)) return;
     e.preventDefault();
     setDragging(false);
@@ -198,19 +330,79 @@ const Wads = () => {
     }
   };
 
+  const onListDragOver = e => {
+    if (dragFrom === null) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setRemoveHover(true);
+  };
+
+  const onListDragLeave = e => {
+    if (!e.currentTarget.contains(e.relatedTarget)) setRemoveHover(false);
+  };
+
+  const onListDrop = e => {
+    if (dragFrom === null) return;
+    e.preventDefault();
+    setRemoveHover(false);
+    const id = gstate.package.selected[dragFrom];
+    setDragFrom(null);
+    setDragOver(null);
+    if (id) {
+      dispatch({ type: 'mods/remove', ids: [id] });
+      play('soundModSelect');
+    }
+  };
+
   const openDrawer = () => {
     setPoActive(true);
     play('soundDrawer');
   };
 
-  let show = sortList(gstate.mods, sort, filter, (i, fuzz) =>
-    fuzz(filter.toLowerCase(), `${i.tags.join(' ')} ${i.name.toLowerCase()}`)
+  const show = useMemo(() => {
+    // always work on a copy, sortList sorts in place
+    const base =
+      sort === 'starred'
+        ? gstate.mods.filter(m => favSet.has(m.id))
+        : [...gstate.mods];
+
+    const sorted = sortList(
+      base,
+      sort === 'fav' ? 'new' : sort === 'starred' ? 'asc' : sort,
+      filter,
+      (i, fuzz) =>
+        fuzz(
+          filter.toLowerCase(),
+          `${i.tags.join(' ')} ${i.name.toLowerCase()}`
+        )
+    );
+
+    return sort === 'fav'
+      ? [
+          ...sorted.filter(m => favSet.has(m.id)),
+          ...sorted.filter(m => !favSet.has(m.id))
+        ]
+      : sorted;
+  }, [gstate.mods, sort, filter, favSet]);
+
+  const totalBytes = useMemo(
+    () => gstate.mods.reduce((n, m) => n + (m.bytes || 0), 0),
+    [gstate.mods]
   );
 
   return (
     <AnimatedView>
       <Flex.Grid>
-        <Flex.Col>
+        <Flex.Col
+          onDragOver={onListDragOver}
+          onDragLeave={onListDragLeave}
+          onDrop={onListDrop}
+          style={
+            removeHover
+              ? { outline: '2px dashed #f55945', outlineOffset: '-2px' }
+              : undefined
+          }
+        >
           <ModBox
             data={show}
             onClick={onSelect}
@@ -220,6 +412,20 @@ const Wads = () => {
             forceOpen={filter.trim() !== ''}
             onToggleFolder={onToggleFolder}
             onSetFolders={saveOpenFolders}
+            onAddFolder={onAddFolder}
+            onRemoveFolder={onRemoveFolder}
+            favorites={favSet}
+            onFavorite={onFavorite}
+            onShow={onShowMod}
+            onDelete={item => onDeleteMod(item.path, item.name, item.id)}
+            footer={
+              <ModStats
+                count={gstate.mods.length}
+                bytes={totalBytes}
+                groups={gstate.duplicates.length + gstate.versions.length}
+                onOpen={() => setDupesOpen(true)}
+              />
+            }
             fixed={
               <ModFilter
                 filterValue={rawFilter}
@@ -245,6 +451,12 @@ const Wads = () => {
           }
         >
           <Box fixed={<PackageAreaNew />}>
+            {gstate.package.notes ? (
+              <NotesStyle>
+                <b>{t('wads:notesTitle')}</b>
+                {gstate.package.notes}
+              </NotesStyle>
+            ) : null}
             <ul>
               <AnimatePresence>
                 {gstate.package.selected.length &&
@@ -276,6 +488,15 @@ const Wads = () => {
           </Box>
         </Flex.Col>
       </Flex.Grid>
+      <DuplicatesModal
+        active={dupesOpen}
+        onClose={() => setDupesOpen(false)}
+        duplicates={gstate.duplicates}
+        versions={gstate.versions}
+        modpath={gstate.settings.modpath}
+        onShow={onShowMod}
+        onDelete={(path, name) => onDeleteMod(path, name)}
+      />
       <PlayIcon active={true} onClick={openDrawer} />
       <PlayOverlay active={poActive} setActive={setPoActive} />
     </AnimatedView>

@@ -49,6 +49,14 @@ const ModFilter = ({
     {
       label: t('filters:folders'),
       value: 'folder'
+    },
+    {
+      label: t('filters:favFirst'),
+      value: 'fav'
+    },
+    {
+      label: t('filters:starred'),
+      value: 'starred'
     }
   ];
 

@@ -1,6 +1,7 @@
 import './global.css';
 
-import React, { useEffect, useMemo, useReducer } from 'react';
+import { ipcRenderer } from 'electron';
+import React, { useEffect, useMemo, useReducer, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { ThemeProvider } from 'styled-components';
 
@@ -23,6 +24,23 @@ const App = () => {
         : themes[gstate.settings.theme] || themes.hell,
     [gstate.settings.theme, gstate.settings.accent]
   );
+  const settingsRef = useRef(gstate.settings);
+  settingsRef.current = gstate.settings;
+
+  // The WAD directory changed on disk: re-scan quietly, the load order stays
+  useEffect(() => {
+    const onChanged = async () => {
+      const auto = settingsRef.current.autoRefresh;
+      if (auto === false || auto === '') return;
+      try {
+        const res = await ipcRenderer.invoke('main/init');
+        if (!res.error) dispatch({ type: 'mods/refresh', data: res.data });
+      } catch (e) {}
+    };
+    ipcRenderer.on('mods/changed', onChanged);
+    return () => ipcRenderer.removeListener('mods/changed', onChanged);
+  }, []);
+
   const [fetch, loading] = useIpc({ delayLoad: 1000 });
   // eslint-disable-next-line no-unused-vars
   const [location, navigate] = useHashLocation();

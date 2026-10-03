@@ -7,6 +7,10 @@ const countMods = node =>
   node.items.length +
   Array.from(node.children.values()).reduce((n, c) => n + countMods(c), 0);
 
+const countBytes = node =>
+  node.items.reduce((n, i) => n + (i.bytes || 0), 0) +
+  Array.from(node.children.values()).reduce((n, c) => n + countBytes(c), 0);
+
 const countActive = node =>
   node.items.filter(i => i.active).length +
   Array.from(node.children.values()).reduce((n, c) => n + countActive(c), 0);
@@ -55,6 +59,7 @@ const groupByFolder = (data, openFolders = [], forceOpen = false) => {
         folder: name,
         depth,
         count: countMods(child),
+        bytes: countBytes(child),
         active: countActive(child),
         open
       });
@@ -80,6 +85,7 @@ const groupByFolder = (data, openFolders = [], forceOpen = false) => {
       folder: '',
       depth: 0,
       count: root.items.length,
+      bytes: root.items.reduce((n, i) => n + (i.bytes || 0), 0),
       active: root.items.filter(i => i.active).length,
       open
     });
@@ -89,6 +95,21 @@ const groupByFolder = (data, openFolders = [], forceOpen = false) => {
   }
 
   return { rows, folders };
+};
+
+// All mods inside a folder (subfolders included) in the order they are shown
+export const modsInFolder = (data, folderKey) => {
+  const { rows } = groupByFolder(data, [], true);
+  const start = rows.findIndex(r => r.type === 'folder' && r.key === folderKey);
+  if (start < 0) return [];
+
+  const depth = rows[start].depth;
+  const found = [];
+  for (let i = start + 1; i < rows.length; i++) {
+    if (rows[i].depth <= depth) break;
+    if (rows[i].type === 'mod') found.push(rows[i].item);
+  }
+  return found;
 };
 
 export default groupByFolder;

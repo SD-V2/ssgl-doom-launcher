@@ -3,6 +3,7 @@ import got from 'got';
 
 import { getJSON } from '../utils/json';
 import { walkWadDir } from '../utils/mods';
+import { watchModDir } from '../utils/watcher';
 
 ipcMain.handle('main/checkupdate', async () => {
   try {
@@ -50,6 +51,7 @@ ipcMain.handle('main/init', async () => {
 
     try {
       const walkedFiles = await walkWadDir(settings.modpath);
+      watchModDir(settings.modpath);
       return {
         error: null,
         data: {

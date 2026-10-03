@@ -4,6 +4,7 @@ import React, { useContext } from 'react';
 import styled from 'styled-components';
 
 import { StoreContext } from '../../state';
+import { useTranslation } from '../../utils';
 import Check from './Checkmarks';
 import Icon from './Icon';
 import TagList from './TagList';
@@ -47,6 +48,73 @@ const Meta = styled.span`
   margin-bottom: 5px;
   margin-right: 5px;
 `;
+
+const ActionsStyle = styled.div`
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  margin-left: 8px;
+
+  button {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    width: 15px;
+    height: 15px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  svg {
+    width: 15px;
+    height: 15px;
+    fill: none;
+    stroke: ${({ theme }) => theme.border.idle};
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: ${({ theme }) => theme.transition.out};
+  }
+
+  button:hover svg {
+    stroke: ${({ theme }) => theme.border.active};
+    filter: ${({ theme }) => theme.svg.glow};
+  }
+
+  button.fav svg {
+    stroke: ${({ theme }) => theme.color.active};
+    fill: ${({ theme }) => theme.color.active};
+  }
+
+  button.danger:hover svg {
+    stroke: #f55945;
+    filter: drop-shadow(0 -1px 4px #ff2f00) drop-shadow(0 0 10px #ff2f00);
+  }
+`;
+
+const StarSvg = () => (
+  <svg viewBox="0 0 24 24">
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+  </svg>
+);
+
+const FolderSvg = () => (
+  <svg viewBox="0 0 24 24">
+    <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+  </svg>
+);
+
+const TrashSvg = () => (
+  <svg viewBox="0 0 24 24">
+    <polyline points="3 6 5 6 21 6" />
+    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+    <path d="M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+  </svg>
+);
 
 const IconContainer = styled.div`
   text-align: center;
@@ -99,9 +167,14 @@ const ModItem = ({
   onTag = null,
   selected = false,
   dragProps = {},
-  dragState = null
+  dragState = null,
+  fav = false,
+  onFav = null,
+  onShow = null,
+  onDelete = null
 }) => {
   const { gstate } = useContext(StoreContext);
+  const { t } = useTranslation(['wads']);
 
   return (
     <motion.li
@@ -131,6 +204,29 @@ const ModItem = ({
           </Meta>
           <TagList item={item} onTag={onTag} />
         </Content>
+        {!selected && onFav ? (
+          <ActionsStyle>
+            <button
+              type="button"
+              className={fav ? 'fav' : undefined}
+              title={t('wads:favorite')}
+              onClick={onFav}
+            >
+              <StarSvg />
+            </button>
+            <button type="button" title={t('wads:showInFolder')} onClick={onShow}>
+              <FolderSvg />
+            </button>
+            <button
+              type="button"
+              className="danger"
+              title={t('wads:deleteMod')}
+              onClick={onDelete}
+            >
+              <TrashSvg />
+            </button>
+          </ActionsStyle>
+        ) : null}
         {selected ? (
           <IconContainer>
             <Icon name="up" width="13" onClick={onUp} />
@@ -161,7 +257,11 @@ ModItem.propTypes = {
   onTag: PropTypes.any,
   selected: PropTypes.bool,
   dragProps: PropTypes.object,
-  dragState: PropTypes.string
+  dragState: PropTypes.string,
+  fav: PropTypes.bool,
+  onFav: PropTypes.func,
+  onShow: PropTypes.func,
+  onDelete: PropTypes.func
 };
 
 export default ModItem;

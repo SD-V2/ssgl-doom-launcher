@@ -1,3 +1,4 @@
+import byteSize from 'byte-size';
 import PropTypes from 'prop-types';
 import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import VirtualList from 'react-tiny-virtual-list';
@@ -100,6 +101,39 @@ const ToolbarStyle = styled.div`
   }
 `;
 
+const FolderButton = styled.button`
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  margin-left: 8px;
+  padding: 0;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 20px;
+  color: ${({ theme }) => theme.color.idle};
+  background: transparent;
+  border-radius: ${({ theme }) => theme.border.radius};
+  border: 1px solid ${({ theme }) => theme.border.idle};
+  transition: ${({ theme }) => theme.transition.out};
+
+  &:hover {
+    color: ${({ theme, danger }) => (danger ? '#f55945' : theme.color.active)};
+    border: 1px solid
+      ${({ theme, danger }) => (danger ? '#f55945' : theme.border.active)};
+  }
+`;
+
+const MOD_MIME = 'application/x-ssgl-mod';
+
+const modDragProps = item => ({
+  draggable: true,
+  onDragStart: e => {
+    e.dataTransfer.effectAllowed = 'copy';
+    e.dataTransfer.setData(MOD_MIME, item.id);
+    e.dataTransfer.setData('text/plain', item.name);
+  }
+});
+
 const ModBox = ({
   data,
   onClick,
@@ -109,7 +143,14 @@ const ModBox = ({
   openFolders = [],
   forceOpen = false,
   onToggleFolder = () => {},
-  onSetFolders = () => {}
+  onSetFolders = () => {},
+  onAddFolder = () => {},
+  onRemoveFolder = () => {},
+  favorites = new Set(),
+  onFavorite = () => () => {},
+  onShow = () => () => {},
+  onDelete = () => () => {},
+  footer = null
 }) => {
   const { t } = useTranslation(['wads']);
   const boxRef = useRef(null);
@@ -117,12 +158,14 @@ const ModBox = ({
 
   useLayoutEffect(() => {
     const updateSize = () =>
-      setHeight(boxRef.current.getBoundingClientRect().height - 85);
+      setHeight(
+        boxRef.current.getBoundingClientRect().height - (footer ? 115 : 85)
+      );
 
     window.addEventListener('resize', updateSize);
     updateSize();
     return () => window.removeEventListener('resize', updateSize);
-  }, []);
+  }, [footer]);
 
   const { rows, folders } = useMemo(() => {
     if (!grouped) {
@@ -188,7 +231,31 @@ const ModBox = ({
                 </>
               ) : null}
               {t('wads:folderCount', { count: row.count })}
+              {row.bytes > 0 ? ` · ${byteSize(row.bytes).toString()}` : ''}
             </span>
+            <FolderButton
+              type="button"
+              title={t('wads:addAll')}
+              onClick={e => {
+                e.stopPropagation();
+                onAddFolder(row.key);
+              }}
+            >
+              +
+            </FolderButton>
+            {row.active > 0 ? (
+              <FolderButton
+                type="button"
+                danger
+                title={t('wads:removeAll')}
+                onClick={e => {
+                  e.stopPropagation();
+                  onRemoveFolder(row.key);
+                }}
+              >
+                −
+              </FolderButton>
+            ) : null}
           </FolderStyle>
         </li>
       );
@@ -201,6 +268,11 @@ const ModBox = ({
         item={row.item}
         onSelect={onClick(row.item.id)}
         onTag={onTag}
+        fav={favorites.has(row.item.id)}
+        onFav={onFavorite(row.item.id)}
+        onShow={onShow(row.item.path)}
+        onDelete={onDelete(row.item)}
+        dragProps={modDragProps(row.item)}
       />
     );
   };
@@ -218,6 +290,7 @@ const ModBox = ({
           renderItem={renderRow}
         />
       </ul>
+      {footer}
     </BoxStyle>
   );
 };
@@ -225,6 +298,13 @@ const ModBox = ({
 ModBox.propTypes = {
   data: PropTypes.any,
   fixed: PropTypes.element,
+  footer: PropTypes.element,
+  favorites: PropTypes.any,
+  onFavorite: PropTypes.func,
+  onShow: PropTypes.func,
+  onDelete: PropTypes.func,
+  onAddFolder: PropTypes.func,
+  onRemoveFolder: PropTypes.func,
   forceOpen: PropTypes.bool,
   grouped: PropTypes.bool,
   onSetFolders: PropTypes.func,

@@ -119,6 +119,7 @@ const Pack = ({ pack, onUse, onData, onPlay, onDelete, onOblige }) => {
       exit={{ opacity: 0 }}
       positionTransition={{ type: 'tween' }}
       cover={cover}
+      title={pack.notes || undefined}
     >
       <div className="content">
         <div className="delete">
