@@ -97,12 +97,22 @@ const ConflictsModal = ({
   result,
   count,
   onSwap,
-  onRemove
+  onRemove,
+  ignored = [],
+  onIgnore = () => {},
+  onUnignore = () => {}
 }) => {
   const { t } = useTranslation(['wads', 'common']);
   const [open, setOpen] = useState({});
+  const [showIgnored, setShowIgnored] = useState(false);
 
   const toggle = key => setOpen({ ...open, [key]: !open[key] });
+
+  const pairKey = c => [c.a, c.b].sort().join('|');
+  const isIgnored = c => ignored.indexOf(pairKey(c)) > -1;
+  const conflicts = result ? result.conflicts : [];
+  const visible = conflicts.filter(c => !isIgnored(c));
+  const hidden = conflicts.filter(isIgnored);
 
   const skipText = s =>
     s.code === 'patch'
@@ -123,14 +133,28 @@ const ConflictsModal = ({
         {result && !loading ? (
           <>
             <p className="hint">
-              {result.conflicts.length === 0
+              {visible.length === 0
                 ? t('wads:conflictsNone', { count: result.checked })
                 : `${t('wads:conflictsFound', {
-                    count: result.conflicts.length
+                    count: visible.length
                   })} ${t('wads:conflictsHint')}`}
             </p>
 
-            {result.conflicts.map(c => {
+            {hidden.length > 0 ? (
+              <p className="hint">
+                {t('wads:conflictsIgnored', { count: hidden.length })}{' '}
+                <a
+                  style={{ cursor: 'pointer', textDecoration: 'underline' }}
+                  onClick={() => setShowIgnored(!showIgnored)}
+                >
+                  {showIgnored
+                    ? t('wads:conflictsHideIgnored')
+                    : t('wads:conflictsShowIgnored')}
+                </a>
+              </p>
+            ) : null}
+
+            {(showIgnored ? [...visible, ...hidden] : visible).map(c => {
               const key = `${c.a}|${c.b}`;
               return (
                 <Card key={key}>
@@ -162,6 +186,15 @@ const ConflictsModal = ({
                   ) : null}
                   <div className="actions">
                     <a onClick={() => onSwap(c.a, c.b)}>{t('wads:conflictSwap')}</a>
+                    {isIgnored(c) ? (
+                      <a onClick={() => onUnignore(pairKey(c))}>
+                        {t('wads:conflictUnignore')}
+                      </a>
+                    ) : (
+                      <a onClick={() => onIgnore(pairKey(c))}>
+                        {t('wads:conflictIgnore')}
+                      </a>
+                    )}
                     <a onClick={() => toggle(key)}>
                       {open[key] ? t('wads:conflictHide') : t('wads:conflictShow')}
                     </a>
@@ -206,7 +239,10 @@ ConflictsModal.propTypes = {
   result: PropTypes.object,
   count: PropTypes.number,
   onSwap: PropTypes.func.isRequired,
-  onRemove: PropTypes.func.isRequired
+  onRemove: PropTypes.func.isRequired,
+  ignored: PropTypes.array,
+  onIgnore: PropTypes.func,
+  onUnignore: PropTypes.func
 };
 
 export default ConflictsModal;

@@ -12,6 +12,7 @@ export const initState = {
   mods: [],
   duplicates: [],
   versions: [],
+  folders: [],
   update: {
     available: false,
     download: null,
@@ -51,6 +52,7 @@ export const initState = {
     background: '',
     autoRefresh: true,
     compactList: false,
+    importFolder: '',
     volume: 0.5
   }
 };
@@ -229,6 +231,7 @@ export function reducer(state, action) {
         iwads: action.data.iwads,
         duplicates: action.data.duplicates || [],
         versions: action.data.versions || [],
+        folders: action.data.folders || state.folders,
         mods: action.data.mods.map(m =>
           inOrder.has(m.id) ? { ...m, active: true } : m
         )
@@ -256,6 +259,22 @@ export function reducer(state, action) {
         mods: state.mods.map(m =>
           m.id === action.id ? { ...m, active: true } : m
         ),
+        package: { ...state.package, selected }
+      });
+    }
+
+    case 'mods/replaceIds': {
+      // a mod was updated: its new id takes the place of the old one
+      const swap = new Map(action.replacements.map(r => [r.from, r.to]));
+      const selected = [];
+      state.package.selected.forEach(id => {
+        const next = swap.has(id) ? swap.get(id) : id;
+        if (selected.indexOf(next) < 0) selected.push(next);
+      });
+      const inOrder = new Set(selected);
+      return act({
+        ...state,
+        mods: state.mods.map(m => (inOrder.has(m.id) ? { ...m, active: true } : m)),
         package: { ...state.package, selected }
       });
     }

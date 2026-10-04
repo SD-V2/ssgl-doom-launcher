@@ -38,6 +38,9 @@ const FolderStyle = styled.div`
   border: 1px solid ${({ theme }) => theme.border.idle};
   transition: ${({ theme }) => theme.transition.out};
 
+  box-shadow: ${({ dropping, theme }) =>
+    dropping ? `0 0 0 2px ${theme.color.active}` : 'none'};
+
   &:hover {
     border: 1px solid ${({ theme }) => theme.border.active};
   }
@@ -101,6 +104,22 @@ const ToolbarStyle = styled.div`
   }
 `;
 
+const hasFiles = e =>
+  Array.from(e.dataTransfer.types || []).indexOf('Files') > -1;
+
+const NewModsTag = styled.i`
+  flex-shrink: 0;
+  margin-left: 10px;
+  padding: 0 6px;
+  font-style: normal;
+  font-size: 11px;
+  line-height: 16px;
+  text-transform: uppercase;
+  border-radius: 4px;
+  color: ${({ theme }) => theme.color.active};
+  border: 1px solid ${({ theme }) => theme.color.active};
+`;
+
 const FolderButton = styled.button`
   flex-shrink: 0;
   width: 24px;
@@ -152,10 +171,16 @@ const ModBox = ({
   onDelete = () => () => {},
   footer = null,
   compact = false,
-  recentIds = new Set()
+  recentIds = new Set(),
+  allFolders = [],
+  importFolder = '',
+  onFolderMenu = () => {},
+  onDropFiles = () => {},
+  onNewFolder = () => {}
 }) => {
   const { t } = useTranslation(['wads']);
   const boxRef = useRef(null);
+  const [dropKey, setDropKey] = useState(null);
   const [height, setHeight] = useState(365);
 
   useLayoutEffect(() => {
@@ -176,12 +201,12 @@ const ModBox = ({
         folders: []
       };
     }
-    const grouping = groupByFolder(data, openFolders, forceOpen);
-    // expand / collapse all links on top (not needed while searching)
-    return forceOpen || !grouping.folders.length
+    const grouping = groupByFolder(data, openFolders, forceOpen, allFolders);
+    // expand / collapse all + new folder links on top (not while searching)
+    return forceOpen
       ? grouping
       : { ...grouping, rows: [{ type: 'toolbar' }, ...grouping.rows] };
-  }, [data, grouped, openFolders, forceOpen]);
+  }, [data, grouped, openFolders, forceOpen, allFolders]);
 
   const itemSize = useMemo(
     () => index => {
@@ -212,6 +237,7 @@ const ModBox = ({
       return (
         <li key="folder_toolbar" style={style}>
           <ToolbarStyle>
+            <a onClick={() => onNewFolder()}>{t('wads:newFolder')}</a>
             <a onClick={() => onSetFolders(folders)}>{t('wads:expandAll')}</a>
             <a onClick={() => onSetFolders([])}>{t('wads:collapseAll')}</a>
           </ToolbarStyle>
@@ -222,9 +248,35 @@ const ModBox = ({
     if (row.type === 'folder') {
       return (
         <li key={`folder_${row.key}`} style={style}>
-          <FolderStyle onClick={() => onToggleFolder(row.key)}>
+          <FolderStyle
+            dropping={dropKey === row.key}
+            onClick={() => onToggleFolder(row.key)}
+            onContextMenu={e => {
+              e.preventDefault();
+              onFolderMenu(row);
+            }}
+            onDragOver={e => {
+              if (!hasFiles(e)) return;
+              e.preventDefault();
+              e.dataTransfer.dropEffect = 'copy';
+              if (dropKey !== row.key) setDropKey(row.key);
+            }}
+            onDragLeave={e => {
+              if (!e.currentTarget.contains(e.relatedTarget)) setDropKey(null);
+            }}
+            onDrop={e => {
+              if (!hasFiles(e)) return;
+              e.preventDefault();
+              e.stopPropagation();
+              setDropKey(null);
+              onDropFiles(row.key, e);
+            }}
+          >
             <Arrow open={row.open} />
             <h2>{row.folder || t('wads:noFolder')}</h2>
+            {row.key !== '' && row.key === importFolder ? (
+              <NewModsTag title={t('wads:newModsHere')}>{t('wads:newModsHere')}</NewModsTag>
+            ) : null}
             <span>
               {row.active > 0 ? (
                 <>
@@ -303,6 +355,11 @@ ModBox.propTypes = {
   data: PropTypes.any,
   fixed: PropTypes.element,
   footer: PropTypes.element,
+  allFolders: PropTypes.array,
+  importFolder: PropTypes.string,
+  onFolderMenu: PropTypes.func,
+  onDropFiles: PropTypes.func,
+  onNewFolder: PropTypes.func,
   compact: PropTypes.bool,
   recentIds: PropTypes.any,
   favorites: PropTypes.any,

@@ -6,6 +6,7 @@ import {
   Checkbox,
   Dropdown,
   FormCollection,
+  Input,
   Label,
   Range,
   SelectFile,
@@ -186,6 +187,14 @@ const Settings = () => {
               label={t('settings:autoRefresh')}
               name="autoRefresh"
               onChange={onComponent}
+            />
+            <Input
+              name="importFolder"
+              label={t('settings:importFolder')}
+              value={form.importFolder || ''}
+              placeholder="Added via Explorer"
+              onChange={onInput}
+              fluid
             />
           </FormCollection>
 

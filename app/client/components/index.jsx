@@ -12,6 +12,8 @@ import ErrorItem from './Mods/ErrorItem';
 import ModBox from './Mods/ModBox';
 import ConflictsModal from './Mods/ConflictsModal';
 import DiskUsageModal from './Mods/DiskUsageModal';
+import FixPackagesModal from './Mods/FixPackagesModal';
+import FolderNameModal from './Mods/FolderNameModal';
 import DuplicatesModal from './Mods/DuplicatesModal';
 import ModItem from './Mods/ModItem';
 import ModStats from './Mods/ModStats';
@@ -39,6 +41,8 @@ export {
   ModStats,
   DuplicatesModal,
   DiskUsageModal,
+  FixPackagesModal,
+  FolderNameModal,
   ConflictsModal,
   iWad,
   Routes,

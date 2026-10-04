@@ -48,6 +48,8 @@ require('./handlers/main');
 require('./handlers/mods');
 require('./handlers/transfer');
 require('./handlers/conflicts');
+require('./handlers/folders');
+require('./handlers/fixes');
 require('./handlers/sourceports');
 require('./handlers/settings');
 require('./handlers/packages');

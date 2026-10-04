@@ -1,6 +1,7 @@
 import { remote } from 'electron';
 import { AnimatePresence } from 'framer-motion';
 import React, { useContext, useMemo, useState } from 'react';
+import path from 'path';
 import styled from 'styled-components';
 import { useDebounce } from 'use-debounce';
 
@@ -10,6 +11,8 @@ import {
   DiskUsageModal,
   DuplicatesModal,
   ErrorItem,
+  FixPackagesModal,
+  FolderNameModal,
   Flex,
   ModBox,
   ModFilter,
@@ -23,10 +26,36 @@ import { StoreContext } from '../state';
 import { setTitle, sortList, useIpc, useToast, useTranslation } from '../utils';
 import { useSound } from '../utils';
 import { trackFirstSeen } from '../utils/firstSeen';
+import { findFixes } from '../utils/fixes';
 import { modsInFolder, sortByFolder } from '../utils/groupByFolder';
 import AnimatedView from './AnimatedView';
 
 const FAV_KEY = 'ssgl.favorites';
+const IGNORED_KEY = 'ssgl.ignoredConflicts';
+const DEFAULT_IMPORT = 'Added via Explorer';
+
+// "1_BP\\new/" -> "1_BP/new"
+const normalizeKey = value =>
+  String(value || '')
+    .split(/[\\/]+/)
+    .filter(part => part.trim() !== '')
+    .join('/');
+
+// folder keys below a renamed folder follow it
+const renameKey = (key, oldKey, newKey) =>
+  key === oldKey
+    ? newKey
+    : key.indexOf(`${oldKey}/`) === 0
+    ? newKey + key.slice(oldKey.length)
+    : key;
+
+const loadIgnored = () => {
+  try {
+    return JSON.parse(localStorage.getItem(IGNORED_KEY)) || [];
+  } catch (e) {
+    return [];
+  }
+};
 const MOD_MIME = 'application/x-ssgl-mod';
 
 const NotesStyle = styled.div`
@@ -106,6 +135,9 @@ const Wads = () => {
   const [removeHover, setRemoveHover] = useState(false);
   const [dupesOpen, setDupesOpen] = useState(false);
   const [usageOpen, setUsageOpen] = useState(false);
+  const [fixOpen, setFixOpen] = useState(false);
+  const [folderDialog, setFolderDialog] = useState(null);
+  const [ignored, setIgnored] = useState(loadIgnored);
   const [favorites, setFavorites] = useState(loadFavorites);
   const [orderBackup, setOrderBackup] = useState(null);
   const [conflictsOpen, setConflictsOpen] = useState(false);
@@ -119,6 +151,14 @@ const Wads = () => {
   const favSet = useMemo(() => new Set(favorites), [favorites]);
   // mods SSGL saw for the first time within the last week
   const recentIds = useMemo(() => trackFirstSeen(gstate.mods), [gstate.mods]);
+  // mods that packages use but that were updated / replaced in the mod list
+  const fixes = useMemo(
+    () =>
+      gstate.mods.length ? findFixes(gstate.packages, gstate.mods) : [],
+    [gstate.packages, gstate.mods]
+  );
+  const fixable = fixes.filter(f => f.candidate);
+  const importFolder = normalizeKey(gstate.settings.importFolder) || DEFAULT_IMPORT;
 
   const onSelect = id => () => {
     play('soundModSelect');
@@ -153,7 +193,183 @@ const Wads = () => {
     } catch (e) {}
   };
 
-  const onShowMod = path => () => remote.shell.showItemInFolder(path);
+  const onShowMod = file => () => remote.shell.showItemInFolder(file);
+
+  // ---- update mods inside packages ----
+  const applyFixes = async items => {
+    const replacements = items.map(f => ({
+      from: f.id,
+      to: f.candidate.mod.id,
+      name: f.candidate.mod.name,
+      kind: f.candidate.mod.kind
+    }));
+    try {
+      const res = await ipc('packages/replaceMods', { replacements });
+      dispatch({ type: 'packages/set', packages: res.packages });
+      dispatch({ type: 'mods/replaceIds', replacements });
+      toast(
+        'ok',
+        t('common:success'),
+        t('wads:toastFixed', { count: replacements.length })
+      );
+    } catch (err) {
+      toast('danger', t('common:error'), String(err));
+    }
+  };
+
+  // ---- folders ----
+  const saveSettingsPatch = async patch => {
+    const data = await ipc('settings/save', { ...gstate.settings, ...patch });
+    dispatch({ type: 'settings/save', data });
+  };
+
+  const setImportFolder = async key => {
+    try {
+      await saveSettingsPatch({ importFolder: key });
+      toast('ok', t('common:success'), t('wads:toastNewModsHere', { folder: key }));
+    } catch (err) {
+      toast('danger', t('common:error'), String(err));
+    }
+  };
+
+  const submitFolderDialog = async name => {
+    const dlg = folderDialog;
+    try {
+      if (dlg.mode === 'create') {
+        const res = await ipc('folders/create', { parent: dlg.key, name });
+        // show the new folder: open it and the one it is in
+        const open = [...openFolders];
+        [dlg.key, res.key].forEach(k => {
+          if (k !== '' && open.indexOf(k) < 0) open.push(k);
+        });
+        saveOpenFolders(open);
+      } else {
+        const res = await ipc('folders/rename', { key: dlg.key, name });
+        saveOpenFolders(openFolders.map(k => renameKey(k, res.oldKey, res.key)));
+        const current = normalizeKey(gstate.settings.importFolder);
+        if (current && renameKey(current, res.oldKey, res.key) !== current) {
+          await saveSettingsPatch({
+            importFolder: renameKey(current, res.oldKey, res.key)
+          });
+        }
+      }
+      await refreshMods();
+      setFolderDialog(null);
+    } catch (err) {
+      // stays open so the name can be corrected
+      toast('danger', t('common:error'), String(err));
+    }
+  };
+
+  const deleteFolder = async key => {
+    try {
+      await ipc('folders/delete', { key });
+      saveOpenFolders(openFolders.filter(k => k !== key));
+      await refreshMods();
+    } catch (err) {
+      toast('danger', t('common:error'), String(err));
+    }
+  };
+
+  // right click on a folder of the "By folder" view
+  const onFolderMenu = row => {
+    const full = path.join(
+      gstate.settings.modpath,
+      ...(row.key ? row.key.split('/') : [])
+    );
+    const template = [
+      {
+        label: t('wads:menuAddAll'),
+        enabled: row.count > 0,
+        click: () => onAddFolder(row.key)
+      },
+      { type: 'separator' },
+      {
+        label: t('wads:menuNewSub'),
+        click: () => setFolderDialog({ mode: 'create', key: row.key, initial: '' })
+      }
+    ];
+    if (row.key !== '') {
+      template.push(
+        {
+          label: t('wads:menuRename'),
+          click: () =>
+            setFolderDialog({ mode: 'rename', key: row.key, initial: row.folder })
+        },
+        {
+          label: t('wads:menuNewModsHere'),
+          type: 'checkbox',
+          checked: row.key === importFolder,
+          click: () => setImportFolder(row.key)
+        }
+      );
+    }
+    template.push(
+      { type: 'separator' },
+      { label: t('wads:menuOpen'), click: () => remote.shell.openItem(full) }
+    );
+    if (row.key !== '') {
+      template.push({
+        label: t('wads:menuDeleteFolder'),
+        enabled: row.count === 0,
+        click: () => deleteFolder(row.key)
+      });
+    }
+    remote.Menu.buildFromTemplate(template).popup();
+  };
+
+  // files dropped from Explorer straight onto a folder row
+  const onDropToFolder = async (key, e) => {
+    const files = Array.from(e.dataTransfer.files)
+      .map(f => f.path)
+      .filter(Boolean);
+    if (!files.length) return;
+
+    try {
+      const res = await ipc('mods/import', {
+        paths: files,
+        folder: key,
+        known: gstate.mods.map(m => m.id)
+      });
+      await refreshMods();
+      if (key !== '' && openFolders.indexOf(key) < 0) {
+        saveOpenFolders([...openFolders, key]);
+      }
+      const where = key || t('wads:noFolder');
+      if (res.copied) {
+        play('soundModSelect');
+        toast(
+          'ok',
+          t('common:success'),
+          t('wads:toastImported', { count: res.copied, folder: where })
+        );
+      }
+      if (res.already.length) {
+        toast(
+          'ok',
+          t('common:success'),
+          t('wads:toastAlready', { names: res.already.join(', ') })
+        );
+      }
+      if (res.skipped.length) {
+        toast(
+          'danger',
+          t('common:error'),
+          t('wads:toastDropSkipped', { names: res.skipped.join(', ') })
+        );
+      }
+    } catch (err) {
+      toast('danger', t('common:error'), String(err));
+    }
+  };
+
+  // ---- conflicts the user decided to live with ----
+  const saveIgnored = list => {
+    setIgnored(list);
+    try {
+      localStorage.setItem(IGNORED_KEY, JSON.stringify(list));
+    } catch (e) {}
+  };
 
   // look inside the mods of the load order for files that more than one mod has
   const checkConflicts = async (ids = gstate.package.selected) => {
@@ -504,6 +720,13 @@ const Wads = () => {
             onShow={onShowMod}
             onDelete={item => onDeleteMod(item.path, item.name, item.id)}
             compact={!!gstate.settings.compactList}
+            allFolders={gstate.folders}
+            importFolder={importFolder}
+            onFolderMenu={onFolderMenu}
+            onDropFiles={onDropToFolder}
+            onNewFolder={() =>
+              setFolderDialog({ mode: 'create', key: '', initial: '' })
+            }
             recentIds={recentIds}
             footer={
               <ModStats
@@ -512,6 +735,8 @@ const Wads = () => {
                 groups={gstate.duplicates.length + gstate.versions.length}
                 onOpen={() => setDupesOpen(true)}
                 onUsage={() => setUsageOpen(true)}
+                fixes={fixable.length}
+                onFix={() => setFixOpen(true)}
               />
             }
             fixed={
@@ -606,6 +831,20 @@ const Wads = () => {
         count={conflicts.count}
         onSwap={onConflictSwap}
         onRemove={onConflictRemove}
+        ignored={ignored}
+        onIgnore={key => saveIgnored([...ignored, key])}
+        onUnignore={key => saveIgnored(ignored.filter(k => k !== key))}
+      />
+      <FixPackagesModal
+        active={fixOpen}
+        onClose={() => setFixOpen(false)}
+        fixes={fixes}
+        onApply={applyFixes}
+      />
+      <FolderNameModal
+        dialog={folderDialog}
+        onSubmit={submitFolderDialog}
+        onCancel={() => setFolderDialog(null)}
       />
       <DuplicatesModal
         active={dupesOpen}

@@ -12,6 +12,7 @@ const walkWadDir = dir => {
 
   const mods = [];
   const iwads = [];
+  const folders = [];
   const filter = item => {
     const basename = path.basename(item);
     return basename === '.' || basename[0] !== '.';
@@ -22,7 +23,10 @@ const walkWadDir = dir => {
       .on('readable', function() {
         let item;
         while ((item = this.read())) {
-          if (item.stats.isFile()) {
+          if (item.stats.isDirectory()) {
+            const rel = path.relative(dir, item.path);
+            if (rel) folders.push(rel.split(path.sep));
+          } else if (item.stats.isFile()) {
             const checkname = path
               .parse(item.path)
               .name.replace(/_/g, ' ')
@@ -84,7 +88,7 @@ const walkWadDir = dir => {
           }))
           .sort(natural);
 
-        return resolve({ mods: unique, iwads, duplicates, versions });
+        return resolve({ mods: unique, iwads, duplicates, versions, folders });
       })
       .on('error', err => reject(err.message));
   });

@@ -25,8 +25,12 @@ const StatsStyle = styled.div`
     color: ${({ theme }) => theme.color.active};
   }
 
-  a.dupes {
+  .right {
     margin-left: auto;
+  }
+
+  a.fix {
+    color: #f5b945;
   }
 
   a:hover {
@@ -34,7 +38,15 @@ const StatsStyle = styled.div`
   }
 `;
 
-const ModStats = ({ count, bytes, groups, onOpen, onUsage }) => {
+const ModStats = ({
+  count,
+  bytes,
+  groups,
+  onOpen,
+  onUsage,
+  fixes = 0,
+  onFix = () => {}
+}) => {
   const { t } = useTranslation(['wads']);
 
   return (
@@ -43,9 +55,16 @@ const ModStats = ({ count, bytes, groups, onOpen, onUsage }) => {
         <b>{t('wads:statsMods', { count })}</b> · <b>{byteSize(bytes).toString()}</b>
       </span>
       <a onClick={onUsage}>{t('wads:statsUsage')}</a>
-      {groups > 0 ? (
-        <a className="dupes" onClick={onOpen}>{t('wads:statsDupes', { count: groups })}</a>
-      ) : null}
+      <span className="right">
+        {fixes > 0 ? (
+          <a className="fix" onClick={onFix}>
+            {t('wads:statsFix', { count: fixes })}
+          </a>
+        ) : null}
+        {groups > 0 ? (
+          <a onClick={onOpen}>{t('wads:statsDupes', { count: groups })}</a>
+        ) : null}
+      </span>
     </StatsStyle>
   );
 };
@@ -55,7 +74,9 @@ ModStats.propTypes = {
   bytes: PropTypes.number.isRequired,
   groups: PropTypes.number.isRequired,
   onOpen: PropTypes.func.isRequired,
-  onUsage: PropTypes.func.isRequired
+  onUsage: PropTypes.func.isRequired,
+  fixes: PropTypes.number,
+  onFix: PropTypes.func
 };
 
 export default ModStats;

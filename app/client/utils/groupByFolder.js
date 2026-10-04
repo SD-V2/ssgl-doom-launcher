@@ -21,8 +21,24 @@ const countActive = node =>
 // Folders can be nested; key is the full path ("1_BP/sub"). Inside a folder the
 // subfolders come first, then the mods. Mods without any folder come last.
 // forceOpen = show everything expanded (used while searching).
-const groupByFolder = (data, openFolders = [], forceOpen = false) => {
+const groupByFolder = (
+  data,
+  openFolders = [],
+  forceOpen = false,
+  allFolders = []
+) => {
   const root = newNode('');
+
+  // folders without any mod (new ones) - hidden while searching
+  if (!forceOpen) {
+    allFolders.forEach(parts => {
+      let node = root;
+      parts.forEach(name => {
+        if (!node.children.has(name)) node.children.set(name, newNode(name));
+        node = node.children.get(name);
+      });
+    });
+  }
 
   data.forEach(item => {
     const parts = item.folders || (item.folder ? [item.folder] : []);
