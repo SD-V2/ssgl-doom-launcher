@@ -2,7 +2,7 @@ import { ipcRenderer, remote } from 'electron';
 import { useContext, useEffect, useRef } from 'react';
 
 import { StoreContext } from '../state';
-import { useToast, useTranslation } from '../utils';
+import { explainError, useToast, useTranslation } from '../utils';
 
 // Reacts to the "Packages" menu: export current / all packages, import a file.
 // Renders nothing.
@@ -31,11 +31,15 @@ const PackageTransfer = () => {
 
       const res = await ipcRenderer.invoke('packages/export', {
         ids: current ? [gstate.package.id] : null,
-        names
+        names,
+        labels: {
+          title: t('packages:exportDialogTitle'),
+          filter: t('packages:fileFilter')
+        }
       });
 
       if (res.error) {
-        toast('danger', t('common:error'), res.error);
+        toast('danger', t('common:error'), explainError(res.error, t));
       } else if (!res.data.canceled) {
         toast(
           'ok',
@@ -47,10 +51,15 @@ const PackageTransfer = () => {
 
     const importPackages = async () => {
       const { gstate, dispatch, toast, t } = latest.current;
-      const res = await ipcRenderer.invoke('packages/import');
+      const res = await ipcRenderer.invoke('packages/import', {
+        labels: {
+          title: t('packages:importDialogTitle'),
+          filter: t('packages:fileFilter')
+        }
+      });
 
       if (res.error) {
-        toast('danger', t('common:error'), res.error);
+        toast('danger', t('common:error'), explainError(res.error, t));
         return;
       }
       if (res.data.canceled) return;
@@ -78,7 +87,16 @@ const PackageTransfer = () => {
       if (missing.length || notes.length) {
         const shown = missing.slice(0, 25);
         const lines = [];
-        if (notes.length) lines.push(...notes, '');
+        if (notes.length) {
+          lines.push(
+            ...notes.map(note =>
+              note.code === 'sourceport'
+                ? t('packages:noteSourceport', note)
+                : t('packages:noteIwad', note)
+            ),
+            ''
+          );
+        }
         if (missing.length) {
           lines.push(t('packages:importMissing', { count: missing.length }));
           lines.push(...shown);
@@ -88,7 +106,7 @@ const PackageTransfer = () => {
         }
         remote.dialog.showMessageBox({
           type: 'info',
-          buttons: ['OK'],
+          buttons: [t('common:ok')],
           message: t('packages:importDone', { count: imported.length }),
           detail: lines.join('\n')
         });
@@ -101,7 +119,7 @@ const PackageTransfer = () => {
         await fn();
       } catch (err) {
         const { toast, t } = latest.current;
-        toast('danger', t('common:error'), String((err && err.message) || err));
+        toast('danger', t('common:error'), explainError(err, t));
       }
     };
 

@@ -1,18 +1,19 @@
 import path from 'path';
 
+import { AppError } from './errors';
+
 // A folder name that is safe to create on Windows / macOS / Linux
 export const cleanFolderName = name => {
   const clean = String(name === undefined || name === null ? '' : name).trim();
-  if (!clean || clean === '.' || clean === '..') {
-    throw new Error('Please type a folder name');
-  }
-  if (clean.length > 120) throw new Error('The folder name is too long');
+  if (!clean) throw new AppError('E_NAME_EMPTY');
+  if (clean === '.' || clean === '..') throw new AppError('E_NAME_END');
+  if (clean.length > 120) throw new AppError('E_NAME_LONG');
   // eslint-disable-next-line no-control-regex
   if (/[\\/:*?"<>|\u0000-\u001f]/.test(clean)) {
-    throw new Error('A folder name cannot contain  \\ / : * ? " < > |');
+    throw new AppError('E_NAME_CHARS');
   }
   if (/[. ]$/.test(clean)) {
-    throw new Error('A folder name cannot end with a dot or a space');
+    throw new AppError('E_NAME_END');
   }
   return clean;
 };

@@ -4,6 +4,7 @@ import ReactMarkdown from 'react-markdown';
 import styled from 'styled-components';
 
 import { StoreContext } from '../state';
+import { useTranslation } from '../utils';
 import { Button } from './Form';
 import { Modal } from './index';
 
@@ -37,6 +38,7 @@ const MarkdownStyle = styled.div`
 `;
 const Update = () => {
   const { gstate, dispatch } = useContext(StoreContext);
+  const { t } = useTranslation(['common']);
 
   const onOk = () => {
     remote.shell.openExternal(gstate.update.download);
@@ -50,13 +52,13 @@ const Update = () => {
   return (
     <Modal
       active={true}
-      title={`Version ${gstate.update.version} Available`}
+      title={t('common:updateTitle', { version: gstate.update.version })}
       strict
     >
       <MarkdownStyle>
         <ReactMarkdown source={gstate.update.changelog} />
       </MarkdownStyle>
-      <div style={{ textAlign: 'right', marginTop: '20px' }}>
+      <div style={{ textAlign: 'end', marginTop: '20px' }}>
         <Button
           type="button"
           border={'#f55945'}
@@ -65,7 +67,7 @@ const Update = () => {
           onClick={onCancel}
           width="100px"
         >
-          Not now
+          {t('common:updateLater')}
         </Button>
         <Button
           type="button"
@@ -73,7 +75,7 @@ const Update = () => {
           width="100px"
           onClick={onOk}
         >
-          Download
+          {t('common:updateDownload')}
         </Button>
       </div>
     </Modal>

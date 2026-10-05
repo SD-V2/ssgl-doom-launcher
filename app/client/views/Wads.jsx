@@ -24,7 +24,7 @@ import {
 } from '../components';
 import { StoreContext } from '../state';
 import { setTitle, sortList, useIpc, useToast, useTranslation } from '../utils';
-import { useSound } from '../utils';
+import { explainError, useSound } from '../utils';
 import { trackFirstSeen } from '../utils/firstSeen';
 import { findFixes } from '../utils/fixes';
 import { modsInFolder, sortByFolder } from '../utils/groupByFolder';
@@ -213,7 +213,7 @@ const Wads = () => {
         t('wads:toastFixed', { count: replacements.length })
       );
     } catch (err) {
-      toast('danger', t('common:error'), String(err));
+      toast('danger', t('common:error'), explainError(err, t));
     }
   };
 
@@ -228,7 +228,7 @@ const Wads = () => {
       await saveSettingsPatch({ importFolder: key });
       toast('ok', t('common:success'), t('wads:toastNewModsHere', { folder: key }));
     } catch (err) {
-      toast('danger', t('common:error'), String(err));
+      toast('danger', t('common:error'), explainError(err, t));
     }
   };
 
@@ -257,7 +257,7 @@ const Wads = () => {
       setFolderDialog(null);
     } catch (err) {
       // stays open so the name can be corrected
-      toast('danger', t('common:error'), String(err));
+      toast('danger', t('common:error'), explainError(err, t));
     }
   };
 
@@ -267,7 +267,7 @@ const Wads = () => {
       saveOpenFolders(openFolders.filter(k => k !== key));
       await refreshMods();
     } catch (err) {
-      toast('danger', t('common:error'), String(err));
+      toast('danger', t('common:error'), explainError(err, t));
     }
   };
 
@@ -359,7 +359,7 @@ const Wads = () => {
         );
       }
     } catch (err) {
-      toast('danger', t('common:error'), String(err));
+      toast('danger', t('common:error'), explainError(err, t));
     }
   };
 
@@ -385,7 +385,12 @@ const Wads = () => {
       const result = await ipc('mods/conflicts', { items });
       setConflicts({ loading: false, result, error: null, count: items.length });
     } catch (err) {
-      setConflicts({ loading: false, result: null, error: String(err), count: items.length });
+      setConflicts({
+        loading: false,
+        result: null,
+        error: explainError(err, t),
+        count: items.length
+      });
     }
   };
 
@@ -624,7 +629,7 @@ const Wads = () => {
         );
       }
     } catch (err) {
-      toast('danger', t('common:error'), String(err));
+      toast('danger', t('common:error'), explainError(err, t));
     }
   };
 

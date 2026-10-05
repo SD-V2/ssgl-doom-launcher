@@ -14,6 +14,7 @@ const lngs = {
 
 i18n.use(initReactI18next).init({
   interpolation: {
+    escapeValue: false,
     format: function(value, format, lng) {
       if (format === 'date') {
         return formatDistance(value, Date.now(), {

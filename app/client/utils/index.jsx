@@ -1,5 +1,7 @@
 import { useTranslation } from 'react-i18next';
 
+import explainError from './explainError';
+
 import image from './image';
 import { currentLocation, useHashLocation } from './location';
 import setTitle from './setTitle';
@@ -11,6 +13,7 @@ import useToast from './useToast';
 export {
   image,
   setTitle,
+  explainError,
   useTranslation,
   useIpc,
   useToast,

@@ -2,6 +2,7 @@ import { ipcMain } from 'electron';
 import fs from 'fs';
 import path from 'path';
 
+import { AppError, toPayload } from '../utils/errors';
 import { getJSON } from '../utils/json';
 import {
   cleanFolderName,
@@ -12,16 +13,16 @@ import {
 const getModPath = async () => {
   const settings = await getJSON('settings');
   if (!settings.modpath || settings.modpath.trim() === '') {
-    throw new Error('The WAD directory is not set');
+    throw new AppError('E_NO_WADDIR');
   }
   return settings.modpath;
 };
 
 const humanError = err => {
   if (err.code === 'EPERM' || err.code === 'EBUSY' || err.code === 'EACCES') {
-    return 'Windows would not allow it. Is a game or another program using files in this folder?';
+    return toPayload(new AppError('E_FS_DENIED'));
   }
-  return err.message;
+  return toPayload(err);
 };
 
 // new folder inside `parent` ('' = top level of the WAD directory)
@@ -33,9 +34,9 @@ ipcMain.handle('folders/create', async (e, data) => {
     const parentPath = path.join(modpath, ...parent);
     const target = path.join(parentPath, name);
 
-    if (!isInside(modpath, target)) throw new Error('That folder is outside the WAD directory');
-    if (!fs.existsSync(parentPath)) throw new Error('The parent folder does not exist');
-    if (fs.existsSync(target)) throw new Error('A folder with this name already exists');
+    if (!isInside(modpath, target)) throw new AppError('E_OUTSIDE');
+    if (!fs.existsSync(parentPath)) throw new AppError('E_PARENT_MISSING');
+    if (fs.existsSync(target)) throw new AppError('E_FOLDER_EXISTS');
 
     fs.mkdirSync(target);
     return { data: { key: [...parent, name].join('/') }, error: null };
@@ -49,22 +50,22 @@ ipcMain.handle('folders/rename', async (e, data) => {
   try {
     const modpath = await getModPath();
     const parts = splitFolderKey(data.key);
-    if (!parts.length) throw new Error('Pick a folder to rename');
+    if (!parts.length) throw new AppError('E_PICK_FOLDER');
 
     const name = cleanFolderName(data.name);
     const from = path.join(modpath, ...parts);
     const to = path.join(modpath, ...parts.slice(0, -1), name);
 
     if (!isInside(modpath, from) || !isInside(modpath, to)) {
-      throw new Error('That folder is outside the WAD directory');
+      throw new AppError('E_OUTSIDE');
     }
-    if (!fs.existsSync(from)) throw new Error('The folder does not exist (any more)');
+    if (!fs.existsSync(from)) throw new AppError('E_FOLDER_MISSING');
 
     const onlyCaseChanged = from.toLowerCase() === to.toLowerCase();
     if (!onlyCaseChanged && fs.existsSync(to)) {
-      throw new Error('A folder with this name already exists');
+      throw new AppError('E_FOLDER_EXISTS');
     }
-    if (from === to) throw new Error('That is already the name');
+    if (from === to) throw new AppError('E_SAME_NAME');
 
     fs.renameSync(from, to);
     return {
@@ -81,16 +82,16 @@ ipcMain.handle('folders/delete', async (e, data) => {
   try {
     const modpath = await getModPath();
     const parts = splitFolderKey(data.key);
-    if (!parts.length) throw new Error('Pick a folder to delete');
+    if (!parts.length) throw new AppError('E_PICK_FOLDER');
 
     const target = path.join(modpath, ...parts);
-    if (!isInside(modpath, target)) throw new Error('That folder is outside the WAD directory');
+    if (!isInside(modpath, target)) throw new AppError('E_OUTSIDE');
 
     try {
       fs.rmdirSync(target);
     } catch (err) {
       if (err.code === 'ENOTEMPTY' || err.code === 'EEXIST') {
-        throw new Error('The folder is not empty');
+        throw new AppError('E_NOT_EMPTY');
       }
       throw err;
     }

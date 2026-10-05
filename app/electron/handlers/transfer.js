@@ -4,12 +4,18 @@ import path from 'path';
 import shortid from 'shortid';
 
 import { copyfile, createPath } from '../utils/common';
+import { AppError, toPayload } from '../utils/errors';
 import { getJSON, setJSON } from '../utils/json';
 import { walkWadDir } from '../utils/mods';
 
 const FORMAT = 'ssgl-packages';
 const MAX_COVER_BYTES = 5 * 1024 * 1024;
-const FILTERS = [{ name: 'SSGL packages (*.json)', extensions: ['json'] }];
+const filters = labels => [
+  {
+    name: (labels && labels.filter) || 'SSGL packages (*.json)',
+    extensions: ['json']
+  }
+];
 
 const safeName = name =>
   String(name || 'package')
@@ -66,14 +72,14 @@ ipcMain.handle('packages/export', async (e, data) => {
     const sourceports = await getJSON('sourceports');
     const chosen = ids ? packages.filter(p => ids.indexOf(p.id) > -1) : packages;
 
-    if (!chosen.length) throw new Error('There are no packages to export');
+    if (!chosen.length) throw new AppError('E_NO_PACKAGES');
 
     const res = await dialog.showSaveDialog(win, {
-      title: 'Export packages',
+      title: (data.labels && data.labels.title) || 'Export packages',
       defaultPath: `${
         chosen.length === 1 ? safeName(chosen[0].name) : 'ssgl-packages'
       }.json`,
-      filters: FILTERS
+      filters: filters(data.labels)
     });
 
     if (res.canceled || !res.filePath) {
@@ -93,17 +99,17 @@ ipcMain.handle('packages/export', async (e, data) => {
       error: null
     };
   } catch (err) {
-    return { data: null, error: err.message };
+    return { data: null, error: toPayload(err) };
   }
 });
 
-ipcMain.handle('packages/import', async e => {
+ipcMain.handle('packages/import', async (e, data) => {
   try {
     const win = BrowserWindow.fromWebContents(e.sender);
     const res = await dialog.showOpenDialog(win, {
-      title: 'Import packages',
+      title: (data && data.labels && data.labels.title) || 'Import packages',
       properties: ['openFile'],
-      filters: FILTERS
+      filters: filters(data && data.labels)
     });
 
     if (res.canceled || !res.filePaths || !res.filePaths.length) {
@@ -114,10 +120,10 @@ ipcMain.handle('packages/import', async e => {
     try {
       raw = JSON.parse(fs.readFileSync(res.filePaths[0], 'utf8'));
     } catch (err) {
-      throw new Error('This file could not be read');
+      throw new AppError('E_FILE_UNREADABLE');
     }
     if (!raw || raw.format !== FORMAT || !Array.isArray(raw.packages)) {
-      throw new Error('This is not an SSGL packages file');
+      throw new AppError('E_NOT_PACKAGES_FILE');
     }
 
     const settings = await getJSON('settings');
@@ -125,10 +131,10 @@ ipcMain.handle('packages/import', async e => {
     const packages = await getJSON('packages');
 
     if (!sourceports.length) {
-      throw new Error('Add a sourceport first (Sourceports tab), then import again');
+      throw new AppError('E_ADD_SOURCEPORT');
     }
     if (!settings.savepath || settings.savepath.trim() === '') {
-      throw new Error('The SSGL Data Directory is not set (Settings)');
+      throw new AppError('E_NO_SAVEPATH');
     }
 
     const { iwads } = settings.modpath
@@ -150,10 +156,12 @@ ipcMain.handle('packages/import', async e => {
       let port = sourceports.find(s => s.name.toLowerCase() === wanted);
       if (!port) {
         port = sourceports[0];
-        notes.push(
-          `${item.name}: sourceport "${item.sourceportName ||
-            '?'}" not found, using "${port.name}"`
-        );
+        notes.push({
+          code: 'sourceport',
+          pack: item.name,
+          wanted: item.sourceportName || '?',
+          used: port.name
+        });
       }
 
       // iwad: same file name as on the other PC
@@ -161,7 +169,11 @@ ipcMain.handle('packages/import', async e => {
         i => path.basename(i.path).toLowerCase() === String(item.iwadName).toLowerCase()
       );
       if (!iwad) {
-        notes.push(`${item.name}: IWAD "${item.iwadName || '?'}" not found, pick one by editing the package`);
+        notes.push({
+          code: 'iwad',
+          pack: item.name,
+          wanted: item.iwadName || '?'
+        });
       }
       const iwadPath = iwad ? iwad.path : item.iwad || '';
 
@@ -223,7 +235,7 @@ ipcMain.handle('packages/import', async e => {
       });
     });
 
-    if (!created.length) throw new Error('The file does not contain any packages');
+    if (!created.length) throw new AppError('E_EMPTY_PACKAGES_FILE');
 
     const newPackages = [...created, ...packages];
     await setJSON('packages', newPackages);
@@ -233,6 +245,6 @@ ipcMain.handle('packages/import', async e => {
       error: null
     };
   } catch (err) {
-    return { data: null, error: err.message };
+    return { data: null, error: toPayload(err) };
   }
 });

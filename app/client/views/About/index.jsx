@@ -6,6 +6,7 @@ import styled from 'styled-components';
 import { BoxStyle } from '../../components/Box';
 import Flex from '../../components/Flex';
 import Logo from '../../components/Logo';
+import { useTranslation } from '../../utils';
 import AnimatedView from '../AnimatedView';
 import { contact, techs, testers } from './data';
 
@@ -81,6 +82,7 @@ Link.propTypes = {
 };
 
 const About = () => {
+  const { t } = useTranslation(['about']);
   return (
     <AnimatedView>
       <Box>
@@ -88,13 +90,13 @@ const About = () => {
           <div className="content">
             <Text>
               <h1>
-                SSGL (Super Shotgun Launcher) Version {remote.app.getVersion()}
+                {t('about:title', { version: remote.app.getVersion() })}
               </h1>
               <Logo height="90px" center />
               <br /> <br />
               <Flex.Grid>
                 <Flex.Col>
-                  <h3>Used Technologies</h3>
+                  <h3>{t('about:technologies')}</h3>
                   <ul>
                     {techs.map(i => (
                       <li key={i.name}>
@@ -104,43 +106,44 @@ const About = () => {
                   </ul>
                 </Flex.Col>
                 <Flex.Col>
-                  <h3>Shoutout to my Alphatesters</h3>
+                  <h3>{t('about:testers')}</h3>
                   <ul>
                     {testers.map(i => (
                       <li key={i.name}>
                         <Link to={i.link}>
                           {i.name} <br />
-                          <span className="meta">{i.role}</span>
+                          <span className="meta">{t(`about:${i.roleKey}`, { defaultValue: i.role })}</span>
                         </Link>
                       </li>
                     ))}
                   </ul>
                 </Flex.Col>
                 <Flex.Col>
-                  <h3>If you want to Contact me</h3>
+                  <h3>{t('about:contact')}</h3>
                   <ul>
                     {contact.map(i => (
                       <li key={i.platform}>
-                        <Link to={i.link}>{i.platform}</Link>
+                        <Link to={i.link}>
+                          {i.key ? t(`about:${i.key}`) : i.platform}
+                        </Link>
                       </li>
                     ))}
                   </ul>
                 </Flex.Col>
               </Flex.Grid>
               <p style={{ textAlign: 'center', textTransform: 'uppercase' }}>
-                All Icons and Graphics included in this Project are created{' '}
-                <br /> by me (Thomas Petrovic) and Licensed under{' '}
+                {t('about:iconsLicense')} <br /> {t('about:iconsLicense2')}{' '}
                 <Link to="https://creativecommons.org/licenses/by-nc/4.0/">
                   CC BY-NC 4.0
                 </Link>{' '}
                 <br />
                 <br />
-                Code Licensed under{' '}
+                {t('about:codeLicense')}{' '}
                 <Link to="https://github.com/FreaKzero/ssgl-doom-launcher/blob/latest/app/LICENSE">
                   MIT License
                 </Link>
                 <br />
-                Copyright (c) 2015 Thomas Petrovic
+                {t('about:copyright')}
               </p>
               <p
                 style={{
@@ -149,14 +152,10 @@ const About = () => {
                   marginTop: '15px'
                 }}
               >
-                DOOM is a registered Trademark of id Software LLC, a Zenimax
-                Media company in the US and/or other Countries, and is used
-                without permission. All other Trademarks are the property of
-                their respective holders. SSGL is in no way affiliated with nor
-                endorsed by id Software.
+                {t('about:trademark')}
               </p>
-              <p style={{ textAlign: 'right' }}>
-                Handcrafted in Vienna, Austria
+              <p style={{ textAlign: 'end' }}>
+                {t('about:crafted')}
               </p>
             </Text>
           </div>

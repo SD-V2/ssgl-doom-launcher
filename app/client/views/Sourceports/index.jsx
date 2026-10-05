@@ -63,7 +63,7 @@ const SourcePorts = () => {
       });
       setSelected(sourcePorts[0]);
     } catch (e) {
-      toast('danger', 'Error ?!');
+      toast('danger', t('common:error'));
     }
   };
 
@@ -87,7 +87,7 @@ const SourcePorts = () => {
       toast('ok', t('common:success'), t('sourceports:toastSaved'));
     } catch (e) {
       console.log(e);
-      toast('Error ?!', 'danger');
+      toast('danger', t('common:error'));
     }
   };
 

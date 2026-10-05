@@ -10,6 +10,7 @@ import path from 'path';
 
 import { AVAILABLE_IWADS } from '../constants';
 import { getExt } from '../utils/common';
+import { AppError, toPayload } from '../utils/errors';
 import { getJSON } from '../utils/json';
 import { isModFile, modItem } from '../utils/mods';
 import { importFolderParts, isInside, splitFolderKey } from '../utils/safepath';
@@ -142,7 +143,7 @@ const importPaths = ({ paths, modpath, targetDir, known, skipInside }) => {
 const getSettings = async () => {
   const settings = await getJSON('settings');
   if (!settings.modpath || settings.modpath.trim() === '') {
-    throw new Error('WAD Directory is not set');
+    throw new AppError('E_NO_WADDIR');
   }
   return settings;
 };
@@ -166,7 +167,7 @@ ipcMain.handle('mods/add', async (e, data) => {
 
     return { error: null, data: { mods, ids, skipped } };
   } catch (e) {
-    return { data: null, error: e.message };
+    return { data: null, error: toPayload(e) };
   }
 });
 
@@ -180,7 +181,7 @@ ipcMain.handle('mods/import', async (e, data) => {
     const targetDir = path.join(settings.modpath, ...parts);
 
     if (parts.length && !isInside(settings.modpath, targetDir)) {
-      throw new Error('That folder is outside the WAD directory');
+      throw new AppError('E_OUTSIDE');
     }
 
     const { mods, skipped, already } = importPaths({
@@ -196,6 +197,6 @@ ipcMain.handle('mods/import', async (e, data) => {
       data: { copied: mods.length, skipped, already }
     };
   } catch (e) {
-    return { data: null, error: e.message };
+    return { data: null, error: toPayload(e) };
   }
 });

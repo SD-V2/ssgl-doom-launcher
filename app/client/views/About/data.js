@@ -1,6 +1,7 @@
 export const contact = [
   {
     platform: 'Website',
+    key: 'website',
     link: 'http://freakzero.com'
   },
   {
@@ -25,26 +26,31 @@ export const testers = [
   {
     name: 'Xeno1979',
     role: 'Alphatesting MacOS & NL Translation',
+    roleKey: 'roleMacNl',
     link: 'https://github.com/Xeno1979'
   },
   {
     name: 'CthePredatorG',
     role: 'Alphatesting Windows',
+    roleKey: 'roleWindows',
     link: 'https://www.voices.com/actors/CthePredatorG'
   },
   {
     name: 'WolVexus',
     role: 'Alphatesting Windows',
+    roleKey: 'roleWindows',
     link: 'https://www.youtube.com/channel/UCC6ixAIHqKkSh3lv2tM5wwQ'
   },
   {
     name: 'Rain',
     role: 'Alphatesting Windows',
+    roleKey: 'roleWindows',
     link: 'https://github.com/starpotion'
   },
   {
     name: 'Leaguesman',
     role: 'Alphatesting Linux',
+    roleKey: 'roleLinux',
     link: 'https://github.com/Leaguesman'
   }
 ];
