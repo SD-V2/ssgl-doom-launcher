@@ -150,6 +150,7 @@ const PackageModal = ({
         <InputContainerStyle fluid>
           <InputStyle
             as="textarea"
+            dir="auto"
             name="notes"
             rows={3}
             value={form.notes || ''}

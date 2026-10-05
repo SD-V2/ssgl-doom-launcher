@@ -11,7 +11,7 @@ const Scroll = styled.div`
   overflow-y: auto;
   overflow-x: hidden;
   margin-bottom: 15px;
-  padding-right: 8px;
+  padding-inline-end: 8px;
   ${({ theme }) => theme.scrollbar};
 
   p.hint {
@@ -74,7 +74,7 @@ const Card = styled.div`
   }
 
   .actions a {
-    margin-right: 16px;
+    margin-inline-end: 16px;
     font-size: 14px;
     cursor: pointer;
     color: ${({ theme }) => theme.color.active};

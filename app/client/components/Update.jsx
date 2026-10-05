@@ -23,7 +23,7 @@ const MarkdownStyle = styled.div`
   ul {
     color: red;
     list-style-type: square;
-    padding-left: 20px;
+    padding-inline-start: 20px;
     margin: 10px;
   }
 

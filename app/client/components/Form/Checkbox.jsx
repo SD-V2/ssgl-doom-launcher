@@ -16,7 +16,7 @@ const CheckboxStyle = styled.button`
   height: 25px;
   width: 24px;
   padding: 2px 2px 5px 1px;
-  margin-right: 5px;
+  margin-inline-end: 5px;
 
   svg {
     transition: ${({ theme }) => theme.transition.short};

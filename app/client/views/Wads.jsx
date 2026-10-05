@@ -65,7 +65,7 @@ const NotesStyle = styled.div`
   white-space: pre-wrap;
   color: #ddd;
   background: ${({ theme }) => theme.color.backdrop};
-  border-left: 3px solid ${({ theme }) => theme.color.active};
+  border-inline-start: 3px solid ${({ theme }) => theme.color.active};
   border-radius: ${({ theme }) => theme.border.radius};
 
   b {
@@ -86,7 +86,7 @@ const ToolbarStyle = styled.div`
 
   a {
     cursor: pointer;
-    margin-left: 16px;
+    margin-inline-start: 16px;
     color: ${({ theme }) => theme.color.active};
   }
 

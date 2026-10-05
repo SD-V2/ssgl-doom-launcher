@@ -65,6 +65,7 @@ export default {
     dupesShow: 'Show',
     dupesDelete: 'Delete',
     notesTitle: 'Notes',
+    notFound: 'NOT FOUND',
     newBadge: 'new',
     sortByFolder: 'Sort by folder',
     checkConflicts: 'Check conflicts',

@@ -56,7 +56,7 @@ const Text = styled.div`
   ul {
     color: red;
     list-style-type: square;
-    padding-left: 20px;
+    padding-inline-start: 20px;
     margin: 10px;
     margin-bottom: 30px;
   }

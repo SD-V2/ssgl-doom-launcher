@@ -18,7 +18,7 @@ const BoxStyle = styled.div`
   height: calc(100vh - 140px);
 
   & > ul > div {
-    padding-right: 5px;
+    padding-inline-end: 5px;
     overflow-x: hidden !important;
     overflow-y: scroll !important;
     ${({ theme }) => theme.scrollbar};
@@ -60,8 +60,8 @@ const FolderStyle = styled.div`
   }
 
   span {
-    margin-left: auto;
-    padding-left: 12px;
+    margin-inline-start: auto;
+    padding-inline-start: 12px;
     white-space: nowrap;
     font-size: 14px;
     color: ${({ theme }) => theme.color.meta};
@@ -81,6 +81,10 @@ const Arrow = styled.i`
   border-right: 6px solid transparent;
   border-top: 8px solid ${({ theme }) => theme.color.active};
   transform: ${({ open }) => (open ? 'rotate(0deg)' : 'rotate(-90deg)')};
+
+  [dir='rtl'] & {
+    transform: ${({ open }) => (open ? 'rotate(0deg)' : 'rotate(90deg)')};
+  }
   transition: ${({ theme }) => theme.transition.short};
 `;
 
@@ -95,7 +99,7 @@ const ToolbarStyle = styled.div`
 
   a {
     cursor: pointer;
-    margin-left: 14px;
+    margin-inline-start: 14px;
     transition: ${({ theme }) => theme.transition.out};
   }
 
@@ -109,7 +113,7 @@ const hasFiles = e =>
 
 const NewModsTag = styled.i`
   flex-shrink: 0;
-  margin-left: 10px;
+  margin-inline-start: 10px;
   padding: 0 6px;
   font-style: normal;
   font-size: 11px;
@@ -124,7 +128,7 @@ const FolderButton = styled.button`
   flex-shrink: 0;
   width: 24px;
   height: 24px;
-  margin-left: 8px;
+  margin-inline-start: 8px;
   padding: 0;
   cursor: pointer;
   font-size: 18px;
@@ -178,7 +182,8 @@ const ModBox = ({
   onDropFiles = () => {},
   onNewFolder = () => {}
 }) => {
-  const { t } = useTranslation(['wads']);
+  const { t, i18n } = useTranslation(['wads']);
+  const rtl = i18n.dir() === 'rtl';
   const boxRef = useRef(null);
   const [dropKey, setDropKey] = useState(null);
   const [height, setHeight] = useState(365);
@@ -230,7 +235,11 @@ const ModBox = ({
     const indent = (row.depth || 0) * INDENT;
     const style =
       indent > 0
-        ? { ...baseStyle, left: indent, width: `calc(100% - ${indent}px)` }
+        ? {
+            ...baseStyle,
+            ...(rtl ? { left: 'auto', right: indent } : { left: indent }),
+            width: `calc(100% - ${indent}px)`
+          }
         : baseStyle;
 
     if (row.type === 'toolbar') {

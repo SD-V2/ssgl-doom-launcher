@@ -23,7 +23,7 @@ const SourcePortStyle = styled.div`
   .indicator {
     background-color: ${({ theme }) => theme.color.active};
     box-shadow: ${({ theme }) => theme.font.glow};
-    margin-right: 10px;
+    margin-inline-end: 10px;
     width: 0;
     transition: ${({ theme }) => theme.transition.out};
   }

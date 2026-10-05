@@ -44,7 +44,7 @@ const Content = styled.div`
 
 const NewTag = styled.span`
   display: inline-block;
-  margin-right: 8px;
+  margin-inline-end: 8px;
   padding: 0 6px;
   font-size: 11px;
   line-height: 16px;
@@ -58,7 +58,7 @@ const Meta = styled.span`
   color: ${({ theme }) => theme.color.meta};
   font-size: 14px;
   margin-bottom: 5px;
-  margin-right: 5px;
+  margin-inline-end: 5px;
 `;
 
 const ActionsStyle = styled.div`
@@ -66,7 +66,7 @@ const ActionsStyle = styled.div`
   flex-direction: ${({ compact }) => (compact ? 'row' : 'column')};
   justify-content: space-between;
   align-items: center;
-  margin-left: 8px;
+  margin-inline-start: 8px;
   ${({ compact }) => (compact ? 'gap: 6px;' : '')}
 
   button {

@@ -1,0 +1,7 @@
+Extra font files used for Turkish and Arabic text (SIL Open Font License 1.1, https://scripts.sil.org/OFL):
+
+  Rajdhani-LatinExt.woff   - Rajdhani, latin-ext subset   (c) The Rajdhani Project Authors (Indian Type Foundry)
+  Michroma-LatinExt.woff   - Michroma, latin-ext subset   (c) The Michroma Project Authors (Vernon Adams)
+  Cairo-Arabic-*.woff      - Cairo, arabic subset         (c) 2009 The Cairo Project Authors (https://github.com/Gue3bara/Cairo)
+
+Subsets obtained from the Fontsource packages (@fontsource/rajdhani, @fontsource/michroma, @fontsource/cairo).

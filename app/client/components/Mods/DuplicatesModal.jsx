@@ -11,7 +11,7 @@ const Scroll = styled.div`
   overflow-y: auto;
   overflow-x: hidden;
   margin-bottom: 15px;
-  padding-right: 8px;
+  padding-inline-end: 8px;
   ${({ theme }) => theme.scrollbar};
 
   h3 {
@@ -43,7 +43,7 @@ const Group = styled.div`
 
   .head small {
     font-size: 13px;
-    margin-left: 8px;
+    margin-inline-start: 8px;
     color: ${({ theme }) => theme.color.meta};
   }
 `;
@@ -56,6 +56,8 @@ const Row = styled.div`
 
   .path {
     flex-grow: 1;
+    direction: ltr;
+    text-align: start;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -63,13 +65,13 @@ const Row = styled.div`
   }
 
   .size {
-    margin-left: 10px;
+    margin-inline-start: 10px;
     white-space: nowrap;
     color: ${({ theme }) => theme.color.meta};
   }
 
   a {
-    margin-left: 12px;
+    margin-inline-start: 12px;
     white-space: nowrap;
     cursor: pointer;
     color: ${({ theme }) => theme.color.active};

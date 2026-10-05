@@ -21,12 +21,12 @@ const StatsStyle = styled.div`
 
   a {
     cursor: pointer;
-    margin-left: 14px;
+    margin-inline-start: 14px;
     color: ${({ theme }) => theme.color.active};
   }
 
   .right {
-    margin-left: auto;
+    margin-inline-start: auto;
   }
 
   a.fix {

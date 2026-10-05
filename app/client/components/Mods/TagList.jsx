@@ -12,7 +12,7 @@ const Tag = styled.li`
   transition: ${({ theme }) => theme.transition.out};
   color: ${({ theme }) => theme.color.meta};
   display: inline;
-  margin-right: 5px;
+  margin-inline-end: 5px;
   font-size: 12px;
   border: ${({ theme }) => `1px solid ${theme.color.meta}`};
   border-radius: 4px;

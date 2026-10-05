@@ -28,7 +28,7 @@ export const ButtonStyle = styled.button`
   min-width: 100px;
   padding: 7px;
   cursor: pointer;
-  margin-right: 10px;
+  margin-inline-end: 10px;
   white-space: nowrap;
 
   &:hover,

@@ -4,7 +4,12 @@ const SubmitArea = styled.div`
   position: absolute;
   right: 10px;
   bottom: 20px;
-  text-align: right;
+
+  [dir='rtl'] & {
+    right: auto;
+    left: 10px;
+  }
+  text-align: end;
 `;
 
 export default SubmitArea;

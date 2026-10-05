@@ -19,7 +19,7 @@ export const BoxStyle = styled.div`
   }
 
   .content {
-    margin-right: 5px;
+    margin-inline-end: 5px;
     margin-bottom: ${p => (p.noscroll ? '0px' : '80px')};
   }
 `;

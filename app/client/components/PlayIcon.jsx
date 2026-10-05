@@ -6,6 +6,11 @@ const PlayIconStyle = styled.div`
   position: absolute;
   right: 30px;
   bottom: 20px;
+
+  [dir='rtl'] & {
+    right: auto;
+    left: 30px;
+  }
   cursor: pointer;
   pointer-events: none;
 

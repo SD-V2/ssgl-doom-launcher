@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import React from 'react';
 import styled from 'styled-components';
 
+import { useTranslation } from '../../utils';
 import ErrorCheckmark from './Checkmarks/ErrorCheckmark';
 
 const Divider = styled.div`
@@ -35,7 +36,7 @@ const Meta = styled.span`
   color: ${({ theme }) => theme.color.meta};
   font-size: 14px;
   margin-bottom: 5px;
-  margin-right: 5px;
+  margin-inline-end: 5px;
 `;
 
 const ItemStyle = styled.div`
@@ -60,6 +61,7 @@ const ItemStyle = styled.div`
 `;
 
 const ErrorItem = ({ style, id, onSelect }) => {
+  const { t } = useTranslation(['wads']);
   return (
     <motion.li
       style={style}
@@ -78,7 +80,7 @@ const ErrorItem = ({ style, id, onSelect }) => {
         <Divider />
         <Content>
           <h1>{id}</h1>
-          <Meta>NOT FOUND</Meta>
+          <Meta>{t('wads:notFound')}</Meta>
         </Content>
       </ItemStyle>
     </motion.li>

@@ -53,6 +53,11 @@ const Package = motion.custom(styled.div`
     position: absolute;
     right: 10px;
     top: 10px;
+
+    [dir='rtl'] & {
+      right: auto;
+      left: 10px;
+    }
     transform: scale(0);
     transform-origin: center center;
   }
@@ -78,6 +83,11 @@ const Package = motion.custom(styled.div`
     position: absolute;
     left: 10px;
     bottom: -40px;
+
+    [dir='rtl'] & {
+      left: auto;
+      right: 10px;
+    }
     text-align: center;
     transition: all 0.3s ease-out;
   }

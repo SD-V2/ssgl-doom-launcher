@@ -32,7 +32,7 @@ export const InputContainerStyle = styled.div`
   transition: ${({ theme }) => theme.transition.out};
   margin-bottom: 15px;
   display: flex;
-  margin-right: 5px;
+  margin-inline-end: 5px;
   width: ${p => {
     if (p.fluid) {
       return `100%`;
@@ -45,7 +45,7 @@ export const InputContainerStyle = styled.div`
 
   .fu {
     margin-top: 5px;
-    margin-right: 5px;
+    margin-inline-end: 5px;
     padding: 5px;
     transition: ${({ theme }) => theme.transition.short};
     stroke: ${({ theme }) => theme.button.idle};
@@ -124,6 +124,7 @@ const Input = ({
         <InputStyle
           ref={inputRef}
           type="text"
+          dir="auto"
           onChange={onChangeWrap}
           value={value}
           {...rest}
