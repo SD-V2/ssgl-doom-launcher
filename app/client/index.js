@@ -128,7 +128,11 @@ const App = () => {
             {loading ? (
               <MainLoader />
             ) : (
-              <Body background={gstate.settings.background}>
+              <Body
+                background={gstate.settings.background}
+                dim={gstate.settings.wallpaperDim}
+                blur={gstate.settings.wallpaperBlur}
+              >
                 {openNotifier(gstate) ? <Update /> : null}
                 <Head />
                 <Routes />

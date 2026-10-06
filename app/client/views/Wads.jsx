@@ -1,6 +1,7 @@
 import { remote } from 'electron';
 import { AnimatePresence } from 'framer-motion';
-import React, { useContext, useMemo, useState } from 'react';
+import byteSize from 'byte-size';
+import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import path from 'path';
 import styled from 'styled-components';
 import { useDebounce } from 'use-debounce';
@@ -20,6 +21,7 @@ import {
   ModItem,
   ModStats,
   PackageAreaNew,
+  TwinsModal,
   PlayIcon,
   PlayOverlay
 } from '../components';
@@ -28,6 +30,7 @@ import { setTitle, sortList, useIpc, useToast, useTranslation } from '../utils';
 import { explainError, useSound } from '../utils';
 import { trackFirstSeen } from '../utils/firstSeen';
 import { findFixes } from '../utils/fixes';
+import { findTwins, twinKey } from '../utils/twins';
 import { modsInFolder, sortByFolder } from '../utils/groupByFolder';
 import AnimatedView from './AnimatedView';
 
@@ -75,6 +78,38 @@ const NotesStyle = styled.div`
     font-size: 12px;
     text-transform: uppercase;
     color: ${({ theme }) => theme.color.meta};
+  }
+`;
+
+const SummaryStyle = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  margin-bottom: 8px;
+  font-size: 14px;
+  user-select: none;
+  color: ${({ theme }) => theme.color.meta};
+
+  b {
+    font-weight: normal;
+    color: #fff;
+  }
+
+  a {
+    cursor: pointer;
+    margin-inline-start: 14px;
+  }
+
+  a.warn {
+    color: #f5b945;
+  }
+
+  a.bad {
+    color: #f55945;
+  }
+
+  a:hover {
+    text-decoration: underline;
   }
 `;
 
@@ -139,6 +174,9 @@ const Wads = () => {
   const [fixOpen, setFixOpen] = useState(false);
   const [folderDialog, setFolderDialog] = useState(null);
   const [ignored, setIgnored] = useState(loadIgnored);
+  const [twinsOpen, setTwinsOpen] = useState(false);
+  const [live, setLive] = useState(null);
+  const liveTicket = useRef(0);
   const [favorites, setFavorites] = useState(loadFavorites);
   const [orderBackup, setOrderBackup] = useState(null);
   const [healthOpen, setHealthOpen] = useState(false);
@@ -146,6 +184,8 @@ const Wads = () => {
   const [conflictsOpen, setConflictsOpen] = useState(false);
   const [conflicts, setConflicts] = useState({ loading: false, result: null, error: null, count: 0 });
   const [ipc, loading] = useIpc();
+  // a second connection for checks that run quietly in the background
+  const [bgIpc] = useIpc();
   const { t } = useTranslation(['common', 'wads']);
   const [toast] = useToast();
   const [play] = useSound();
@@ -162,6 +202,63 @@ const Wads = () => {
   );
   const fixable = fixes.filter(f => f.candidate);
   const importFolder = normalizeKey(gstate.settings.importFolder) || DEFAULT_IMPORT;
+
+  // ---- the load order at a glance ----
+  const selectedMods = useMemo(() => {
+    const byId = new Map(gstate.mods.map(m => [m.id, m]));
+    return gstate.package.selected.map(id => byId.get(id)).filter(Boolean);
+  }, [gstate.mods, gstate.package.selected]);
+
+  const selectedKey = gstate.package.selected.join('|');
+
+  // conflicts are looked for quietly whenever the load order changes
+  useEffect(() => {
+    if (selectedMods.length < 2) {
+      liveTicket.current += 1;
+      setLive(null);
+      return undefined;
+    }
+    const items = selectedMods.map(m => ({ id: m.id, name: m.name, path: m.path }));
+    const ticket = liveTicket.current + 1;
+    liveTicket.current = ticket;
+
+    const timer = setTimeout(async () => {
+      try {
+        const result = await bgIpc('mods/conflicts', { items });
+        if (ticket === liveTicket.current) setLive(result);
+      } catch (e) {
+        if (ticket === liveTicket.current) setLive(null);
+      }
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [selectedKey, gstate.mods]);
+
+  // how many conflicts each mod of the load order is part of (ignored ones not counted)
+  const conflictInfo = useMemo(() => {
+    const counts = new Map();
+    let pairs = 0;
+    if (live) {
+      live.conflicts.forEach(c => {
+        if (ignored.indexOf([c.a, c.b].sort().join('|')) > -1) return;
+        pairs += 1;
+        counts.set(c.a, (counts.get(c.a) || 0) + 1);
+        counts.set(c.b, (counts.get(c.b) || 0) + 1);
+      });
+    }
+    return { counts, pairs };
+  }, [live, ignored]);
+
+  // the same mod twice (two versions of it) in the load order
+  const twinGroups = useMemo(
+    () => findTwins(selectedMods).filter(g => ignored.indexOf(twinKey(g)) < 0),
+    [selectedMods, ignored]
+  );
+  const twinIds = useMemo(
+    () => new Set(twinGroups.reduce((all, g) => all.concat(g.mods.map(m => m.id)), [])),
+    [twinGroups]
+  );
+  const loadBytes = selectedMods.reduce((n, m) => n + (m.bytes || 0), 0);
+  const missingCount = gstate.package.selected.length - selectedMods.length;
 
   const onSelect = id => () => {
     play('soundModSelect');
@@ -364,6 +461,15 @@ const Wads = () => {
     } catch (err) {
       toast('danger', t('common:error'), explainError(err, t));
     }
+  };
+
+  // keep one of the twins: the others leave the load order
+  const onTwinKeep = (group, keepId) => {
+    dispatch({
+      type: 'mods/remove',
+      ids: group.mods.filter(m => m.id !== keepId).map(m => m.id)
+    });
+    play('soundModSelect');
   };
 
   // ---- conflicts the user decided to live with ----
@@ -797,6 +903,32 @@ const Wads = () => {
                 {gstate.package.notes}
               </NotesStyle>
             ) : null}
+            {gstate.package.selected.length > 0 ? (
+              <SummaryStyle>
+                <span>
+                  <b>{t('wads:statsMods', { count: selectedMods.length })}</b> ·{' '}
+                  <b>{byteSize(loadBytes).toString()}</b>
+                </span>
+                {missingCount > 0 ? (
+                  <a
+                    className="bad"
+                    onClick={() => (fixable.length ? setFixOpen(true) : null)}
+                  >
+                    {t('wads:summaryMissing', { count: missingCount })}
+                  </a>
+                ) : null}
+                {conflictInfo.pairs > 0 ? (
+                  <a className="warn" onClick={() => checkConflicts()}>
+                    {t('wads:summaryConflicts', { count: conflictInfo.pairs })}
+                  </a>
+                ) : null}
+                {twinGroups.length > 0 ? (
+                  <a className="warn" onClick={() => setTwinsOpen(true)}>
+                    {t('wads:summaryTwins', { count: twinGroups.length })}
+                  </a>
+                ) : null}
+              </SummaryStyle>
+            ) : null}
             {gstate.package.selected.length > 1 || canUndoSort ? (
               <ToolbarStyle>
                 {canUndoSort ? (
@@ -822,6 +954,10 @@ const Wads = () => {
                         onTag={onTag}
                         dragProps={itemDragProps(itemindex)}
                         dragState={itemDragState(itemindex)}
+                        conflicts={conflictInfo.counts.get(item.id) || 0}
+                        onConflicts={() => checkConflicts()}
+                        twin={twinIds.has(item.id)}
+                        onTwin={() => setTwinsOpen(true)}
                         selected
                       />
                     ) : (
@@ -848,6 +984,13 @@ const Wads = () => {
           setUsageOpen(false);
           setDupesOpen(true);
         }}
+      />
+      <TwinsModal
+        active={twinsOpen}
+        onClose={() => setTwinsOpen(false)}
+        groups={twinGroups}
+        onKeep={onTwinKeep}
+        onNotSame={group => saveIgnored([...ignored, twinKey(group)])}
       />
       <BrokenFilesModal
         active={healthOpen}

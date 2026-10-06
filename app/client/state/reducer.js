@@ -55,6 +55,8 @@ export const initState = {
     compactList: false,
     importFolder: '',
     updateRepo: 'SD-V2/ssgl-doom-launcher',
+    wallpaperDim: 0,
+    wallpaperBlur: 0,
     hideWhilePlaying: false,
     volume: 0.5
   }
@@ -79,6 +81,10 @@ export function reducer(state, action) {
         package: state.package
       });
     }
+
+    case 'settings/preview':
+      // shown at once while a slider is moved, not saved
+      return act({ ...state, settings: { ...state.settings, ...action.data } });
 
     case 'recovered/clear':
       return act({ ...state, recovered: [] });

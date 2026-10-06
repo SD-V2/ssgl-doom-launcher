@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 
 import { Box, Flex } from '../components';
 import {
@@ -31,6 +31,30 @@ const Settings = () => {
   const { gstate, dispatch } = useContext(StoreContext);
   const { settings } = gstate;
   const [form, setForm] = useState(settings);
+
+  // The wallpaper sliders show their effect at once. If you leave without saving,
+  // the saved values come back.
+  const savedLook = useRef({
+    dim: settings.wallpaperDim,
+    blur: settings.wallpaperBlur
+  });
+  useEffect(() => {
+    dispatch({
+      type: 'settings/preview',
+      data: { wallpaperDim: form.wallpaperDim, wallpaperBlur: form.wallpaperBlur }
+    });
+  }, [form.wallpaperDim, form.wallpaperBlur]);
+  useEffect(
+    () => () =>
+      dispatch({
+        type: 'settings/preview',
+        data: {
+          wallpaperDim: savedLook.current.dim,
+          wallpaperBlur: savedLook.current.blur
+        }
+      }),
+    []
+  );
   const [errors, setError] = useState({});
   const [toast] = useToast();
   const [saveSettings] = useIpc();
@@ -150,6 +174,8 @@ const Settings = () => {
         ...form,
         updateRepo: repo
       });
+      // what is saved now is what comes back when the sliders are left unsaved later
+      savedLook.current = { dim: form.wallpaperDim, blur: form.wallpaperBlur };
       dispatch({ type: 'settings/save', data: newSettings });
 
       const newState = await fetchInit('main/init', null);
@@ -219,6 +245,26 @@ const Settings = () => {
                   onFile={onComponent}
                   label={t('settings:wallpaper')}
                   value={form.background}
+                  fluid
+                />
+                <Range
+                  value={form.wallpaperDim || 0}
+                  min="0"
+                  max="80"
+                  step="5"
+                  name="wallpaperDim"
+                  label={t('settings:wallpaperDim')}
+                  onChange={onInput}
+                  fluid
+                />
+                <Range
+                  value={form.wallpaperBlur || 0}
+                  min="0"
+                  max="12"
+                  step="1"
+                  name="wallpaperBlur"
+                  label={t('settings:wallpaperBlur')}
+                  onChange={onInput}
                   fluid
                 />
                 <Checkbox

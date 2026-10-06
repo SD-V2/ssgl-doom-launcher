@@ -54,6 +54,17 @@ const NewTag = styled.span`
   border: 1px solid ${({ theme }) => theme.color.active};
 `;
 
+const WarnTag = styled(NewTag)`
+  cursor: pointer;
+  color: #f5b945;
+  border: 1px solid #f5b945;
+  text-transform: none;
+
+  &:hover {
+    background: rgba(245, 185, 69, 0.15);
+  }
+`;
+
 const Meta = styled.span`
   color: ${({ theme }) => theme.color.meta};
   font-size: 14px;
@@ -201,7 +212,11 @@ const ModItem = ({
   onShow = null,
   onDelete = null,
   isNew = false,
-  compact = false
+  compact = false,
+  conflicts = 0,
+  onConflicts = () => {},
+  twin = false,
+  onTwin = () => {}
 }) => {
   const { gstate } = useContext(StoreContext);
   const { t } = useTranslation(['wads']);
@@ -230,6 +245,19 @@ const ModItem = ({
         <Content className={item.active ? 'active' : undefined}>
           <h1>{item.name}</h1>
           {isNew && !selected ? <NewTag>{t('wads:newBadge')}</NewTag> : null}
+          {selected && conflicts > 0 ? (
+            <WarnTag
+              title={t('wads:conflictBadgeTitle', { count: conflicts })}
+              onClick={onConflicts}
+            >
+              ⚠ {conflicts}
+            </WarnTag>
+          ) : null}
+          {selected && twin ? (
+            <WarnTag title={t('wads:twinBadgeTitle')} onClick={onTwin}>
+              {t('wads:twinBadge')}
+            </WarnTag>
+          ) : null}
           <Meta>
             {item.size} {item.kind}{' '}
           </Meta>
@@ -294,7 +322,11 @@ ModItem.propTypes = {
   onShow: PropTypes.func,
   onDelete: PropTypes.func,
   isNew: PropTypes.bool,
-  compact: PropTypes.bool
+  compact: PropTypes.bool,
+  conflicts: PropTypes.number,
+  onConflicts: PropTypes.func,
+  twin: PropTypes.bool,
+  onTwin: PropTypes.func
 };
 
 export default ModItem;
