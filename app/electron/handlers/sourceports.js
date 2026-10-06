@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron';
+import { BrowserWindow, ipcMain } from 'electron';
 import { existsSync } from 'fs';
 import path from 'path';
 import shortid from 'shortid';
@@ -89,7 +89,13 @@ ipcMain.handle('sourceports/play', async (e, data) => {
       pack.datapath = path.join(pack.sourceport, NAME_UNPURE_PACKAGE);
     }
 
-    await play(pack, selected, false, null);
+    await play(
+      pack,
+      selected,
+      false,
+      null,
+      BrowserWindow.fromWebContents(e.sender)
+    );
 
     return {
       data: [],

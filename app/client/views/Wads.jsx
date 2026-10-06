@@ -7,6 +7,7 @@ import { useDebounce } from 'use-debounce';
 
 import {
   Box,
+  BrokenFilesModal,
   ConflictsModal,
   DiskUsageModal,
   DuplicatesModal,
@@ -140,6 +141,8 @@ const Wads = () => {
   const [ignored, setIgnored] = useState(loadIgnored);
   const [favorites, setFavorites] = useState(loadFavorites);
   const [orderBackup, setOrderBackup] = useState(null);
+  const [healthOpen, setHealthOpen] = useState(false);
+  const [health, setHealth] = useState({ loading: false, result: null, error: null });
   const [conflictsOpen, setConflictsOpen] = useState(false);
   const [conflicts, setConflicts] = useState({ loading: false, result: null, error: null, count: 0 });
   const [ipc, loading] = useIpc();
@@ -369,6 +372,24 @@ const Wads = () => {
     try {
       localStorage.setItem(IGNORED_KEY, JSON.stringify(list));
     } catch (e) {}
+  };
+
+  // are all mod files complete and readable?
+  const runHealth = async () => {
+    setHealthOpen(true);
+    setHealth({ loading: true, result: null, error: null });
+    try {
+      const items = gstate.mods.map(m => ({
+        id: m.id,
+        name: m.name,
+        path: m.path,
+        kind: m.kind
+      }));
+      const result = await ipc('mods/health', { items });
+      setHealth({ loading: false, result, error: null });
+    } catch (err) {
+      setHealth({ loading: false, result: null, error: explainError(err, t) });
+    }
   };
 
   // look inside the mods of the load order for files that more than one mod has
@@ -740,6 +761,7 @@ const Wads = () => {
                 groups={gstate.duplicates.length + gstate.versions.length}
                 onOpen={() => setDupesOpen(true)}
                 onUsage={() => setUsageOpen(true)}
+                onHealth={runHealth}
                 fixes={fixable.length}
                 onFix={() => setFixOpen(true)}
               />
@@ -826,6 +848,21 @@ const Wads = () => {
           setUsageOpen(false);
           setDupesOpen(true);
         }}
+      />
+      <BrokenFilesModal
+        active={healthOpen}
+        onClose={() => setHealthOpen(false)}
+        loading={health.loading}
+        error={health.error}
+        result={health.result}
+        count={gstate.mods.length}
+        modpath={gstate.settings.modpath}
+        onShow={onShowMod}
+        onDelete={mod => async () => {
+          await onDeleteMod(mod.path, mod.name, mod.id)();
+          runHealth();
+        }}
+        onRecheck={runHealth}
       />
       <ConflictsModal
         active={conflictsOpen}

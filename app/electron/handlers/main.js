@@ -3,37 +3,46 @@ import got from 'got';
 
 import { getJSON } from '../utils/json';
 import { walkWadDir } from '../utils/mods';
+import { cleanRepo, findUpdate } from '../utils/versions';
 import { watchModDir } from '../utils/watcher';
 
 ipcMain.handle('main/checkupdate', async () => {
-  try {
-    let update = {
-      available: false,
-      download: null,
-      version: null,
-      date: null,
-      prerelease: null,
-      changelog: null
-    };
+  const none = {
+    available: false,
+    download: null,
+    version: null,
+    date: null,
+    prerelease: null,
+    changelog: null
+  };
 
-    const res = await got(
-      'https://api.github.com/repos/FreaKzero/ssgl-doom-launcher/releases'
+  try {
+    const settings = await getJSON('settings');
+    // only the GitHub page named in the settings is asked, nothing by default
+    const repo = cleanRepo(settings.updateRepo);
+    if (!repo) return { error: null, data: none };
+
+    const releases = await got(
+      `https://api.github.com/repos/${repo}/releases`
     ).json();
 
-    if (res[0] && `v${app.getVersion()}` !== res[0].tag_name) {
-      update = {
-        available: true,
-        download: res[0].html_url,
-        version: res[0].tag_name,
-        date: res[0].published_at,
-        prerelease: res[0].prerelease,
-        changelog: res[0].body
-      };
-    }
+    const release = findUpdate(releases, app.getVersion(), {
+      time: typeof __BUILD_TIME__ === 'undefined' ? '' : __BUILD_TIME__,
+      commit: typeof __BUILD_COMMIT__ === 'undefined' ? '' : __BUILD_COMMIT__
+    });
 
     return {
       error: null,
-      data: update
+      data: release
+        ? {
+            available: true,
+            download: release.html_url,
+            version: release.tag_name,
+            date: release.published_at,
+            prerelease: release.prerelease,
+            changelog: release.body
+          }
+        : none
     };
   } catch (e) {
     return {

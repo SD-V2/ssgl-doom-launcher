@@ -81,6 +81,10 @@ Link.propTypes = {
   to: PropTypes.string
 };
 
+// set while building (see configs/wp.*.base.js)
+const BUILD_DATE =
+  typeof __BUILD_TIME__ === 'undefined' ? '' : __BUILD_TIME__.slice(0, 10);
+
 const About = () => {
   const { t } = useTranslation(['about']);
   return (
@@ -92,6 +96,11 @@ const About = () => {
               <h1>
                 {t('about:title', { version: remote.app.getVersion() })}
               </h1>
+              {BUILD_DATE ? (
+                <p style={{ textAlign: 'center', opacity: 0.7 }}>
+                  {t('about:forkBuild', { date: BUILD_DATE })}
+                </p>
+              ) : null}
               <Logo height="90px" center />
               <br /> <br />
               <Flex.Grid>

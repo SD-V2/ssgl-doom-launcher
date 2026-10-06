@@ -10,6 +10,7 @@ import Modal from './Modal';
 import ModFilter from './ModFilter';
 import ErrorItem from './Mods/ErrorItem';
 import ModBox from './Mods/ModBox';
+import BrokenFilesModal from './Mods/BrokenFilesModal';
 import ConflictsModal from './Mods/ConflictsModal';
 import DiskUsageModal from './Mods/DiskUsageModal';
 import FixPackagesModal from './Mods/FixPackagesModal';
@@ -44,6 +45,7 @@ export {
   FixPackagesModal,
   FolderNameModal,
   ConflictsModal,
+  BrokenFilesModal,
   iWad,
   Routes,
   Modal,

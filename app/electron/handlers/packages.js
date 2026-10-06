@@ -1,4 +1,4 @@
-import { ipcMain, shell } from 'electron';
+import { BrowserWindow, ipcMain, shell } from 'electron';
 import { existsSync } from 'fs';
 import path from 'path';
 import rimraf from 'rimraf';
@@ -42,7 +42,13 @@ ipcMain.handle('packages/play', async (e, data) => {
 
     setJSON('packages', newpacks);
 
-    await play(pack, selected, load, oblige);
+    await play(
+      pack,
+      selected,
+      load,
+      oblige,
+      BrowserWindow.fromWebContents(e.sender)
+    );
 
     return {
       data: newpacks,

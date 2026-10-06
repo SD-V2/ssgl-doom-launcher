@@ -98,7 +98,7 @@ const App = () => {
         i18n.changeLanguage(data.settings.language || 'en');
         navigate(data.settings.startView || '/');
         //navigate('/settings');
-        if (data.settings.notifyRelease !== 'off') {
+        if (data.settings.notifyRelease !== 'off' && data.settings.updateRepo) {
           try {
             const update = await fetch('main/checkupdate');
             dispatch({ type: 'update/set', data: update, done: false });

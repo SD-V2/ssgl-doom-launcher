@@ -53,6 +53,8 @@ export const initState = {
     autoRefresh: true,
     compactList: false,
     importFolder: '',
+    updateRepo: '',
+    hideWhilePlaying: false,
     volume: 0.5
   }
 };

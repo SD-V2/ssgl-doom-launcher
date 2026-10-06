@@ -21,7 +21,36 @@ const getLastSaveGame = dir => {
   return sorted.length ? sorted[0].path : null;
 };
 
-const play = async (pack, selected, loadLast = false, oblige = null) => {
+// Option "Minimize SSGL while a game is running": SSGL goes to the taskbar and
+// comes back when the game closes (or could not be started). Not possible on
+// macOS, where the game is started through "open".
+const hideWhilePlaying = (win, proc) => {
+  if (!win || win.isDestroyed()) return;
+
+  let minimizedByUs = false;
+  const comeBack = () => {
+    // only when it is still minimized, if you opened SSGL yourself in the
+    // meantime nothing changes
+    if (minimizedByUs && !win.isDestroyed() && win.isMinimized()) {
+      win.restore();
+      win.focus();
+    }
+    minimizedByUs = false;
+  };
+
+  proc.once('exit', comeBack);
+  proc.once('error', comeBack);
+  win.minimize();
+  minimizedByUs = true;
+};
+
+const play = async (
+  pack,
+  selected,
+  loadLast = false,
+  oblige = null,
+  win = null
+) => {
   let deh = [];
   let bex = [];
   let file = [];
@@ -115,6 +144,8 @@ const play = async (pack, selected, loadLast = false, oblige = null) => {
         stdio: 'ignore'
       });
       proc.unref();
+
+      if (settings.hideWhilePlaying) hideWhilePlaying(win, proc);
     }
 
     return {
@@ -130,4 +161,5 @@ const play = async (pack, selected, loadLast = false, oblige = null) => {
   }
 };
 
+export { hideWhilePlaying };
 export default play;

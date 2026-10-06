@@ -50,6 +50,7 @@ require('./handlers/transfer');
 require('./handlers/conflicts');
 require('./handlers/folders');
 require('./handlers/fixes');
+require('./handlers/health');
 require('./handlers/sourceports');
 require('./handlers/settings');
 require('./handlers/packages');

@@ -1,7 +1,16 @@
 const path = require('path');
+const webpack = require('webpack');
+
+// when and from which commit this program was built
+const BUILD = new webpack.DefinePlugin({
+  __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+  __BUILD_COMMIT__: JSON.stringify(process.env.GITHUB_SHA || '')
+});
+
 
 const res = p => path.resolve(__dirname, p);
 module.exports = {
+  plugins: [BUILD],
   module: {
     rules: [
       {

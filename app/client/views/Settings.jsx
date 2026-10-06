@@ -209,6 +209,12 @@ const Settings = () => {
                   fluid
                 />
                 <Checkbox
+                  value={form.hideWhilePlaying}
+                  label={t('settings:hideWhilePlaying')}
+                  name="hideWhilePlaying"
+                  onChange={onComponent}
+                />
+                <Checkbox
                   value={form.compactList}
                   label={t('settings:compactList')}
                   name="compactList"
@@ -274,6 +280,14 @@ const Settings = () => {
                   label={t('settings:notifyRelease')}
                   value={form.notifyRelease}
                   onChange={onComponent}
+                />
+                <Input
+                  name="updateRepo"
+                  label={t('settings:updateRepo')}
+                  value={form.updateRepo || ''}
+                  placeholder="your-name/ssgl-doom-launcher"
+                  onChange={onInput}
+                  fluid
                 />
               </Flex.Col>
             </Flex.Grid>
