@@ -39,9 +39,9 @@ const SwitchStyle = styled.div`
     color: ${({ theme }) => theme.color.active};
   }
 
+  /* same background as the other tab - only the line marks the open one */
   button.on {
     color: ${({ theme }) => theme.color.active};
-    background: transparent;
     text-shadow: ${({ theme }) =>
       `0 0 5px ${theme.color.glow}, 0 0 15px ${theme.color.glow}`};
     box-shadow: inset 0 -3px 0 0 ${({ theme }) => theme.color.active};
