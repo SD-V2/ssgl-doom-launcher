@@ -74,6 +74,7 @@ const Card = styled.div`
   }
 
   .actions a {
+    display: inline-block;
     margin-inline-end: 16px;
     font-size: 14px;
     cursor: pointer;

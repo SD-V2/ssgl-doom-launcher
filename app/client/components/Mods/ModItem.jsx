@@ -78,7 +78,12 @@ const ActionsStyle = styled.div`
   justify-content: space-between;
   align-items: center;
   margin-inline-start: 8px;
-  ${({ compact }) => (compact ? 'gap: 6px;' : '')}
+  ${({ compact }) =>
+    compact
+      ? `button + button {
+    margin-inline-start: 6px;
+  }`
+      : ''}
 
   button {
     background: none;

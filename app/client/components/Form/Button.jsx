@@ -17,7 +17,9 @@ const SpinnerStyle = styled.div`
 export const ButtonStyle = styled.button`
   color: ${({ theme }) => theme.button.idle};
   transition: ${({ theme }) => theme.transition.out};
-  width: ${p => (p.fluid ? '100%' : p.width ? p.width : 'auto')};
+  /* a width in pixels is a minimum: longer texts (other languages) make the button wider */
+  width: ${p =>
+    p.fluid ? '100%' : p.width && /%$/.test(p.width) ? p.width : 'auto'};
   border: 1px solid ${({ theme }) => theme.border.idle};
   background: ${p =>
     p.disabled ? p.theme.button.disabled : p.theme.button.back};
@@ -25,8 +27,11 @@ export const ButtonStyle = styled.button`
   box-sizing: border-box;
   border-radius: ${({ theme }) => theme.border.radius};
   text-transform: uppercase;
-  min-width: 100px;
-  padding: 7px;
+  min-width: ${p =>
+    !p.fluid && p.width && !/%$/.test(p.width) && p.width !== 'auto'
+      ? p.width
+      : '100px'};
+  padding: 7px 14px;
   cursor: pointer;
   margin-inline-end: 10px;
   white-space: nowrap;

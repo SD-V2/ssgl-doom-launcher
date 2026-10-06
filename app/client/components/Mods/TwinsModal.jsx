@@ -52,6 +52,8 @@ const Card = styled.div`
 
   .row .meta {
     margin-inline-start: 10px;
+    min-width: 70px;
+    text-align: end;
     font-size: 13px;
     white-space: nowrap;
     color: ${({ theme }) => theme.color.meta};
@@ -59,6 +61,8 @@ const Card = styled.div`
 
   .row .newer {
     margin-inline-start: 8px;
+    min-width: 110px;
+    text-align: end;
     font-size: 12px;
     color: ${({ theme }) => theme.color.active};
   }
@@ -111,9 +115,11 @@ const TwinsModal = ({ active, onClose, groups, onKeep, onNotSame }) => {
                     {mod.name}
                   </span>
                   <span className="meta">{byteSize(mod.bytes || 0).toString()}</span>
-                  {mod.id === newest.id && group.mods.length > 1 ? (
-                    <span className="newer">{t('wads:twinsNewer')}</span>
-                  ) : null}
+                  <span className="newer">
+                    {mod.id === newest.id && group.mods.length > 1
+                      ? t('wads:twinsNewer')
+                      : ''}
+                  </span>
                   <a onClick={() => onKeep(group, mod.id)}>{t('wads:twinsKeep')}</a>
                 </div>
               ))}
