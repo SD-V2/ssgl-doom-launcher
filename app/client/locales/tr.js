@@ -175,7 +175,7 @@ export default {
     titleOblige: 'Oblige entegrasyonu',
     colorTheme: 'Renk teması',
     accentColor: 'Özel vurgu rengi',
-    updateRepo: 'Güncellemeleri şurada ara (GitHub adı/depo veya bağlantı, boşsa hiç denetleme)',
+    updateRepo: 'Yeni sürümleri ve yüklemeleri şurada bildir (GitHub adı/depo veya bağlantı, boşsa hiç denetleme)',
     updateRepoInvalid: 'Bu bir GitHub deposu değil. Adı/depo biçiminde yazın (ör. adınız/ssgl-doom-launcher) veya deponun bağlantısını yapıştırın.',
     hideWhilePlaying: 'Oyun çalışırken SSGL’yi simge durumuna küçült',
     autoRefresh: 'Dosyalar değişince mod listesini otomatik yenile',
@@ -211,6 +211,9 @@ export default {
     updateLater: 'Şimdi değil',
     updateDownload: 'İndir',
     recovered: '{{name}}.json dosyası bozulmuştu. SSGL son sağlam kopyayı geri yükledi, bu yüzden en son değişiklikleriniz eksik olabilir.',
+    updateFilesTitle: 'Fork’unuzda yeni dosyalar var',
+    updateFilesText: '{{repo}} deposuna daha yeni dosyalar yüklendi (sürüm {{version}}). Bunları almak için programı yeniden derleyin (Build-SSGL.cmd).',
+    updateOpen: 'GitHub’da aç',
     toastStartText: '{{sourceport}} {{num}} modla başlatılıyor'
   },
   nav: {

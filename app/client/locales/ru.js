@@ -182,7 +182,7 @@ export default {
     titleOblige: 'Интеграция с Oblige',
     colorTheme: 'Цветовая тема',
     accentColor: 'Свой акцентный цвет',
-    updateRepo: 'Искать обновления на GitHub (имя/репозиторий или ссылка, пусто = не проверять)',
+    updateRepo: 'Сообщать о новых релизах и загрузках на GitHub (имя/репозиторий или ссылка, пусто = не проверять)',
     updateRepoInvalid: 'Это не репозиторий GitHub. Напишите в виде ваше-имя/ssgl-doom-launcher или вставьте ссылку на репозиторий.',
     hideWhilePlaying: 'Сворачивать SSGL, пока запущена игра',
     autoRefresh: 'Автоматически обновлять список модов при изменении файлов',
@@ -218,6 +218,9 @@ export default {
     updateLater: 'Не сейчас',
     updateDownload: 'Скачать',
     recovered: 'Файл {{name}}.json был повреждён. SSGL восстановил его последнюю исправную копию, поэтому ваше последнее изменение может отсутствовать.',
+    updateFilesTitle: 'В вашем форке новые файлы',
+    updateFilesText: 'В {{repo}} загружены более новые файлы (версия {{version}}). Соберите программу заново (Build-SSGL.cmd), чтобы получить их.',
+    updateOpen: 'Открыть на GitHub',
     toastStartText: 'Запуск {{sourceport}}, модов: {{num}}'
   },
   nav: {

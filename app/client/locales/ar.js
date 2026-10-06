@@ -197,7 +197,7 @@ export default {
     titleOblige: 'تكامل Oblige',
     colorTheme: 'سمة الألوان',
     accentColor: 'لون تمييز مخصص',
-    updateRepo: 'البحث عن التحديثات في (اسم GitHub/المستودع أو الرابط، فارغ = لا تفحص أبداً)',
+    updateRepo: 'أخبرني عن الإصدارات والرفع الجديد في (اسم GitHub/المستودع أو الرابط، فارغ = لا تفحص أبداً)',
     updateRepoInvalid: 'هذا ليس مستودع GitHub. اكتبه بالشكل اسمك/ssgl-doom-launcher أو الصق رابط المستودع.',
     hideWhilePlaying: 'تصغير SSGL أثناء تشغيل اللعبة',
     autoRefresh: 'تحديث قائمة المودات تلقائياً عند تغيّر الملفات',
@@ -233,6 +233,9 @@ export default {
     updateLater: 'ليس الآن',
     updateDownload: 'تنزيل',
     recovered: 'كان الملف {{name}}.json تالفاً. استعاد SSGL آخر نسخة سليمة منه، لذلك قد يكون آخر تغيير لديك مفقوداً.',
+    updateFilesTitle: 'ملفات جديدة في نسختك المعدّلة',
+    updateFilesText: 'تم رفع ملفات أحدث (الإصدار {{version}}) إلى {{repo}}. أعد بناء البرنامج (Build-SSGL.cmd) للحصول عليها.',
+    updateOpen: 'فتح على GitHub',
     toastStartText: 'تشغيل {{sourceport}} مع {{num}} مود'
   },
   nav: {

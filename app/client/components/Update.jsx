@@ -5,6 +5,7 @@ import styled from 'styled-components';
 
 import { StoreContext } from '../state';
 import { useTranslation } from '../utils';
+import { dismiss } from '../utils/dismissed';
 import { Button } from './Form';
 import { Modal } from './index';
 
@@ -40,21 +41,38 @@ const Update = () => {
   const { gstate, dispatch } = useContext(StoreContext);
   const { t } = useTranslation(['common']);
 
+  // new files in the repository (no release): the program has to be built again
+  const files = gstate.update.kind === 'files';
+
   const onOk = () => {
     remote.shell.openExternal(gstate.update.download);
+    if (files) dismiss(gstate.update.sha);
     dispatch({ type: 'update/done' });
   };
 
   const onCancel = () => {
+    if (files) dismiss(gstate.update.sha);
     dispatch({ type: 'update/done' });
   };
 
   return (
     <Modal
       active={true}
-      title={t('common:updateTitle', { version: gstate.update.version })}
+      title={
+        files
+          ? t('common:updateFilesTitle')
+          : t('common:updateTitle', { version: gstate.update.version })
+      }
       strict
     >
+      {files ? (
+        <p style={{ margin: '0 0 12px 0' }}>
+          {t('common:updateFilesText', {
+            repo: gstate.update.repo,
+            version: gstate.update.version
+          })}
+        </p>
+      ) : null}
       <MarkdownStyle>
         <ReactMarkdown source={gstate.update.changelog} />
       </MarkdownStyle>
@@ -75,7 +93,7 @@ const Update = () => {
           width="100px"
           onClick={onOk}
         >
-          {t('common:updateDownload')}
+          {files ? t('common:updateOpen') : t('common:updateDownload')}
         </Button>
       </div>
     </Modal>

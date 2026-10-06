@@ -176,7 +176,7 @@ export default {
     titleOblige: 'Oblige Integration',
     colorTheme: 'Color Theme',
     accentColor: 'Custom accent color',
-    updateRepo: 'Look for updates at (GitHub name/repository or link, empty = never check)',
+    updateRepo: 'Tell me about new releases and uploads at (GitHub name/repository or link, empty = never check)',
     updateRepoInvalid: 'That is not a GitHub repository. Write it like your-name/ssgl-doom-launcher or paste the link of the repository.',
     hideWhilePlaying: 'Minimize SSGL while a game is running',
     autoRefresh: 'Refresh mod list automatically when files change',
@@ -212,6 +212,9 @@ export default {
     updateLater: 'Not now',
     updateDownload: 'Download',
     recovered: 'The file {{name}}.json was damaged. SSGL restored its last good copy, so your latest change may be missing.',
+    updateFilesTitle: 'New files in your fork',
+    updateFilesText: 'Newer files (version {{version}}) were uploaded to {{repo}}. Build the program again (Build-SSGL.cmd) to get them.',
+    updateOpen: 'Open on GitHub',
     toastStartText: `Starting {{sourceport}} with {{num}} Mods`
   },
   nav: {

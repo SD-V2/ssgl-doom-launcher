@@ -9,6 +9,7 @@ import { Body, Head, MainLoader, Routes, ToastContainer } from './components';
 import AudioProvider from './components/Audio';
 import PackageTransfer from './components/PackageTransfer';
 import UnsavedGuard from './components/UnsavedGuard';
+import { isDismissed } from './utils/dismissed';
 import { rememberUpdates } from './utils/fixes';
 import Update from './components/Update';
 import i18n from './i18n';
@@ -102,7 +103,10 @@ const App = () => {
         if (data.settings.notifyRelease !== 'off' && data.settings.updateRepo) {
           try {
             const update = await fetch('main/checkupdate');
-            dispatch({ type: 'update/set', data: update, done: false });
+            // an upload you already said "not now" to is not announced again
+            if (!(update.kind === 'files' && isDismissed(update.sha))) {
+              dispatch({ type: 'update/set', data: update, done: false });
+            }
           } catch (e) {
             console.log(e);
           }

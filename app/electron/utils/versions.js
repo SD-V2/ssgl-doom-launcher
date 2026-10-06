@@ -85,3 +85,16 @@ export const findUpdate = (releases, current, build) => {
     }) || null
   );
 };
+
+// Was something uploaded to the repository after the commit this program was built
+// from? commits = answer of GitHub (newest first). Unknown build commit = no answer.
+export const findNewerCommit = (commits, buildCommit) => {
+  const mine = String(buildCommit || '').trim().toLowerCase();
+  const latest = Array.isArray(commits) && commits.length ? commits[0] : null;
+  if (!mine || !latest || !latest.sha) return null;
+
+  const sha = String(latest.sha).toLowerCase();
+  // a short hash (7+ characters) counts as the same commit
+  const same = mine.length >= 7 && (sha === mine || sha.indexOf(mine) === 0 || mine.indexOf(sha) === 0);
+  return same ? null : latest;
+};
