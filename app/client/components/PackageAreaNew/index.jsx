@@ -7,6 +7,7 @@ import trashSvg from '../../assets/icon/trash.svg';
 import { StoreContext } from '../../state';
 import { useIpc, useSound, useToast, useTranslation } from '../../utils';
 import { isUnsaved, confirmDiscard } from '../../utils/unsaved';
+import { useDialog } from '../Dialog';
 import { Dropdown, IconButton } from '../Form';
 import { createPackage, initState } from './helper';
 import PackageModal from './PackageModal';
@@ -28,6 +29,7 @@ const PackageAreaNew = () => {
   const [form, setForm] = useState(initState);
   const [modalOpen, setModalOpen] = useState(false);
   const [ipc] = useIpc();
+  const dialog = useDialog();
   const [toast] = useToast();
   const [copy, setCopy] = useState(null);
   const [play] = useSound('sound');
@@ -58,7 +60,7 @@ const PackageAreaNew = () => {
   }, [gstate]);
 
   const onSelect = async ({ value }) => {
-    if (value !== currentId && unsaved && !(await confirmDiscard(t))) return;
+    if (value !== currentId && unsaved && !(await confirmDiscard(dialog, t))) return;
     if (value === NULLCONST) {
       dispatch({ type: 'packages/reset' });
     } else {
@@ -68,7 +70,7 @@ const PackageAreaNew = () => {
   };
 
   const onReset = async () => {
-    if (unsaved && !(await confirmDiscard(t))) return;
+    if (unsaved && !(await confirmDiscard(dialog, t))) return;
     dispatch({ type: 'packages/reset' });
     setForm(initState);
   };

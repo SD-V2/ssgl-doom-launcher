@@ -1,7 +1,8 @@
-import { ipcRenderer, remote } from 'electron';
+import { ipcRenderer } from 'electron';
 import { useContext, useEffect, useRef } from 'react';
 
 import { StoreContext } from '../state';
+import { useDialog } from './Dialog';
 import { explainError, useToast, useTranslation } from '../utils';
 
 // Reacts to the "Packages" menu: export current / all packages, import a file.
@@ -13,7 +14,8 @@ const PackageTransfer = () => {
 
   // the listeners are set once, so they read the latest state from here
   const latest = useRef({});
-  latest.current = { gstate, dispatch, toast, t };
+  const dialog = useDialog();
+  latest.current = { gstate, dispatch, toast, t, dialog };
 
   useEffect(() => {
     const exportPackages = async current => {
@@ -50,7 +52,7 @@ const PackageTransfer = () => {
     };
 
     const importPackages = async () => {
-      const { gstate, dispatch, toast, t } = latest.current;
+      const { gstate, dispatch, toast, t, dialog } = latest.current;
       const res = await ipcRenderer.invoke('packages/import', {
         labels: {
           title: t('packages:importDialogTitle'),
@@ -104,11 +106,11 @@ const PackageTransfer = () => {
             lines.push(`... +${missing.length - shown.length}`);
           }
         }
-        remote.dialog.showMessageBox({
-          type: 'info',
-          buttons: [t('common:ok')],
-          message: t('packages:importDone', { count: imported.length }),
-          detail: lines.join('\n')
+        dialog.info({
+          title: t('packages:importDone', { count: imported.length }),
+          lines,
+          okText: t('common:ok'),
+          wide: true
         });
       }
     };

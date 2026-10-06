@@ -29,6 +29,7 @@ import { StoreContext } from '../state';
 import { setTitle, sortList, useIpc, useToast, useTranslation } from '../utils';
 import { explainError, useSound } from '../utils';
 import { trackFirstSeen } from '../utils/firstSeen';
+import { useDialog } from '../components/Dialog';
 import { findFixes } from '../utils/fixes';
 import { findTwins, twinKey } from '../utils/twins';
 import { modsInFolder, sortByFolder } from '../utils/groupByFolder';
@@ -197,6 +198,7 @@ const Wads = () => {
   const [ipc, loading] = useIpc();
   // a second connection for checks that run quietly in the background
   const [bgIpc] = useIpc();
+  const dialog = useDialog();
   const { t } = useTranslation(['common', 'wads']);
   const [toast] = useToast();
   const [play] = useSound();
@@ -606,15 +608,15 @@ const Wads = () => {
 
   // move a mod file to the Recycle Bin (after asking)
   const onDeleteMod = (path, name, id = null) => async () => {
-    const res = await remote.dialog.showMessageBox({
-      type: 'warning',
-      buttons: [t('wads:deleteYes'), t('wads:deleteNo')],
-      defaultId: 1,
-      cancelId: 1,
+    const sure = await dialog.confirm({
+      title: t('common:deleteTitle'),
       message: t('wads:confirmDelete', { name }),
-      detail: path
+      detail: path,
+      confirmText: t('wads:deleteYes'),
+      cancelText: t('wads:deleteNo'),
+      danger: true
     });
-    if (res.response !== 0) return;
+    if (!sure) return;
 
     if (!remote.shell.moveItemToTrash(path)) {
       toast('danger', t('common:error'), t('wads:toastDeleteFailed', { name }));

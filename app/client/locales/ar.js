@@ -288,6 +288,7 @@ export default {
     fileFilter: 'حزم SSGL (*.json)',
     noteSourceport: '{{pack}}: لم يُعثر على Sourceport باسم "{{wanted}}"، سيتم استخدام "{{used}}"',
     noteIwad: '{{pack}}: لم يُعثر على IWAD باسم "{{wanted}}"، اختر واحداً بتعديل الحزمة',
+    unsavedTitle: 'تغييرات غير محفوظة',
     unsavedMessage: 'ترتيب التحميل لديك يحتوي على تغييرات غير محفوظة.',
     unsavedDetail: 'احفظها أولاً بزر القلم أو زر القرص في شريط الحزمة، وإلا ستضيع.',
     unsavedDiscard: 'تجاهل التغييرات',

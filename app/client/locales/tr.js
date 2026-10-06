@@ -258,6 +258,7 @@ export default {
     fileFilter: 'SSGL paketleri (*.json)',
     noteSourceport: '{{pack}}: "{{wanted}}" sourceport’u bulunamadı, "{{used}}" kullanılıyor',
     noteIwad: '{{pack}}: "{{wanted}}" IWAD’ı bulunamadı, paketi düzenleyerek birini seçin',
+    unsavedTitle: 'Kaydedilmemiş değişiklikler',
     unsavedMessage: 'Yükleme sırasında kaydedilmemiş değişiklikler var.',
     unsavedDetail: 'Önce paket çubuğundaki kalem veya disk düğmesiyle kaydedin, aksi halde kaybolurlar.',
     unsavedDiscard: 'Değişiklikleri at',

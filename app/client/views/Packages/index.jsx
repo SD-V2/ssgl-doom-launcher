@@ -12,6 +12,7 @@ import {
   useToast,
   useTranslation
 } from '../../utils';
+import { useDialog } from '../../components/Dialog';
 import { confirmDiscard, isUnsaved } from '../../utils/unsaved';
 import AnimatedView from '../AnimatedView';
 import ObligeModal from './ObligeModal';
@@ -26,6 +27,7 @@ const Packages = () => {
   const onSort = ({ value }) => setSort(value);
   const [confirm, setConfirm] = useState({ id: null, open: false });
   const { t } = useTranslation(['common']);
+  const dialog = useDialog();
   const [toast] = useToast();
   // eslint-disable-next-line no-unused-vars
   const [location, navigate] = useHashLocation();
@@ -85,7 +87,7 @@ const Packages = () => {
     if (
       id !== gstate.package.id &&
       isUnsaved(gstate.package, gstate.packages) &&
-      !(await confirmDiscard(t))
+      !(await confirmDiscard(dialog, t))
     ) {
       return;
     }

@@ -7,6 +7,7 @@ import { ThemeProvider } from 'styled-components';
 
 import { Body, Head, MainLoader, Routes, ToastContainer } from './components';
 import AudioProvider from './components/Audio';
+import { DialogProvider } from './components/Dialog';
 import PackageTransfer from './components/PackageTransfer';
 import UnsavedGuard from './components/UnsavedGuard';
 import { isDismissed } from './utils/dismissed';
@@ -122,6 +123,7 @@ const App = () => {
     <StoreContext.Provider value={{ gstate, dispatch }}>
       <AudioProvider>
         <ThemeProvider theme={activeTheme}>
+          <DialogProvider>
           <ToastContainer>
             <PackageTransfer />
             <UnsavedGuard />
@@ -139,6 +141,7 @@ const App = () => {
               </Body>
             )}
           </ToastContainer>
+          </DialogProvider>
         </ThemeProvider>
       </AudioProvider>
     </StoreContext.Provider>

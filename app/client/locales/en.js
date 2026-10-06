@@ -259,6 +259,7 @@ export default {
     fileFilter: 'SSGL packages (*.json)',
     noteSourceport: '{{pack}}: sourceport "{{wanted}}" not found, using "{{used}}"',
     noteIwad: '{{pack}}: IWAD "{{wanted}}" not found, pick one by editing the package',
+    unsavedTitle: 'Unsaved changes',
     unsavedMessage: 'Your load order has changes that are not saved.',
     unsavedDetail: 'Save them first with the pencil or disc button in the package bar, otherwise they are lost.',
     unsavedDiscard: 'Discard changes',

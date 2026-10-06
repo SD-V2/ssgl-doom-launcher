@@ -1,5 +1,3 @@
-import { remote } from 'electron';
-
 // true when the load order in the window is not what the selected package has saved
 // (or when there is a load order but no package at all)
 export const isUnsaved = (pack, packages) => {
@@ -16,14 +14,12 @@ export const isUnsaved = (pack, packages) => {
 };
 
 // "Your load order has changes that are not saved" -> true = go on and lose them
-export const confirmDiscard = async t => {
-  const res = await remote.dialog.showMessageBox({
-    type: 'warning',
-    buttons: [t('packages:unsavedDiscard'), t('common:cancel')],
-    defaultId: 1,
-    cancelId: 1,
+export const confirmDiscard = (dialog, t) =>
+  dialog.confirm({
+    title: t('packages:unsavedTitle'),
     message: t('packages:unsavedMessage'),
-    detail: t('packages:unsavedDetail')
+    detail: t('packages:unsavedDetail'),
+    confirmText: t('packages:unsavedDiscard'),
+    cancelText: t('common:cancel'),
+    danger: true
   });
-  return res.response === 0;
-};

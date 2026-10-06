@@ -1,27 +1,37 @@
-import { dialog, ipcMain } from 'electron';
+import { ipcMain } from 'electron';
 
 // The window tells us (message "app/dirty") whether the load order has unsaved
-// changes. Closing SSGL then asks first. The texts come from the window, so they
-// are in the language of the user.
-export const installCloseGuard = (win, ipc = ipcMain, box = dialog) => {
-  let unsaved = null;
+// changes. Closing SSGL then does not close it at once: the window is asked to show
+// its own question (in the look of SSGL). Only when you confirm there
+// ("app/close-confirmed") SSGL really closes.
+export const installCloseGuard = (win, ipc = ipcMain) => {
+  let unsaved = false;
+  let allowClose = false;
 
   ipc.on('app/dirty', (e, data) => {
-    unsaved = data && data.dirty ? data : null;
+    unsaved = !!(data && data.dirty);
+  });
+
+  ipc.on('app/close-confirmed', () => {
+    allowClose = true;
+    if (!win.isDestroyed()) win.close();
   });
 
   win.on('close', event => {
-    if (!unsaved || !unsaved.labels) return;
+    if (allowClose || !unsaved) return;
 
-    const choice = box.showMessageBoxSync(win, {
-      type: 'warning',
-      buttons: [unsaved.labels.discard, unsaved.labels.cancel],
-      defaultId: 1,
-      cancelId: 1,
-      message: unsaved.labels.message,
-      detail: unsaved.labels.detail
-    });
+    event.preventDefault();
+    // closed from the taskbar while minimized: bring it back so the question is seen
+    if (win.isMinimized()) win.restore();
+    win.focus();
+    win.webContents.send('app/close-request');
+  });
 
-    if (choice !== 0) event.preventDefault();
+  // a window that crashed or hangs cannot answer, it must not keep SSGL open
+  win.webContents.on('crashed', () => {
+    unsaved = false;
+  });
+  win.on('unresponsive', () => {
+    unsaved = false;
   });
 };
