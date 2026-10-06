@@ -5,3 +5,7 @@ Extra font files used for Turkish and Arabic text (SIL Open Font License 1.1, ht
   Cairo-Arabic-*.woff      - Cairo, arabic subset         (c) 2009 The Cairo Project Authors (https://github.com/Gue3bara/Cairo)
 
 Subsets obtained from the Fontsource packages (@fontsource/rajdhani, @fontsource/michroma, @fontsource/cairo).
+
+Cyrillic (Russian) text:
+  Play-Cyrillic-Regular.woff - Play, cyrillic subset     (c) 2011 Jonas Hecksher, Playtypes, e-types AS, SIL OFL 1.1
+  RussoOne-Cyrillic.woff     - Russo One, cyrillic subset (c) 2011-2012 Jovanny Lemonad, SIL OFL 1.1

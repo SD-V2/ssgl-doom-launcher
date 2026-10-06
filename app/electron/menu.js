@@ -18,6 +18,34 @@ if (fs.existsSync(settingsPath)) {
 // Menu texts for the languages that are not English (the window texts live in
 // client/locales). Anything missing here stays English.
 const MENU_TEXT = {
+  ru: {
+    'Open': 'Открыть',
+    'Mod Directory': 'Папка модов',
+    'SSGL Data Directory': 'Папка данных SSGL',
+    'Oblige Config Directory': 'Папка конфигов Oblige',
+    'Application Directory': 'Папка приложения',
+    'Packages': 'Пакеты',
+    'Export Current Package...': 'Экспортировать текущий пакет...',
+    'Export All Packages...': 'Экспортировать все пакеты...',
+    'Import Packages...': 'Импортировать пакеты...',
+    'Edit': 'Правка',
+    'View': 'Вид',
+    'Reload': 'Перезагрузить',
+    'Developer Tools': 'Инструменты разработчика',
+    'Actual Size': 'Реальный размер',
+    'Zoom In': 'Увеличить',
+    'Zoom Out': 'Уменьшить',
+    'Toggle Full Screen': 'Полноэкранный режим',
+    'Window': 'Окно',
+    'Minimize': 'Свернуть',
+    'Close': 'Закрыть',
+    'Community': 'Сообщество',
+    'Join Discord': 'Присоединиться к Discord',
+    'Open Github': 'Открыть GitHub',
+    'Help': 'Справка',
+    'About': 'О программе',
+    'Open First Setup Guide': 'Открыть руководство по первой настройке'
+  },
   tr: {
     'Open': 'Aç',
     'Mod Directory': 'Mod klasörü',

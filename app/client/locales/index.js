@@ -2,6 +2,7 @@ import ar from './ar';
 import de from './de';
 import en from './en';
 import nl from './nl';
+import ru from './ru';
 import tr from './tr';
 
 // label = the language written in itself
@@ -17,6 +18,10 @@ export const AVAILABLE_LOCALES = [
   {
     label: 'Nederlands',
     value: 'nl'
+  },
+  {
+    label: 'Русский',
+    value: 'ru'
   },
   {
     label: 'Türkçe',
@@ -35,6 +40,7 @@ export default {
   en,
   de,
   nl,
+  ru,
   tr,
   ar
 };

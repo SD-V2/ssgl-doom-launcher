@@ -28,6 +28,19 @@ html, body {
   unicode-range: U+0100-02AF, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 
+/* Russian (Cyrillic) */
+@font-face {
+  font-family: 'Rajdhani';
+  src: url('./assets/fonts/Play-Cyrillic-Regular.woff') format('woff');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+
+@font-face {
+  font-family: 'Michroma';
+  src: url('./assets/fonts/RussoOne-Cyrillic.woff') format('woff');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+
 @font-face {
   font-family: 'Rajdhani';
   src: url('./assets/fonts/Cairo-Arabic-Regular.woff') format('woff');

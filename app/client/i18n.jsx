@@ -1,5 +1,5 @@
 import { formatDistance } from 'date-fns';
-import { arSA, de, nl, tr } from 'date-fns/locale';
+import { arSA, de, nl, ru, tr } from 'date-fns/locale';
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
@@ -8,6 +8,7 @@ import locales from './locales';
 const lngs = {
   de: de,
   nl: nl,
+  ru: ru,
   tr: tr,
   ar: arSA
 };
