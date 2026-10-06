@@ -41,7 +41,7 @@ const SwitchStyle = styled.div`
 
   button.on {
     color: ${({ theme }) => theme.color.active};
-    background: ${({ theme }) => theme.button.back};
+    background: transparent;
     text-shadow: ${({ theme }) =>
       `0 0 5px ${theme.color.glow}, 0 0 15px ${theme.color.glow}`};
     box-shadow: inset 0 -3px 0 0 ${({ theme }) => theme.color.active};
