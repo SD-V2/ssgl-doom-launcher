@@ -10,12 +10,14 @@ import {
   splitFolderKey
 } from '../utils/safepath';
 
-const getModPath = async () => {
+// root = 'maps' works in the maps directory, anything else in the WAD directory
+const getModPath = async root => {
   const settings = await getJSON('settings');
-  if (!settings.modpath || settings.modpath.trim() === '') {
-    throw new AppError('E_NO_WADDIR');
+  const key = root === 'maps' ? 'mappath' : 'modpath';
+  if (!settings[key] || settings[key].trim() === '') {
+    throw new AppError(root === 'maps' ? 'E_NO_MAPDIR' : 'E_NO_WADDIR');
   }
-  return settings.modpath;
+  return settings[key];
 };
 
 const humanError = err => {
@@ -28,7 +30,7 @@ const humanError = err => {
 // new folder inside `parent` ('' = top level of the WAD directory)
 ipcMain.handle('folders/create', async (e, data) => {
   try {
-    const modpath = await getModPath();
+    const modpath = await getModPath(data.root);
     const parent = splitFolderKey(data.parent);
     const name = cleanFolderName(data.name);
     const parentPath = path.join(modpath, ...parent);
@@ -48,7 +50,7 @@ ipcMain.handle('folders/create', async (e, data) => {
 // rename the last part of a folder key ("1_BP/old" -> "1_BP/new")
 ipcMain.handle('folders/rename', async (e, data) => {
   try {
-    const modpath = await getModPath();
+    const modpath = await getModPath(data.root);
     const parts = splitFolderKey(data.key);
     if (!parts.length) throw new AppError('E_PICK_FOLDER');
 
@@ -80,7 +82,7 @@ ipcMain.handle('folders/rename', async (e, data) => {
 // only works for an empty folder - rmdir refuses anything else
 ipcMain.handle('folders/delete', async (e, data) => {
   try {
-    const modpath = await getModPath();
+    const modpath = await getModPath(data.root);
     const parts = splitFolderKey(data.key);
     if (!parts.length) throw new AppError('E_PICK_FOLDER');
 

@@ -150,6 +150,16 @@ const loadOpenFolders = () => {
   }
 };
 
+const SECTION_KEY = 'ssgl.section';
+
+const loadSection = () => {
+  try {
+    return localStorage.getItem(SECTION_KEY) === 'maps' ? 'maps' : 'mods';
+  } catch (e) {
+    return 'mods';
+  }
+};
+
 const loadSort = () => {
   try {
     // only the folder view is remembered, the other sorts start fresh
@@ -164,6 +174,7 @@ const Wads = () => {
   const { gstate, dispatch } = useContext(StoreContext);
   const [poActive, setPoActive] = useState(false);
   const [sort, setSort] = useState(loadSort);
+  const [wanted, setWanted] = useState(loadSection);
   const [openFolders, setOpenFolders] = useState(loadOpenFolders);
   const [dragging, setDragging] = useState(false);
   const [dragFrom, setDragFrom] = useState(null);
@@ -202,6 +213,28 @@ const Wads = () => {
   );
   const fixable = fixes.filter(f => f.candidate);
   const importFolder = normalizeKey(gstate.settings.importFolder) || DEFAULT_IMPORT;
+
+  // ---- maps are kept apart from the mods (own directory, own list) ----
+  const hasMaps = String(gstate.settings.mappath || '').trim() !== '';
+  const section = hasMaps && wanted === 'maps' ? 'maps' : 'mods';
+  const rootPath = section === 'maps' ? gstate.settings.mappath : gstate.settings.modpath;
+  const sectionMods = useMemo(
+    () => gstate.mods.filter(m => !!m.isMap === (section === 'maps')),
+    [gstate.mods, section]
+  );
+  const counts = useMemo(
+    () => ({
+      maps: gstate.mods.filter(m => m.isMap).length,
+      mods: gstate.mods.filter(m => !m.isMap).length
+    }),
+    [gstate.mods]
+  );
+  const onSection = value => {
+    setWanted(value);
+    try {
+      localStorage.setItem(SECTION_KEY, value);
+    } catch (e) {}
+  };
 
   // ---- the load order at a glance ----
   const selectedMods = useMemo(() => {
@@ -336,7 +369,11 @@ const Wads = () => {
     const dlg = folderDialog;
     try {
       if (dlg.mode === 'create') {
-        const res = await ipc('folders/create', { parent: dlg.key, name });
+        const res = await ipc('folders/create', {
+          parent: dlg.key,
+          name,
+          root: section
+        });
         // show the new folder: open it and the one it is in
         const open = [...openFolders];
         [dlg.key, res.key].forEach(k => {
@@ -344,7 +381,11 @@ const Wads = () => {
         });
         saveOpenFolders(open);
       } else {
-        const res = await ipc('folders/rename', { key: dlg.key, name });
+        const res = await ipc('folders/rename', {
+          key: dlg.key,
+          name,
+          root: section
+        });
         saveOpenFolders(openFolders.map(k => renameKey(k, res.oldKey, res.key)));
         const current = normalizeKey(gstate.settings.importFolder);
         if (current && renameKey(current, res.oldKey, res.key) !== current) {
@@ -363,7 +404,7 @@ const Wads = () => {
 
   const deleteFolder = async key => {
     try {
-      await ipc('folders/delete', { key });
+      await ipc('folders/delete', { key, root: section });
       saveOpenFolders(openFolders.filter(k => k !== key));
       await refreshMods();
     } catch (err) {
@@ -374,7 +415,7 @@ const Wads = () => {
   // right click on a folder of the "By folder" view
   const onFolderMenu = row => {
     const full = path.join(
-      gstate.settings.modpath,
+      rootPath,
       ...(row.key ? row.key.split('/') : [])
     );
     const template = [
@@ -396,12 +437,16 @@ const Wads = () => {
           click: () =>
             setFolderDialog({ mode: 'rename', key: row.key, initial: row.folder })
         },
-        {
-          label: t('wads:menuNewModsHere'),
-          type: 'checkbox',
-          checked: row.key === importFolder,
-          click: () => setImportFolder(row.key)
-        }
+        ...(section === 'mods'
+          ? [
+              {
+                label: t('wads:menuNewModsHere'),
+                type: 'checkbox',
+                checked: row.key === importFolder,
+                click: () => setImportFolder(row.key)
+              }
+            ]
+          : [])
       );
     }
     template.push(
@@ -429,6 +474,7 @@ const Wads = () => {
       const res = await ipc('mods/import', {
         paths: files,
         folder: key,
+        root: section,
         known: gstate.mods.map(m => m.id)
       });
       await refreshMods();
@@ -737,6 +783,7 @@ const Wads = () => {
     try {
       const res = await ipc('mods/add', {
         paths,
+        root: section,
         known: gstate.mods.map(m => m.id)
       });
       dispatch({ type: 'mods/drop', mods: res.mods, ids: res.ids });
@@ -791,7 +838,7 @@ const Wads = () => {
 
   const show = useMemo(() => {
     // always work on a copy, sortList sorts in place
-    let base = [...gstate.mods];
+    let base = [...sectionMods];
     if (sort === 'starred') base = base.filter(m => favSet.has(m.id));
     if (sort === 'recent') base = base.filter(m => recentIds.has(m.id));
 
@@ -816,11 +863,11 @@ const Wads = () => {
           ...sorted.filter(m => !favSet.has(m.id))
         ]
       : sorted;
-  }, [gstate.mods, sort, filter, favSet, recentIds]);
+  }, [sectionMods, sort, filter, favSet, recentIds]);
 
   const totalBytes = useMemo(
-    () => gstate.mods.reduce((n, m) => n + (m.bytes || 0), 0),
-    [gstate.mods]
+    () => sectionMods.reduce((n, m) => n + (m.bytes || 0), 0),
+    [sectionMods]
   );
 
   return (
@@ -852,8 +899,10 @@ const Wads = () => {
             onShow={onShowMod}
             onDelete={item => onDeleteMod(item.path, item.name, item.id)}
             compact={!!gstate.settings.compactList}
-            allFolders={gstate.folders}
-            importFolder={importFolder}
+            allFolders={section === 'maps' ? gstate.mapFolders : gstate.folders}
+            maps={section === 'maps'}
+            importFolder={section === 'mods' ? importFolder : ''}
+            fixedExtra={hasMaps ? 46 : 0}
             onFolderMenu={onFolderMenu}
             onDropFiles={onDropToFolder}
             onNewFolder={() =>
@@ -862,8 +911,9 @@ const Wads = () => {
             recentIds={recentIds}
             footer={
               <ModStats
-                count={gstate.mods.length}
+                count={sectionMods.length}
                 bytes={totalBytes}
+                maps={section === 'maps'}
                 groups={gstate.duplicates.length + gstate.versions.length}
                 onOpen={() => setDupesOpen(true)}
                 onUsage={() => setUsageOpen(true)}
@@ -882,6 +932,9 @@ const Wads = () => {
                 onSort={onSortList}
                 sortValue={sort}
                 size={show.length}
+                section={section}
+                onSection={hasMaps ? onSection : null}
+                counts={counts}
               />
             }
           ></ModBox>
@@ -906,7 +959,17 @@ const Wads = () => {
             {gstate.package.selected.length > 0 ? (
               <SummaryStyle>
                 <span>
-                  <b>{t('wads:statsMods', { count: selectedMods.length })}</b> ·{' '}
+                  <b>
+                    {t('wads:statsMods', {
+                      count: selectedMods.filter(m => !m.isMap).length
+                    })}
+                    {selectedMods.some(m => m.isMap)
+                      ? ` + ${t('wads:statsMaps', {
+                          count: selectedMods.filter(m => m.isMap).length
+                        })}`
+                      : ''}
+                  </b>{' '}
+                  ·{' '}
                   <b>{byteSize(loadBytes).toString()}</b>
                 </span>
                 {missingCount > 0 ? (
@@ -976,7 +1039,8 @@ const Wads = () => {
       <DiskUsageModal
         active={usageOpen}
         onClose={() => setUsageOpen(false)}
-        mods={gstate.mods}
+        mods={sectionMods}
+        maps={section === 'maps'}
         duplicates={gstate.duplicates}
         onShow={onShowMod}
         onDelete={mod => onDeleteMod(mod.path, mod.name, mod.id)}

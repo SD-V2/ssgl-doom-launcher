@@ -2,7 +2,7 @@ import { app, ipcMain } from 'electron';
 import got from 'got';
 
 import { getJSON, takeRecovered } from '../utils/json';
-import { walkWadDir } from '../utils/mods';
+import { scanLibrary } from '../utils/mods';
 import { DEFAULT_UPDATE_REPO } from '../constants';
 import { cleanRepo, findNewerCommit, findUpdate } from '../utils/versions';
 import { watchModDir } from '../utils/watcher';
@@ -93,8 +93,8 @@ ipcMain.handle('main/init', async () => {
     const packages = (await getJSON('packages')) || [];
 
     try {
-      const walkedFiles = await walkWadDir(settings.modpath);
-      watchModDir(settings.modpath);
+      const walkedFiles = await scanLibrary(settings);
+      watchModDir([settings.modpath, settings.mappath]);
       return {
         error: null,
         data: {

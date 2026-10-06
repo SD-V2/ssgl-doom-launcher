@@ -250,6 +250,7 @@ const ModItem = ({
         <Content className={item.active ? 'active' : undefined}>
           <h1>{item.name}</h1>
           {isNew && !selected ? <NewTag>{t('wads:newBadge')}</NewTag> : null}
+          {selected && item.isMap ? <NewTag>{t('wads:mapBadge')}</NewTag> : null}
           {selected && conflicts > 0 ? (
             <WarnTag
               title={t('wads:conflictBadgeTitle', { count: conflicts })}

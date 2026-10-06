@@ -207,6 +207,14 @@ const Settings = () => {
                   info="https://github.com/FreaKzero/ssgl-doom-launcher/wiki/SSGL---First-Setup#wad-directory-required"
                   fluid
                 />
+                <SelectFile
+                  name="mappath"
+                  onFile={onComponent}
+                  label={t('settings:mapdir')}
+                  value={form.mappath || ''}
+                  directory
+                  fluid
+                />
               </Flex.Col>
               <Flex.Col width="50%">
                 <SelectFile

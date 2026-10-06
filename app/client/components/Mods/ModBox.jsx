@@ -174,9 +174,11 @@ const ModBox = ({
   onShow = () => () => {},
   onDelete = () => () => {},
   footer = null,
+  fixedExtra = 0,
   compact = false,
   recentIds = new Set(),
   allFolders = [],
+  maps = false,
   importFolder = '',
   onFolderMenu = () => {},
   onDropFiles = () => {},
@@ -191,13 +193,15 @@ const ModBox = ({
   useLayoutEffect(() => {
     const updateSize = () =>
       setHeight(
-        boxRef.current.getBoundingClientRect().height - (footer ? 115 : 85)
+        boxRef.current.getBoundingClientRect().height -
+          (footer ? 115 : 85) -
+          fixedExtra
       );
 
     window.addEventListener('resize', updateSize);
     updateSize();
     return () => window.removeEventListener('resize', updateSize);
-  }, [footer]);
+  }, [footer, fixedExtra]);
 
   const { rows, folders } = useMemo(() => {
     if (!grouped) {
@@ -293,7 +297,9 @@ const ModBox = ({
                   {' · '}
                 </>
               ) : null}
-              {t('wads:folderCount', { count: row.count })}
+              {t(maps ? 'wads:statsMaps' : 'wads:folderCount', {
+                count: row.count
+              })}
               {row.bytes > 0 ? ` · ${byteSize(row.bytes).toString()}` : ''}
             </span>
             <FolderButton
@@ -364,7 +370,9 @@ ModBox.propTypes = {
   data: PropTypes.any,
   fixed: PropTypes.element,
   footer: PropTypes.element,
+  fixedExtra: PropTypes.number,
   allFolders: PropTypes.array,
+  maps: PropTypes.bool,
   importFolder: PropTypes.string,
   onFolderMenu: PropTypes.func,
   onDropFiles: PropTypes.func,

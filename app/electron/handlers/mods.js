@@ -8,7 +8,7 @@ import {
 } from 'fs';
 import path from 'path';
 
-import { AVAILABLE_IWADS } from '../constants';
+import { AVAILABLE_IWADS, MAP_ID_PREFIX } from '../constants';
 import { getExt } from '../utils/common';
 import { AppError, toPayload } from '../utils/errors';
 import { getJSON } from '../utils/json';
@@ -67,13 +67,22 @@ const listModFiles = root => {
   return found.sort(natural);
 };
 
-const modId = (src, stats) =>
-  `${path.parse(src).name.replace(/_/g, ' ')}${stats.size}${getExt(src)}`;
+const modId = (src, stats, isMap) =>
+  `${isMap ? MAP_ID_PREFIX : ''}${path.parse(src).name.replace(/_/g, ' ')}${
+    stats.size
+  }${getExt(src)}`;
 
 // Copies dropped files / folders into `targetDir` (when they are not already in
 // the WAD directory) and returns mod items for them.
 //   skipInside: files already inside the WAD directory are left alone
-const importPaths = ({ paths, modpath, targetDir, known, skipInside }) => {
+const importPaths = ({
+  paths,
+  modpath,
+  targetDir,
+  known,
+  skipInside,
+  isMap = false
+}) => {
   const knownIds = new Set(known);
   const newIds = new Set();
   const mods = [];
@@ -84,7 +93,7 @@ const importPaths = ({ paths, modpath, targetDir, known, skipInside }) => {
   // getDestDir is only called if the file really has to be copied
   const addFile = (src, getDestDir) => {
     const stats = statSync(src);
-    const id = modId(src, stats);
+    const id = modId(src, stats, isMap);
 
     if (knownIds.has(id) || newIds.has(id)) {
       ids.push(id);
@@ -103,7 +112,11 @@ const importPaths = ({ paths, modpath, targetDir, known, skipInside }) => {
       return;
     }
 
-    const item = modItem({ path: target, stats: statSync(target) }, modpath);
+    const item = modItem(
+      { path: target, stats: statSync(target) },
+      modpath,
+      isMap
+    );
     mods.push(item);
     ids.push(item.id);
     newIds.add(item.id);
@@ -140,12 +153,14 @@ const importPaths = ({ paths, modpath, targetDir, known, skipInside }) => {
   return { mods, ids, skipped, already };
 };
 
-const getSettings = async () => {
+// root = 'maps': the maps directory is used instead of the WAD directory
+const getSettings = async root => {
   const settings = await getJSON('settings');
-  if (!settings.modpath || settings.modpath.trim() === '') {
-    throw new AppError('E_NO_WADDIR');
+  const key = root === 'maps' ? 'mappath' : 'modpath';
+  if (!settings[key] || settings[key].trim() === '') {
+    throw new AppError(root === 'maps' ? 'E_NO_MAPDIR' : 'E_NO_WADDIR');
   }
-  return settings;
+  return { ...settings, base: settings[key] };
 };
 
 // Takes file / folder paths (dropped from the OS file manager onto the load
@@ -154,15 +169,20 @@ const getSettings = async () => {
 // known are simply selected.
 ipcMain.handle('mods/add', async (e, data) => {
   try {
-    const settings = await getSettings();
-    const parts = importFolderParts(settings.importFolder) || [DEFAULT_IMPORT_DIR];
+    const isMap = data.root === 'maps';
+    const settings = await getSettings(data.root);
+    // the setting "Folder for new mods" is for mods, maps use the default folder
+    const parts = (!isMap && importFolderParts(settings.importFolder)) || [
+      DEFAULT_IMPORT_DIR
+    ];
 
     const { mods, ids, skipped } = importPaths({
       paths: data.paths,
-      modpath: settings.modpath,
-      targetDir: path.join(settings.modpath, ...parts),
+      modpath: settings.base,
+      targetDir: path.join(settings.base, ...parts),
       known: data.known,
-      skipInside: false
+      skipInside: false,
+      isMap
     });
 
     return { error: null, data: { mods, ids, skipped } };
@@ -176,20 +196,22 @@ ipcMain.handle('mods/add', async (e, data) => {
 // by the window afterwards.
 ipcMain.handle('mods/import', async (e, data) => {
   try {
-    const settings = await getSettings();
+    const isMap = data.root === 'maps';
+    const settings = await getSettings(data.root);
     const parts = splitFolderKey(data.folder);
-    const targetDir = path.join(settings.modpath, ...parts);
+    const targetDir = path.join(settings.base, ...parts);
 
-    if (parts.length && !isInside(settings.modpath, targetDir)) {
+    if (parts.length && !isInside(settings.base, targetDir)) {
       throw new AppError('E_OUTSIDE');
     }
 
     const { mods, skipped, already } = importPaths({
       paths: data.paths,
-      modpath: settings.modpath,
+      modpath: settings.base,
       targetDir,
       known: data.known,
-      skipInside: true
+      skipInside: true,
+      isMap
     });
 
     return {

@@ -97,6 +97,7 @@ const ModStats = ({
   onHealth = () => {},
   fixes = 0,
   onFix = () => {},
+  maps = false,
   initiallyOpen = false
 }) => {
   const { t } = useTranslation(['wads']);
@@ -110,7 +111,7 @@ const ModStats = ({
   return (
     <StatsStyle>
       <span>
-        <b>{t('wads:statsMods', { count })}</b> · <b>{byteSize(bytes).toString()}</b>
+        <b>{t(maps ? 'wads:statsMaps' : 'wads:statsMods', { count })}</b> · <b>{byteSize(bytes).toString()}</b>
       </span>
       <span className="right">
         {fixes > 0 ? (
@@ -147,6 +148,7 @@ ModStats.propTypes = {
   onHealth: PropTypes.func,
   fixes: PropTypes.number,
   onFix: PropTypes.func,
+  maps: PropTypes.bool,
   initiallyOpen: PropTypes.bool
 };
 

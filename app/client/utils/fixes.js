@@ -25,7 +25,9 @@ export const rememberUpdates = (packages, mods) => {
     const modNames = {};
     (pack.selected || []).forEach(id => {
       const mod = byId.get(id);
-      if (mod && !known[id]) modNames[id] = { name: mod.name, kind: mod.kind };
+      if (mod && !known[id]) {
+        modNames[id] = { name: mod.name, kind: mod.kind, isMap: !!mod.isMap };
+      }
     });
     if (Object.keys(modNames).length) updates.push({ id: pack.id, modNames });
   });
@@ -41,11 +43,17 @@ const candidateFor = (entry, mods) => {
   if (entry.info) {
     const name = entry.info.name.toLowerCase();
     const kind = entry.info.kind;
-    const same = mods.filter(m => m.kind === kind && m.name.toLowerCase() === name);
+    // a map is only replaced by a map, a mod by a mod
+    const section = m => !!m.isMap === !!entry.info.isMap;
+    const same = mods.filter(
+      m => section(m) && m.kind === kind && m.name.toLowerCase() === name
+    );
     if (same.length) return { mod: newest(same), tier: 1 };
 
     const base = baseName(entry.info.name);
-    const similar = mods.filter(m => m.kind === kind && baseName(m.name) === base);
+    const similar = mods.filter(
+      m => section(m) && m.kind === kind && baseName(m.name) === base
+    );
     if (similar.length) return { mod: newest(similar), tier: 2 };
     return null;
   }
@@ -53,8 +61,9 @@ const candidateFor = (entry, mods) => {
   // no stored name: the id is "name" + digits + type, so look for a mod whose
   // name is the beginning of the id
   const hits = mods.filter(m => {
-    if (!entry.id.endsWith(m.kind) || !entry.id.startsWith(m.name)) return false;
-    const middle = entry.id.slice(m.name.length, entry.id.length - m.kind.length);
+    const own = (m.isMap ? 'map:' : '') + m.name;
+    if (!entry.id.endsWith(m.kind) || !entry.id.startsWith(own)) return false;
+    const middle = entry.id.slice(own.length, entry.id.length - m.kind.length);
     return /^\d+$/.test(middle);
   });
   if (!hits.length) return null;

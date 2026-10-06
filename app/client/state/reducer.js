@@ -13,6 +13,7 @@ export const initState = {
   duplicates: [],
   versions: [],
   folders: [],
+  mapFolders: [],
   recovered: [],
   update: {
     available: false,
@@ -54,6 +55,7 @@ export const initState = {
     autoRefresh: true,
     compactList: false,
     importFolder: '',
+    mappath: '',
     updateRepo: 'SD-V2/ssgl-doom-launcher',
     wallpaperDim: 0,
     wallpaperBlur: 0,
@@ -62,7 +64,7 @@ export const initState = {
   }
 };
 
-export function reducer(state, action) {
+function baseReducer(state, action) {
   switch (action.type) {
     case 'main/init': {
       // a load order you are working on stays when the data is loaded again
@@ -251,6 +253,7 @@ export function reducer(state, action) {
         duplicates: action.data.duplicates || [],
         versions: action.data.versions || [],
         folders: action.data.folders || state.folders,
+        mapFolders: action.data.mapFolders || state.mapFolders,
         mods: action.data.mods.map(m =>
           inOrder.has(m.id) ? { ...m, active: true } : m
         )
@@ -319,4 +322,38 @@ export function reducer(state, action) {
     default:
       return initState;
   }
+}
+
+// ids of maps start with "map:" (see electron/constants.js)
+export const isMapId = id => String(id).indexOf('map:') === 0;
+
+// maps always load after the mods
+export const mapsLast = selected => [
+  ...selected.filter(id => !isMapId(id)),
+  ...selected.filter(id => isMapId(id))
+];
+
+// everything that changes the load order keeps the maps at the end
+const KEEP_MAPS_LAST = [
+  'mod/move',
+  'mod/reorder',
+  'mod/select',
+  'mods/drop',
+  'mod/insert',
+  'mods/replaceIds',
+  'mods/setOrder'
+];
+
+export function reducer(state, action) {
+  const next = baseReducer(state, action);
+  if (next === state || KEEP_MAPS_LAST.indexOf(action.type) < 0) return next;
+
+  const fixed = mapsLast(next.package.selected);
+  const same =
+    fixed.length === next.package.selected.length &&
+    fixed.every((id, i) => id === next.package.selected[i]);
+
+  return same
+    ? next
+    : { ...next, package: { ...next.package, selected: fixed } };
 }

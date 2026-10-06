@@ -2,7 +2,7 @@ import { BrowserWindow } from 'electron';
 import fs from 'fs';
 import path from 'path';
 
-let watcher = null;
+let watchers = [];
 let watched = '';
 let timer = null;
 
@@ -15,36 +15,43 @@ const defaultNotify = () =>
 
 export const stopWatching = () => {
   clearTimeout(timer);
-  if (watcher) {
+  watchers.forEach(w => {
     try {
-      watcher.close();
+      w.close();
     } catch (e) {}
-  }
-  watcher = null;
+  });
+  watchers = [];
   watched = '';
 };
 
-// Watches the WAD Directory and tells the window when something changed.
-// Changes are collected for a moment, so copying a big mod only triggers once.
-export const watchModDir = (dir, notify = defaultNotify, delay = DELAY) => {
-  if (watcher && dir === watched) return true;
+// Watches the WAD directory (and the maps directory) and tells the window when
+// something changed. Changes are collected for a moment, so copying a big mod only
+// triggers once. dirs = one folder or a list of folders.
+export const watchModDir = (dirs, notify = defaultNotify, delay = DELAY) => {
+  const list = (Array.isArray(dirs) ? dirs : [dirs])
+    .map(d => String(d || '').trim())
+    .filter(d => d !== '' && fs.existsSync(d));
+  const key = list.join('|');
+
+  if (watchers.length && key === watched) return true;
 
   stopWatching();
+  if (!list.length) return false;
 
-  if (!dir || dir.trim() === '' || !fs.existsSync(dir)) return false;
+  list.forEach(dir => {
+    try {
+      const w = fs.watch(dir, { recursive: true }, (event, filename) => {
+        if (filename && path.basename(String(filename))[0] === '.') return;
+        clearTimeout(timer);
+        timer = setTimeout(notify, delay);
+      });
+      w.on('error', stopWatching);
+      watchers.push(w);
+    } catch (e) {
+      // recursive watching is not available on every platform
+    }
+  });
 
-  try {
-    watcher = fs.watch(dir, { recursive: true }, (event, filename) => {
-      if (filename && path.basename(String(filename))[0] === '.') return;
-      clearTimeout(timer);
-      timer = setTimeout(notify, delay);
-    });
-    watcher.on('error', stopWatching);
-    watched = dir;
-    return true;
-  } catch (e) {
-    // recursive watching is not available on every platform
-    watcher = null;
-    return false;
-  }
+  watched = watchers.length ? key : '';
+  return watchers.length > 0;
 };

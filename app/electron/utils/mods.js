@@ -2,13 +2,18 @@ import byteSize from 'byte-size';
 import klaw from 'klaw';
 import path from 'path';
 
-import { AVAILABLE_IWADS, MOD_EXTENSIONS } from '../constants';
-import { getExt } from './common';
+import fs from 'fs';
 
-const walkWadDir = dir => {
+import { AVAILABLE_IWADS, MAP_ID_PREFIX, MOD_EXTENSIONS } from '../constants';
+import { getExt } from './common';
+import { isInside } from './safepath';
+
+// options.isMap: the folder holds maps - they get their own ids and a flag
+const walkWadDir = (dir, options = {}) => {
   if (!dir || dir.trim() === '') {
     throw new Error('WAD Directory is not set');
   }
+  const isMap = !!options.isMap;
 
   const mods = [];
   const iwads = [];
@@ -35,7 +40,7 @@ const walkWadDir = dir => {
             if (AVAILABLE_IWADS.indexOf(checkname) > -1) {
               iwads.push(IWADItem(item));
             } else if (isModFile(item.path)) {
-              mods.push(modItem(item, dir));
+              mods.push(modItem(item, dir, isMap));
             }
           }
         }
@@ -146,12 +151,13 @@ const isModFile = item => {
   return MOD_EXTENSIONS.indexOf(EXT) > -1;
 };
 
-const modItem = (item, dir) => {
+const modItem = (item, dir, isMap = false) => {
   const sz = byteSize(item.stats.size);
   const meta = getMetaData(item, dir);
 
   return {
-    id: meta.id,
+    id: isMap ? `${MAP_ID_PREFIX}${meta.id}` : meta.id,
+    isMap,
     lastdir: path.basename(path.dirname(item.path)).toLowerCase(),
     tags: meta.tags,
     folder: meta.folder,
@@ -166,4 +172,40 @@ const modItem = (item, dir) => {
   };
 };
 
-export { modItem, isModFile, walkWadDir };
+// Mods and (if a maps directory is set) maps, in one list. Maps are marked with
+// isMap. A maps directory inside the mod directory (or the other way round) does
+// not make files show up twice.
+const scanLibrary = async settings => {
+  const library = await walkWadDir(settings.modpath);
+  const mapdir = String(settings.mappath || '').trim();
+
+  if (!mapdir || !fs.existsSync(mapdir)) {
+    return { ...library, mapFolders: [] };
+  }
+
+  const maps = await walkWadDir(mapdir, { isMap: true });
+
+  const same = path.resolve(mapdir) === path.resolve(settings.modpath);
+  const mapsInsideMods = isInside(settings.modpath, mapdir);
+  const modsInsideMaps = isInside(mapdir, settings.modpath);
+
+  // a folder inside the other one: files only count for the inner folder
+  const modsOnly = mapsInsideMods
+    ? library.mods.filter(m => !isInside(mapdir, m.path))
+    : library.mods;
+  const mapsOnly = same
+    ? []
+    : modsInsideMaps
+    ? maps.mods.filter(m => !isInside(settings.modpath, m.path))
+    : maps.mods;
+
+  return {
+    ...library,
+    mods: [...modsOnly, ...mapsOnly],
+    duplicates: [...library.duplicates, ...maps.duplicates],
+    versions: [...library.versions, ...maps.versions],
+    mapFolders: same ? [] : maps.folders
+  };
+};
+
+export { modItem, isModFile, scanLibrary, walkWadDir };

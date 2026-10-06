@@ -166,7 +166,8 @@ const DiskUsageModal = ({
   duplicates,
   onShow,
   onDelete,
-  onOpenDuplicates
+  onOpenDuplicates,
+  maps = false
 }) => {
   const { t } = useTranslation(['wads', 'common']);
   const [path, setPath] = useState([]);
@@ -196,7 +197,10 @@ const DiskUsageModal = ({
           ))}
         </Crumbs>
         <p className="hint">
-          {t('wads:usageTotal', { size: fmt(node.bytes), count: node.count })}
+          {t(maps ? 'wads:usageTotalMaps' : 'wads:usageTotal', {
+            size: fmt(node.bytes),
+            count: node.count
+          })}
         </p>
 
         {rows.length === 0 ? <p className="hint">{t('wads:usageEmpty')}</p> : null}
@@ -217,7 +221,10 @@ const DiskUsageModal = ({
                   : row.name}
               </span>
               <span className="meta">
-                {t('wads:folderCount', { count: row.count })} ·{' '}
+                {t(maps ? 'wads:statsMaps' : 'wads:folderCount', {
+                  count: row.count
+                })}{' '}
+                ·{' '}
                 {percent(row.bytes, node.bytes)}
               </span>
               <span className="size">{fmt(row.bytes)}</span>
@@ -280,7 +287,8 @@ DiskUsageModal.propTypes = {
   duplicates: PropTypes.array.isRequired,
   onShow: PropTypes.func.isRequired,
   onDelete: PropTypes.func.isRequired,
-  onOpenDuplicates: PropTypes.func.isRequired
+  onOpenDuplicates: PropTypes.func.isRequired,
+  maps: PropTypes.bool
 };
 
 export default DiskUsageModal;
