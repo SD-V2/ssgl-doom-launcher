@@ -13,6 +13,7 @@ export const initState = {
   duplicates: [],
   versions: [],
   folders: [],
+  recovered: [],
   update: {
     available: false,
     download: null,
@@ -61,7 +62,10 @@ export const initState = {
 
 export function reducer(state, action) {
   switch (action.type) {
-    case 'main/init':
+    case 'main/init': {
+      // a load order you are working on stays when the data is loaded again
+      // (for example after saving the settings)
+      const working = new Set(state.package.selected);
       return act({
         ...state,
         ...action.data,
@@ -69,8 +73,15 @@ export function reducer(state, action) {
           ...initState.settings,
           ...action.data.settings
         },
-        package: initState.package
+        mods: (action.data.mods || state.mods).map(m =>
+          working.has(m.id) ? { ...m, active: true } : m
+        ),
+        package: state.package
       });
+    }
+
+    case 'recovered/clear':
+      return act({ ...state, recovered: [] });
 
     case 'update/done':
       return act({

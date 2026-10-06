@@ -217,6 +217,7 @@ export default {
     updateTitle: 'Доступна версия {{version}}',
     updateLater: 'Не сейчас',
     updateDownload: 'Скачать',
+    recovered: 'Файл {{name}}.json был повреждён. SSGL восстановил его последнюю исправную копию, поэтому ваше последнее изменение может отсутствовать.',
     toastStartText: 'Запуск {{sourceport}}, модов: {{num}}'
   },
   nav: {
@@ -236,6 +237,11 @@ export default {
     fileFilter: 'Пакеты SSGL (*.json)',
     noteSourceport: '{{pack}}: порт «{{wanted}}» не найден, используется «{{used}}»',
     noteIwad: '{{pack}}: IWAD «{{wanted}}» не найден, выберите другой, отредактировав пакет',
+    unsavedMessage: 'В порядке загрузки есть несохранённые изменения.',
+    unsavedDetail: 'Сначала сохраните их кнопкой с карандашом или диском в панели пакета, иначе они будут потеряны.',
+    unsavedDiscard: 'Отбросить изменения',
+    unsavedCloseMessage: 'Закрыть SSGL, не сохранив изменения порядка загрузки?',
+    unsavedCloseDiscard: 'Закрыть без сохранения',
     exportNoCurrent: 'Пакет не выбран. Сначала выберите пакет или воспользуйтесь пунктом «Экспортировать все пакеты».',
     exportDone_0: 'Экспортирован {{count}} пакет',
     exportDone_1: 'Экспортировано {{count}} пакета',

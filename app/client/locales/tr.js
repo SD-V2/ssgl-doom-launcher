@@ -210,6 +210,7 @@ export default {
     updateTitle: 'Sürüm {{version}} mevcut',
     updateLater: 'Şimdi değil',
     updateDownload: 'İndir',
+    recovered: '{{name}}.json dosyası bozulmuştu. SSGL son sağlam kopyayı geri yükledi, bu yüzden en son değişiklikleriniz eksik olabilir.',
     toastStartText: '{{sourceport}} {{num}} modla başlatılıyor'
   },
   nav: {
@@ -229,6 +230,11 @@ export default {
     fileFilter: 'SSGL paketleri (*.json)',
     noteSourceport: '{{pack}}: "{{wanted}}" sourceport’u bulunamadı, "{{used}}" kullanılıyor',
     noteIwad: '{{pack}}: "{{wanted}}" IWAD’ı bulunamadı, paketi düzenleyerek birini seçin',
+    unsavedMessage: 'Yükleme sırasında kaydedilmemiş değişiklikler var.',
+    unsavedDetail: 'Önce paket çubuğundaki kalem veya disk düğmesiyle kaydedin, aksi halde kaybolurlar.',
+    unsavedDiscard: 'Değişiklikleri at',
+    unsavedCloseMessage: 'Yükleme sırasındaki değişiklikler kaydedilmeden SSGL kapatılsın mı?',
+    unsavedCloseDiscard: 'Kaydetmeden kapat',
     exportNoCurrent: 'Hiçbir paket seçili değil. Önce birini seçin ya da Tüm Paketleri Dışa Aktar’ı kullanın.',
     exportDone: '{{count}} paket dışa aktarıldı',
     exportDone_plural: '{{count}} paket dışa aktarıldı',

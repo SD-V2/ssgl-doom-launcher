@@ -6,6 +6,7 @@ import editSvg from '../../assets/icon/edit.svg';
 import trashSvg from '../../assets/icon/trash.svg';
 import { StoreContext } from '../../state';
 import { useIpc, useSound, useToast, useTranslation } from '../../utils';
+import { isUnsaved, confirmDiscard } from '../../utils/unsaved';
 import { Dropdown, IconButton } from '../Form';
 import { createPackage, initState } from './helper';
 import PackageModal from './PackageModal';
@@ -30,11 +31,14 @@ const PackageAreaNew = () => {
   const [toast] = useToast();
   const [copy, setCopy] = useState(null);
   const [play] = useSound('sound');
+  const unsaved = isUnsaved(gstate.package, gstate.packages);
+  const currentId = gstate.package.id || NULLCONST;
   const opts = [
     { name: t('packages:noPackage'), id: NULLCONST },
     ...gstate.packages
   ].map(item => ({
-    label: item.name,
+    // a dot marks the package whose load order has unsaved changes
+    label: unsaved && item.id === currentId ? `${item.name} •` : item.name,
     value: item.id
   }));
 
@@ -53,7 +57,8 @@ const PackageAreaNew = () => {
     }
   }, [gstate]);
 
-  const onSelect = ({ value }) => {
+  const onSelect = async ({ value }) => {
+    if (value !== currentId && unsaved && !(await confirmDiscard(t))) return;
     if (value === NULLCONST) {
       dispatch({ type: 'packages/reset' });
     } else {
@@ -62,7 +67,8 @@ const PackageAreaNew = () => {
     play('soundModSelect');
   };
 
-  const onReset = () => {
+  const onReset = async () => {
+    if (unsaved && !(await confirmDiscard(t))) return;
     dispatch({ type: 'packages/reset' });
     setForm(initState);
   };

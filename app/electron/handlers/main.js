@@ -1,7 +1,7 @@
 import { app, ipcMain } from 'electron';
 import got from 'got';
 
-import { getJSON } from '../utils/json';
+import { getJSON, takeRecovered } from '../utils/json';
 import { walkWadDir } from '../utils/mods';
 import { DEFAULT_UPDATE_REPO } from '../constants';
 import { cleanRepo, findUpdate } from '../utils/versions';
@@ -72,7 +72,8 @@ ipcMain.handle('main/init', async () => {
           ...walkedFiles,
           sourceports: sourceports,
           settings: settings,
-          packages: packages
+          packages: packages,
+          recovered: takeRecovered()
         }
       };
     } catch (e) {

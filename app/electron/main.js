@@ -2,6 +2,7 @@
 const path = require('path');
 const { app, BrowserWindow, Menu } = require('electron');
 const createMenu = require('./menu');
+const { installCloseGuard } = require('./utils/closeGuard');
 
 const whenProd = (whenProd, notProd) =>
   app.name.toLowerCase() === 'electron' ? notProd : whenProd;
@@ -25,6 +26,7 @@ function createWindow() {
   );
 
   mainWindow.loadURL(url);
+  installCloseGuard(mainWindow);
   mainWindow.on('closed', function() {
     mainWindow = null;
   });

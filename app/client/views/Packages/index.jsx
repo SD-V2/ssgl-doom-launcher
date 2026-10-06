@@ -12,6 +12,7 @@ import {
   useToast,
   useTranslation
 } from '../../utils';
+import { confirmDiscard, isUnsaved } from '../../utils/unsaved';
 import AnimatedView from '../AnimatedView';
 import ObligeModal from './ObligeModal';
 import Pack from './Pack';
@@ -80,7 +81,14 @@ const Packages = () => {
 
   const onData = path => () => ipc('packages/open', { path: path });
 
-  const onUse = id => () => {
+  const onUse = id => async () => {
+    if (
+      id !== gstate.package.id &&
+      isUnsaved(gstate.package, gstate.packages) &&
+      !(await confirmDiscard(t))
+    ) {
+      return;
+    }
     dispatch({ type: 'packages/select', id: id });
     navigate('/');
   };

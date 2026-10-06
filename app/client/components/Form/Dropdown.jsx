@@ -124,7 +124,11 @@ const Dropdown = ({
   useEffect(() => {
     if (value && typeof value === 'string' && value.trim() !== '') {
       const selected = options.find(item => item.value === value);
-      if (selected && selected.value !== current.value) {
+      // also when only the text of the chosen option changed (e.g. the unsaved dot)
+      if (
+        selected &&
+        (selected.value !== current.value || selected.label !== current.label)
+      ) {
         setCurrent(selected);
       }
     }

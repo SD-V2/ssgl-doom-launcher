@@ -211,6 +211,7 @@ export default {
     updateTitle: 'Version {{version}} Available',
     updateLater: 'Not now',
     updateDownload: 'Download',
+    recovered: 'The file {{name}}.json was damaged. SSGL restored its last good copy, so your latest change may be missing.',
     toastStartText: `Starting {{sourceport}} with {{num}} Mods`
   },
   nav: {
@@ -230,6 +231,11 @@ export default {
     fileFilter: 'SSGL packages (*.json)',
     noteSourceport: '{{pack}}: sourceport "{{wanted}}" not found, using "{{used}}"',
     noteIwad: '{{pack}}: IWAD "{{wanted}}" not found, pick one by editing the package',
+    unsavedMessage: 'Your load order has changes that are not saved.',
+    unsavedDetail: 'Save them first with the pencil or disc button in the package bar, otherwise they are lost.',
+    unsavedDiscard: 'Discard changes',
+    unsavedCloseMessage: 'Close SSGL without saving the changes of your load order?',
+    unsavedCloseDiscard: 'Close without saving',
     exportNoCurrent: 'No package is selected. Pick one first, or use Export All Packages.',
     exportDone: 'Exported {{count}} package',
     exportDone_plural: 'Exported {{count}} packages',

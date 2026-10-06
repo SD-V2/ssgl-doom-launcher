@@ -232,6 +232,7 @@ export default {
     updateTitle: 'الإصدار {{version}} متاح',
     updateLater: 'ليس الآن',
     updateDownload: 'تنزيل',
+    recovered: 'كان الملف {{name}}.json تالفاً. استعاد SSGL آخر نسخة سليمة منه، لذلك قد يكون آخر تغيير لديك مفقوداً.',
     toastStartText: 'تشغيل {{sourceport}} مع {{num}} مود'
   },
   nav: {
@@ -251,6 +252,11 @@ export default {
     fileFilter: 'حزم SSGL (*.json)',
     noteSourceport: '{{pack}}: لم يُعثر على Sourceport باسم "{{wanted}}"، سيتم استخدام "{{used}}"',
     noteIwad: '{{pack}}: لم يُعثر على IWAD باسم "{{wanted}}"، اختر واحداً بتعديل الحزمة',
+    unsavedMessage: 'ترتيب التحميل لديك يحتوي على تغييرات غير محفوظة.',
+    unsavedDetail: 'احفظها أولاً بزر القلم أو زر القرص في شريط الحزمة، وإلا ستضيع.',
+    unsavedDiscard: 'تجاهل التغييرات',
+    unsavedCloseMessage: 'هل تريد إغلاق SSGL دون حفظ تغييرات ترتيب التحميل؟',
+    unsavedCloseDiscard: 'إغلاق دون حفظ',
     exportNoCurrent: 'لم تُحدَّد أي حزمة. اختر واحدة أولاً أو استخدم تصدير كل الحزم.',
     exportDone_0: 'لم تُصدَّر أي حزمة',
     exportDone_1: 'تم تصدير حزمة واحدة',
