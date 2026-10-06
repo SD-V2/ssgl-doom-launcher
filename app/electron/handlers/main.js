@@ -3,6 +3,7 @@ import got from 'got';
 
 import { getJSON } from '../utils/json';
 import { walkWadDir } from '../utils/mods';
+import { DEFAULT_UPDATE_REPO } from '../constants';
 import { cleanRepo, findUpdate } from '../utils/versions';
 import { watchModDir } from '../utils/watcher';
 
@@ -19,7 +20,11 @@ ipcMain.handle('main/checkupdate', async () => {
   try {
     const settings = await getJSON('settings');
     // only the GitHub page named in the settings is asked, nothing by default
-    const repo = cleanRepo(settings.updateRepo);
+    const repo = cleanRepo(
+      settings.updateRepo === undefined
+        ? DEFAULT_UPDATE_REPO
+        : settings.updateRepo
+    );
     if (!repo) return { error: null, data: none };
 
     const releases = await got(

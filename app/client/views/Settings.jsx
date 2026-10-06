@@ -22,6 +22,7 @@ import {
   useToast,
   useTranslation
 } from '../utils';
+import cleanRepo from '../utils/cleanRepo';
 import AnimatedView from './AnimatedView';
 
 const Settings = () => {
@@ -135,8 +136,20 @@ const Settings = () => {
     e.preventDefault();
     const hasError = validate();
 
+    // "Look for updates at": a link or name/repository is turned into name/repository
+    const typed = (form.updateRepo || '').trim();
+    const repo = cleanRepo(typed);
+    if (typed !== '' && repo === '') {
+      toast('danger', t('common:error'), t('settings:updateRepoInvalid'));
+      return;
+    }
+
     if (!hasError) {
-      const newSettings = await saveSettings('settings/save', form);
+      if (repo !== form.updateRepo) setForm({ ...form, updateRepo: repo });
+      const newSettings = await saveSettings('settings/save', {
+        ...form,
+        updateRepo: repo
+      });
       dispatch({ type: 'settings/save', data: newSettings });
 
       const newState = await fetchInit('main/init', null);

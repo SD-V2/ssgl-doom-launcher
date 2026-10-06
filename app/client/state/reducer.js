@@ -53,7 +53,7 @@ export const initState = {
     autoRefresh: true,
     compactList: false,
     importFolder: '',
-    updateRepo: '',
+    updateRepo: 'SD-V2/ssgl-doom-launcher',
     hideWhilePlaying: false,
     volume: 0.5
   }

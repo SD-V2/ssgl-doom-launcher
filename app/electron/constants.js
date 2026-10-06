@@ -1,5 +1,9 @@
 const NAME_UNPURE_PACKAGE = 'unnamed';
 
+// where SSGL looks for updates while the setting "Look for updates at" was never
+// touched (an empty setting means: never check)
+const DEFAULT_UPDATE_REPO = 'SD-V2/ssgl-doom-launcher';
+
 const MOD_EXTENSIONS = [
   'PK3',
   'PK7',
@@ -34,4 +38,9 @@ const AVAILABLE_IWADS = [
   'tnt'
 ];
 
-export { AVAILABLE_IWADS, MOD_EXTENSIONS, NAME_UNPURE_PACKAGE };
+export {
+  AVAILABLE_IWADS,
+  DEFAULT_UPDATE_REPO,
+  MOD_EXTENSIONS,
+  NAME_UNPURE_PACKAGE
+};
