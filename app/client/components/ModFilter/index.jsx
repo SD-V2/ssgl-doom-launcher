@@ -18,6 +18,7 @@ const SwitchStyle = styled.div`
   overflow: hidden;
 
   button {
+    position: relative;
     flex: 1;
     padding: 8px 10px;
     cursor: pointer;
@@ -28,11 +29,20 @@ const SwitchStyle = styled.div`
     color: ${({ theme }) => theme.button.idle};
     background: ${({ theme }) => theme.color.backdrop};
     border: none;
-    transition: ${({ theme }) => theme.transition.out};
+    transition: ${({ theme }) => theme.transition.short};
   }
 
-  button + button {
-    border-inline-start: 1px solid ${({ theme }) => theme.border.idle};
+  /* the line: grows from the middle to both sides, like the line of the main menu */
+  button::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 0;
+    height: 3px;
+    background-color: ${({ theme }) => theme.color.active};
+    box-shadow: ${({ theme }) => theme.font.glow};
+    transition: ${({ theme }) => theme.transition.short};
   }
 
   button:hover {
@@ -42,9 +52,13 @@ const SwitchStyle = styled.div`
   /* same background as the other tab - only the line marks the open one */
   button.on {
     color: ${({ theme }) => theme.color.active};
-    text-shadow: ${({ theme }) =>
-      `0 0 5px ${theme.color.glow}, 0 0 15px ${theme.color.glow}`};
-    box-shadow: inset 0 -3px 0 0 ${({ theme }) => theme.color.active};
+    text-shadow: ${({ theme }) => theme.font.glow};
+  }
+
+  button:hover::after,
+  button.on::after {
+    left: 0;
+    width: 100%;
   }
 
   small {
