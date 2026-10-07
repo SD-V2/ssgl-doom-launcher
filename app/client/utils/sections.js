@@ -51,12 +51,12 @@ export const sectionOfFolder = folder => {
 export const sectionOf = mod => {
   if (mod.isMap) return 'maps';
   const parts = mod.folders && mod.folders.length ? mod.folders : mod.folder ? [mod.folder] : [];
-  // the top folder decides; a deeper folder name only helps when the top one says nothing
-  const top = sectionOfFolder(parts[0]);
-  if (top !== 'other') return top;
-  for (let i = 1; i < parts.length; i++) {
-    const deeper = sectionOfFolder(parts[i]);
-    if (deeper !== 'other') return deeper;
+  // The folder CLOSEST to the mod decides ("Brutal Doom / 10_VISUAL" -> visual): the
+  // upper folders are often only the name of a project or pack. If the closest folder
+  // says nothing, the next one up is tried, and so on.
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const found = sectionOfFolder(parts[i]);
+    if (found !== 'other') return found;
   }
   return 'other';
 };
