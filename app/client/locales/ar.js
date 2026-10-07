@@ -127,6 +127,7 @@ export default {
     sectionsAskMessage: 'عرض الأقسام يُبقي ترتيب التحميل بحسب الأقسام من 0 إلى 11. سيتغيّر ترتيب التحميل الآن.',
     sectionsAskDetail: 'تحتفظ المودات بترتيبها داخل القسم. يمكنك دائمًا العودة إلى عرض القائمة.',
     sectionsAskConfirm: 'ترتيب',
+    sectionsReset: 'الترتيب الافتراضي للأقسام',
     viewList: 'قائمة',
     viewSections: 'أقسام',
     sec_libraries: 'المكتبات',

@@ -36,10 +36,10 @@ import { findFixes } from '../utils/fixes';
 import {
   groupFixed,
   isSectionSorted,
-  MOD_SECTIONS,
+  normalizeOrder,
   resolveSection,
-  SECTION_NUMBER,
-  SECTION_ORDER
+  sectionNumbers,
+  sectionOrder
 } from '../utils/sections';
 import { findTwins, twinKey } from '../utils/twins';
 import { modsInFolder, sortByFolder } from '../utils/groupByFolder';
@@ -262,6 +262,12 @@ const Wads = () => {
   const selectedKey = gstate.package.selected.join('|');
 
   // the same load order, grouped for the "sections" view
+  // the order of the sections (yours) and their numbers (they follow the place)
+  const order = useMemo(() => sectionOrder(gstate.sectionRules), [gstate.sectionRules]);
+  const numbers = useMemo(() => sectionNumbers(order), [order]);
+  const defaultOrder = useMemo(() => normalizeOrder([]), []);
+  const orderChanged = order.join() !== defaultOrder.join();
+
   const fixedGroups = useMemo(
     () => groupFixed(gstate.package.selected, gstate.mods, gstate.sectionRules),
     [gstate.package.selected, gstate.mods, gstate.sectionRules]
@@ -508,9 +514,11 @@ const Wads = () => {
             click: assign('auto')
           },
           { type: 'separator' },
-          ...MOD_SECTIONS.map(id => ({
+          ...order
+            .filter(id => id !== 'maps')
+            .map(id => ({
             label: `${
-              SECTION_NUMBER[id] === undefined ? '' : `${SECTION_NUMBER[id]} · `
+              numbers[id] === undefined ? '' : `${numbers[id]} · `
             }${t(`wads:sec_${id}`)}`,
             type: 'radio',
             checked: given === id,
@@ -1222,34 +1230,55 @@ const Wads = () => {
                 <a onClick={onSortByFolder}>{t('wads:sortByFolder')}</a>
               </ToolbarStyle>
             ) : null}
+            {view === 'sections' && orderChanged ? (
+              <ToolbarStyle>
+                <a onClick={() => dispatch({ type: 'sections/resetOrder' })}>
+                  {t('wads:sectionsReset')}
+                </a>
+              </ToolbarStyle>
+            ) : null}
             {view === 'sections' ? (
               <ul>
-                {SECTION_ORDER.filter(
-                  id => id !== 'maps' || hasMaps || fixedGroups.maps.length > 0
-                ).map(id => {
-                  const entries = fixedGroups[id];
-                  const number = SECTION_NUMBER[id];
-                  const name = t(`wads:sec_${id}`);
-                  return (
-                    <SectionFrame
-                      key={`section_${id}`}
-                      title={number === undefined ? name : `${number} · ${name}`}
-                      count={entries.length}
-                      note={t(`wads:secNote_${id}`)}
-                      empty={entries.length ? undefined : t('wads:sectionEmpty')}
-                      dropping={sectionOver === id}
-                      onDragOver={frameDragOver(id)}
-                      onDragLeave={e => {
-                        if (!e.currentTarget.contains(e.relatedTarget)) {
-                          setSectionOver(null);
+                {order
+                  .filter(
+                    id => id !== 'maps' || hasMaps || fixedGroups.maps.length > 0
+                  )
+                  .map((id, place, shown) => {
+                    const entries = fixedGroups[id];
+                    const number = numbers[id];
+                    const name = t(`wads:sec_${id}`);
+                    // the maps keep the last place, nothing moves behind them
+                    const movable = id !== 'maps';
+                    const last = shown.filter(x => x !== 'maps').length - 1;
+                    return (
+                      <SectionFrame
+                        key={`section_${id}`}
+                        title={number === undefined ? name : `${number} · ${name}`}
+                        count={entries.length}
+                        note={t(`wads:secNote_${id}`)}
+                        empty={entries.length ? undefined : t('wads:sectionEmpty')}
+                        moveable={movable}
+                        canUp={movable && place > 0}
+                        canDown={movable && place < last}
+                        onUp={() =>
+                          dispatch({ type: 'sections/move', id, direction: 'up' })
                         }
-                      }}
-                      onDrop={frameDrop(id)}
-                    >
-                      {entries.map(entry => renderLoadItem(entry.id, entry.index))}
-                    </SectionFrame>
-                  );
-                })}
+                        onDown={() =>
+                          dispatch({ type: 'sections/move', id, direction: 'down' })
+                        }
+                        dropping={sectionOver === id}
+                        onDragOver={frameDragOver(id)}
+                        onDragLeave={e => {
+                          if (!e.currentTarget.contains(e.relatedTarget)) {
+                            setSectionOver(null);
+                          }
+                        }}
+                        onDrop={frameDrop(id)}
+                      >
+                        {entries.map(entry => renderLoadItem(entry.id, entry.index))}
+                      </SectionFrame>
+                    );
+                  })}
               </ul>
             ) : (
               <ul>

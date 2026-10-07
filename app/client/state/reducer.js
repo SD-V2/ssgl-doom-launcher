@@ -3,7 +3,10 @@ import { act } from './middlewares';
 
 import {
   isSectionSorted,
+  moveSection,
+  normalizeOrder,
   resolveSection,
+  sectionOrder,
   sortBySections
 } from '../utils/sections';
 
@@ -22,7 +25,7 @@ export const initState = {
   mapFolders: [],
   recovered: [],
   sectionMode: false,
-  sectionRules: { folders: {}, mods: {} },
+  sectionRules: { folders: {}, mods: {}, order: normalizeOrder([]) },
   update: {
     available: false,
     download: null,
@@ -314,7 +317,11 @@ function baseReducer(state, action) {
       return act({
         ...state,
         sectionMode: !!action.mode,
-        sectionRules: { folders: rules.folders || {}, mods: rules.mods || {} }
+        sectionRules: {
+          folders: rules.folders || {},
+          mods: rules.mods || {},
+          order: normalizeOrder(rules.order)
+        }
       });
     }
 
@@ -323,6 +330,20 @@ function baseReducer(state, action) {
 
     case 'sections/normalize':
       return act({ ...state });
+
+    // move a whole section one place up / down (the numbers follow)
+    case 'sections/move': {
+      const order = sectionOrder(state.sectionRules);
+      const next = moveSection(order, action.id, action.direction);
+      if (next === order) return state;
+      return act({ ...state, sectionRules: { ...state.sectionRules, order: next } });
+    }
+
+    case 'sections/resetOrder':
+      return act({
+        ...state,
+        sectionRules: { ...state.sectionRules, order: normalizeOrder([]) }
+      });
 
     case 'sections/assignFolder': {
       const folders = { ...state.sectionRules.folders };
@@ -414,6 +435,8 @@ const KEEP_ORDER = [
   'sections/load',
   'sections/mode',
   'sections/normalize',
+  'sections/move',
+  'sections/resetOrder',
   'sections/assignFolder',
   'sections/assignMod'
 ];

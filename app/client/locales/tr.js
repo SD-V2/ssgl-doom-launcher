@@ -109,6 +109,7 @@ export default {
     sectionsAskMessage: 'Bölümler görünümü yükleme sırasını 0’dan 11’e bölüm sırasında tutar. Yükleme sırası şimdi değişecek.',
     sectionsAskDetail: 'Modlar bir bölümün içinde kendi sırasını korur. İstediğiniz zaman liste görünümüne dönebilirsiniz.',
     sectionsAskConfirm: 'Düzenle',
+    sectionsReset: 'Varsayılan bölüm sırası',
     viewList: 'Liste',
     viewSections: 'Bölümler',
     sec_libraries: 'Kütüphaneler',

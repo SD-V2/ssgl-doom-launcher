@@ -109,6 +109,7 @@ export default {
     sectionsAskMessage: 'The sections view keeps your load order in section order, from 0 to 11. Your load order will change now.',
     sectionsAskDetail: 'Mods keep their order inside a section. You can always go back to the list view.',
     sectionsAskConfirm: 'Arrange',
+    sectionsReset: 'Default section order',
     viewList: 'List',
     viewSections: 'Sections',
     sec_libraries: 'Libraries',

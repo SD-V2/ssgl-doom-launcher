@@ -107,9 +107,61 @@ export const SECTION_ORDER = [
 // the sections a mod can be put into (maps only live in "maps")
 export const MOD_SECTIONS = SECTION_ORDER.filter(id => id !== 'maps');
 
-export const sectionIndex = id => {
-  const at = SECTION_ORDER.indexOf(id);
-  return at < 0 ? SECTION_ORDER.indexOf('other') : at;
+// The order of the sections is yours (rules.order). Always: every section once,
+// the maps last. A section that is missing from a saved order keeps its usual place.
+export const normalizeOrder = order => {
+  const out = [];
+  (Array.isArray(order) ? order : []).forEach(id => {
+    if (id !== 'maps' && SECTION_ORDER.indexOf(id) > -1 && out.indexOf(id) < 0) {
+      out.push(id);
+    }
+  });
+
+  SECTION_ORDER.forEach((id, i) => {
+    if (id === 'maps' || out.indexOf(id) > -1) return;
+    let at = 0;
+    for (let j = i - 1; j >= 0; j--) {
+      const found = out.indexOf(SECTION_ORDER[j]);
+      if (found > -1) {
+        at = found + 1;
+        break;
+      }
+    }
+    out.splice(at, 0, id);
+  });
+
+  return [...out, 'maps'];
+};
+
+export const sectionOrder = rules => normalizeOrder(rules && rules.order);
+
+export const sectionIndex = (id, order = SECTION_ORDER) => {
+  const at = order.indexOf(id);
+  return at < 0 ? order.indexOf('other') : at;
+};
+
+// The numbers follow the place: first section = 0, and so on. "Other" has none.
+export const sectionNumbers = order => {
+  const numbers = {};
+  let n = 0;
+  order.forEach(id => {
+    if (id !== 'other') {
+      numbers[id] = n;
+      n += 1;
+    }
+  });
+  return numbers;
+};
+
+// one place up / down; the last place belongs to the maps
+export const moveSection = (order, id, direction) => {
+  const from = order.indexOf(id);
+  const to = direction === 'up' ? from - 1 : from + 1;
+  if (id === 'maps' || from < 0 || to < 0 || to >= order.length - 1) return order;
+  const next = [...order];
+  next[from] = order[to];
+  next[to] = order[from];
+  return next;
 };
 
 const usable = id => !!id && id !== 'maps' && SECTION_ORDER.indexOf(id) > -1;
@@ -148,13 +200,16 @@ const keyed = (selected, mods, rules) => {
 };
 
 // stable: inside a section the order you made stays
-export const sortBySections = (selected, mods, rules) =>
-  keyed(selected, mods, rules)
+export const sortBySections = (selected, mods, rules) => {
+  const order = sectionOrder(rules);
+  return keyed(selected, mods, rules)
     .sort(
       (a, b) =>
-        sectionIndex(a.section) - sectionIndex(b.section) || a.index - b.index
+        sectionIndex(a.section, order) - sectionIndex(b.section, order) ||
+        a.index - b.index
     )
     .map(x => x.id);
+};
 
 export const isSectionSorted = (selected, mods, rules) => {
   const sorted = sortBySections(selected, mods, rules);
