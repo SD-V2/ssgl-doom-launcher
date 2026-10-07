@@ -147,6 +147,7 @@ const FolderButton = styled.button`
 `;
 
 const MOD_MIME = 'application/x-ssgl-mod';
+const FOLDER_MIME = 'application/x-ssgl-folder';
 
 const modDragProps = item => ({
   draggable: true,
@@ -262,6 +263,15 @@ const ModBox = ({
       return (
         <li key={`folder_${row.key}`} style={style}>
           <FolderStyle
+            draggable={row.key !== ''}
+            onDragStart={e => {
+              e.dataTransfer.effectAllowed = 'copy';
+              e.dataTransfer.setData(
+                FOLDER_MIME,
+                JSON.stringify({ key: row.key, root: maps ? 'maps' : 'mods' })
+              );
+              e.dataTransfer.setData('text/plain', row.folder);
+            }}
             dropping={dropKey === row.key}
             onClick={() => onToggleFolder(row.key)}
             onContextMenu={e => {

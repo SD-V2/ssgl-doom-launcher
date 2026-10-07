@@ -57,10 +57,24 @@ const Frame = styled.li`
     border-left: 6px solid ${({ theme }) => theme.color.active};
   }
 
+  /* a mod / folder is dragged over this box */
+  box-shadow: ${({ dropping, theme }) =>
+    dropping ? `0 0 0 2px ${theme.color.active}, 0 0 18px ${theme.color.active}` : 'none'};
+
   ul {
     margin: 0;
     padding: 0;
   }
+`;
+
+const Empty = styled.div`
+  padding: 14px 10px;
+  text-align: center;
+  font-size: 14px;
+  user-select: none;
+  color: ${({ theme }) => theme.color.meta};
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  border-radius: 3px;
 `;
 
 const Stripes = styled.i`
@@ -129,8 +143,23 @@ const Note = styled.div`
   }
 `;
 
-const SectionFrame = ({ title, count, note, children }) => (
-  <Frame>
+const SectionFrame = ({
+  title,
+  count,
+  note,
+  empty,
+  dropping = false,
+  onDragOver,
+  onDragLeave,
+  onDrop,
+  children
+}) => (
+  <Frame
+    dropping={dropping}
+    onDragOver={onDragOver}
+    onDragLeave={onDragLeave}
+    onDrop={onDrop}
+  >
     <Title>
       <Stripes />
       <b>
@@ -140,6 +169,7 @@ const SectionFrame = ({ title, count, note, children }) => (
       <Stripes />
     </Title>
     <ul>{children}</ul>
+    {empty ? <Empty>{empty}</Empty> : null}
     {note ? (
       <Note>
         <Stripes />
@@ -154,6 +184,11 @@ SectionFrame.propTypes = {
   title: PropTypes.string.isRequired,
   count: PropTypes.number,
   note: PropTypes.string,
+  empty: PropTypes.string,
+  dropping: PropTypes.bool,
+  onDragOver: PropTypes.func,
+  onDragLeave: PropTypes.func,
+  onDrop: PropTypes.func,
   children: PropTypes.node
 };
 

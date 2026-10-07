@@ -33,7 +33,14 @@ import { explainError, useSound } from '../utils';
 import { trackFirstSeen } from '../utils/firstSeen';
 import { useDialog } from '../components/Dialog';
 import { findFixes } from '../utils/fixes';
-import { groupBySection, SECTION_NUMBER } from '../utils/sections';
+import {
+  groupFixed,
+  isSectionSorted,
+  MOD_SECTIONS,
+  resolveSection,
+  SECTION_NUMBER,
+  SECTION_ORDER
+} from '../utils/sections';
 import { findTwins, twinKey } from '../utils/twins';
 import { modsInFolder, sortByFolder } from '../utils/groupByFolder';
 import AnimatedView from './AnimatedView';
@@ -154,16 +161,10 @@ const loadOpenFolders = () => {
   }
 };
 
-const VIEW_KEY = 'ssgl.loadView';
+const FOLDER_MIME = 'application/x-ssgl-folder';
 const SECTION_KEY = 'ssgl.section';
 
-const loadView = () => {
-  try {
-    return localStorage.getItem(VIEW_KEY) === 'sections' ? 'sections' : 'list';
-  } catch (e) {
-    return 'list';
-  }
-};
+
 
 const loadSection = () => {
   try {
@@ -188,7 +189,8 @@ const Wads = () => {
   const [poActive, setPoActive] = useState(false);
   const [sort, setSort] = useState(loadSort);
   const [wanted, setWanted] = useState(loadSection);
-  const [view, setView] = useState(loadView);
+  const view = gstate.sectionMode ? 'sections' : 'list';
+  const [sectionOver, setSectionOver] = useState(null);
   const [openFolders, setOpenFolders] = useState(loadOpenFolders);
   const [dragging, setDragging] = useState(false);
   const [dragFrom, setDragFrom] = useState(null);
@@ -260,15 +262,30 @@ const Wads = () => {
   const selectedKey = gstate.package.selected.join('|');
 
   // the same load order, grouped for the "sections" view
-  const sectionGroups = useMemo(
-    () => groupBySection(gstate.package.selected, gstate.mods),
-    [gstate.package.selected, gstate.mods]
+  const fixedGroups = useMemo(
+    () => groupFixed(gstate.package.selected, gstate.mods, gstate.sectionRules),
+    [gstate.package.selected, gstate.mods, gstate.sectionRules]
   );
-  const onView = value => {
-    setView(value);
-    try {
-      localStorage.setItem(VIEW_KEY, value);
-    } catch (e) {}
+
+  // LIST <-> SECTIONS. Sections arrange the load order, so you are asked first
+  // when that would change it.
+  const onView = async value => {
+    if (value === view) return;
+    if (
+      value === 'sections' &&
+      gstate.package.selected.length > 1 &&
+      !isSectionSorted(gstate.package.selected, gstate.mods, gstate.sectionRules)
+    ) {
+      const sure = await dialog.confirm({
+        title: t('wads:sectionsAskTitle'),
+        message: t('wads:sectionsAskMessage'),
+        detail: t('wads:sectionsAskDetail'),
+        confirmText: t('wads:sectionsAskConfirm'),
+        cancelText: t('common:cancel')
+      });
+      if (!sure) return;
+    }
+    dispatch({ type: 'sections/mode', on: value === 'sections' });
   };
 
   // conflicts are looked for quietly whenever the load order changes
@@ -475,6 +492,32 @@ const Wads = () => {
             ]
           : [])
       );
+    }
+    // "Section": which section of the load order the mods of this folder go to
+    if (section === 'mods' && row.key !== '') {
+      const given = gstate.sectionRules.folders[row.key];
+      const assign = id => () =>
+        dispatch({ type: 'sections/assignFolder', key: row.key, section: id });
+      template.push({
+        label: t('wads:menuSection'),
+        submenu: [
+          {
+            label: t('wads:menuSectionAuto'),
+            type: 'radio',
+            checked: !given,
+            click: assign('auto')
+          },
+          { type: 'separator' },
+          ...MOD_SECTIONS.map(id => ({
+            label: `${
+              SECTION_NUMBER[id] === undefined ? '' : `${SECTION_NUMBER[id]} · `
+            }${t(`wads:sec_${id}`)}`,
+            type: 'radio',
+            checked: given === id,
+            click: assign(id)
+          }))
+        ]
+      });
     }
     template.push(
       { type: 'separator' },
@@ -757,6 +800,41 @@ const Wads = () => {
       if (dragOver !== index) setDragOver(index);
     },
     onDrop: e => {
+      // sections view: a mod dropped on a mod of ANOTHER section joins that section
+      // (in front of that mod) - it does not swap places with it
+      if (gstate.sectionMode) {
+        const targetId = gstate.package.selected[index];
+        const target = gstate.mods.find(m => m.id === targetId);
+        const draggedId =
+          dragFrom !== null
+            ? gstate.package.selected[dragFrom]
+            : isModDrag(e)
+            ? e.dataTransfer.getData(MOD_MIME)
+            : null;
+        const dragged = gstate.mods.find(m => m.id === draggedId);
+        if (target && dragged && dragged.id !== target.id) {
+          const targetSection = resolveSection(target, gstate.sectionRules);
+          if (
+            dragFrom === null ||
+            resolveSection(dragged, gstate.sectionRules) !== targetSection
+          ) {
+            e.preventDefault();
+            e.stopPropagation();
+            dispatch({
+              type: 'mod/toSection',
+              id: dragged.id,
+              section: targetSection,
+              beforeId: target.id
+            });
+            play('soundModSelect');
+            setDragFrom(null);
+            setDragOver(null);
+            setSectionOver(null);
+            setDragging(false);
+            return;
+          }
+        }
+      }
       // a mod dragged in from the mod list: lands in front of this item
       if (dragFrom === null && isModDrag(e)) {
         e.preventDefault();
@@ -773,6 +851,8 @@ const Wads = () => {
       }
       if (dragFrom === null) return;
       e.preventDefault();
+      // handled here: the section box around must not move the mod again
+      e.stopPropagation();
       if (dragFrom !== index) {
         dispatch({ type: 'mod/reorder', from: dragFrom, to: index });
         play('soundModSelect');
@@ -783,6 +863,7 @@ const Wads = () => {
     onDragEnd: () => {
       setDragFrom(null);
       setDragOver(null);
+      setSectionOver(null);
     }
   });
 
@@ -799,8 +880,70 @@ const Wads = () => {
   const isModDrag = e =>
     Array.from(e.dataTransfer.types || []).indexOf(MOD_MIME) > -1;
 
+  const isFolderDrag = e =>
+    Array.from(e.dataTransfer.types || []).indexOf(FOLDER_MIME) > -1;
+
+  // a whole folder into the load order; every mod goes to its section (by the
+  // section number). Dropped on a section box, the folder is given that section.
+  const addFolderToLoadOrder = (info, sectionId) => {
+    const pool = gstate.mods.filter(m => !!m.isMap === (info.root === 'maps'));
+    const ids = modsInFolder(pool, info.key).map(m => m.id);
+    if (!ids.length) return;
+    const fresh = ids.filter(id => gstate.package.selected.indexOf(id) < 0).length;
+
+    if (sectionId && info.root !== 'maps') {
+      dispatch({ type: 'sections/assignFolder', key: info.key, section: sectionId });
+    }
+    dispatch({ type: 'mods/drop', mods: [], ids });
+    play('soundModSelect');
+    if (fresh) {
+      toast('ok', t('common:success'), t('wads:toastDrop', { count: fresh }));
+    }
+  };
+
+  const readFolder = e => {
+    try {
+      return JSON.parse(e.dataTransfer.getData(FOLDER_MIME));
+    } catch (err) {
+      return null;
+    }
+  };
+
+  // drops on the section boxes
+  const frameDragOver = sectionId => e => {
+    if (dragFrom === null && !isModDrag(e) && !isFolderDrag(e)) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = dragFrom !== null ? 'move' : 'copy';
+    if (sectionOver !== sectionId) setSectionOver(sectionId);
+  };
+
+  const frameDrop = sectionId => e => {
+    e.preventDefault();
+    e.stopPropagation();
+    setSectionOver(null);
+    setDragOver(null);
+    setDragging(false);
+
+    if (dragFrom !== null) {
+      const id = gstate.package.selected[dragFrom];
+      setDragFrom(null);
+      dispatch({ type: 'mod/toSection', id, section: sectionId });
+      play('soundModSelect');
+    } else if (isModDrag(e)) {
+      dispatch({
+        type: 'mod/toSection',
+        id: e.dataTransfer.getData(MOD_MIME),
+        section: sectionId
+      });
+      play('soundModSelect');
+    } else if (isFolderDrag(e)) {
+      const info = readFolder(e);
+      if (info) addFolderToLoadOrder(info, sectionId);
+    }
+  };
+
   const onDragOver = e => {
-    if (!hasFiles(e) && !isModDrag(e)) return;
+    if (!hasFiles(e) && !isModDrag(e) && !isFolderDrag(e)) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = 'copy';
     setDragging(true);
@@ -815,6 +958,13 @@ const Wads = () => {
 
   // Drop mod files from the file manager (or a mod from the list) into the load order
   const onDrop = async e => {
+    if (isFolderDrag(e)) {
+      e.preventDefault();
+      setDragging(false);
+      const info = readFolder(e);
+      if (info) addFolderToLoadOrder(info, null);
+      return;
+    }
     if (isModDrag(e)) {
       e.preventDefault();
       setDragging(false);
@@ -1074,19 +1224,29 @@ const Wads = () => {
             ) : null}
             {view === 'sections' ? (
               <ul>
-                {sectionGroups.map((group, groupIndex) => {
-                  const number = SECTION_NUMBER[group.section];
-                  const name = t(`wads:sec_${group.section}`);
+                {SECTION_ORDER.filter(
+                  id => id !== 'maps' || hasMaps || fixedGroups.maps.length > 0
+                ).map(id => {
+                  const entries = fixedGroups[id];
+                  const number = SECTION_NUMBER[id];
+                  const name = t(`wads:sec_${id}`);
                   return (
                     <SectionFrame
-                      key={`section_${groupIndex}_${group.section}`}
+                      key={`section_${id}`}
                       title={number === undefined ? name : `${number} · ${name}`}
-                      count={group.entries.length}
-                      note={t(`wads:secNote_${group.section}`)}
+                      count={entries.length}
+                      note={t(`wads:secNote_${id}`)}
+                      empty={entries.length ? undefined : t('wads:sectionEmpty')}
+                      dropping={sectionOver === id}
+                      onDragOver={frameDragOver(id)}
+                      onDragLeave={e => {
+                        if (!e.currentTarget.contains(e.relatedTarget)) {
+                          setSectionOver(null);
+                        }
+                      }}
+                      onDrop={frameDrop(id)}
                     >
-                      {group.entries.map(entry =>
-                        renderLoadItem(entry.id, entry.index)
-                      )}
+                      {entries.map(entry => renderLoadItem(entry.id, entry.index))}
                     </SectionFrame>
                   );
                 })}

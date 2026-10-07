@@ -29,6 +29,34 @@ const App = () => {
         : themes[gstate.settings.theme] || themes.hell,
     [gstate.settings.theme, gstate.settings.accent]
   );
+  // sections: which folder / mod was put into which section, and the view mode.
+  // Loaded once at the start, saved whenever they change.
+  useEffect(() => {
+    let rules = {};
+    let mode = false;
+    try {
+      rules = JSON.parse(localStorage.getItem('ssgl.sectionRules')) || {};
+      mode = localStorage.getItem('ssgl.loadView') === 'sections';
+    } catch (e) {
+      // start without rules
+    }
+    dispatch({ type: 'sections/load', rules, mode });
+  }, []);
+  // not on the first run: that would save the empty start values over the saved ones
+  const sectionsFirstRun = useRef(true);
+  useEffect(() => {
+    if (sectionsFirstRun.current) {
+      sectionsFirstRun.current = false;
+      return;
+    }
+    try {
+      localStorage.setItem('ssgl.sectionRules', JSON.stringify(gstate.sectionRules));
+      localStorage.setItem('ssgl.loadView', gstate.sectionMode ? 'sections' : 'list');
+    } catch (e) {
+      // not saved this time
+    }
+  }, [gstate.sectionRules, gstate.sectionMode]);
+
   // packages learn the readable names of their mods, so an updated mod
   // (new file size = new id) can be recognised later
   const rememberTried = useRef(new Set());

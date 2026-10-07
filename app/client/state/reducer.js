@@ -1,6 +1,12 @@
 /* eslint-disable no-case-declarations */
 import { act } from './middlewares';
 
+import {
+  isSectionSorted,
+  resolveSection,
+  sortBySections
+} from '../utils/sections';
+
 export const move = (data, from, to) => {
   const array = data.slice();
   array.splice(to < 0 ? array.length + to : to, 0, array.splice(from, 1)[0]);
@@ -15,6 +21,8 @@ export const initState = {
   folders: [],
   mapFolders: [],
   recovered: [],
+  sectionMode: false,
+  sectionRules: { folders: {}, mods: {} },
   update: {
     available: false,
     download: null,
@@ -301,6 +309,65 @@ function baseReducer(state, action) {
       });
     }
 
+    case 'sections/load': {
+      const rules = action.rules || {};
+      return act({
+        ...state,
+        sectionMode: !!action.mode,
+        sectionRules: { folders: rules.folders || {}, mods: rules.mods || {} }
+      });
+    }
+
+    case 'sections/mode':
+      return act({ ...state, sectionMode: !!action.on });
+
+    case 'sections/normalize':
+      return act({ ...state });
+
+    case 'sections/assignFolder': {
+      const folders = { ...state.sectionRules.folders };
+      if (action.section && action.section !== 'auto') folders[action.key] = action.section;
+      else delete folders[action.key];
+      return act({ ...state, sectionRules: { ...state.sectionRules, folders } });
+    }
+
+    case 'sections/assignMod': {
+      const mods = { ...state.sectionRules.mods };
+      if (action.section && action.section !== 'auto') mods[action.id] = action.section;
+      else delete mods[action.id];
+      return act({ ...state, sectionRules: { ...state.sectionRules, mods } });
+    }
+
+    // drag a mod into a section (from another section, or from the mod list)
+    case 'mod/toSection': {
+      const mod = state.mods.find(m => m.id === action.id);
+      if (!mod) return state;
+      // maps only live in "maps", and nothing else goes into "maps"
+      if (!!mod.isMap !== (action.section === 'maps')) return state;
+
+      const mods = { ...state.sectionRules.mods };
+      const automatic = resolveSection(mod, {
+        folders: state.sectionRules.folders,
+        mods: {}
+      });
+      if (action.section === automatic) delete mods[mod.id];
+      else mods[mod.id] = action.section;
+
+      const without = state.package.selected.filter(id => id !== action.id);
+      const at = action.beforeId ? without.indexOf(action.beforeId) : -1;
+      const selected =
+        at > -1
+          ? [...without.slice(0, at), action.id, ...without.slice(at)]
+          : [...without, action.id];
+
+      return act({
+        ...state,
+        sectionRules: { ...state.sectionRules, mods },
+        mods: state.mods.map(m => (m.id === action.id ? { ...m, active: true } : m)),
+        package: { ...state.package, selected }
+      });
+    }
+
     case 'mods/setOrder':
       return act({
         ...state,
@@ -333,22 +400,31 @@ export const mapsLast = selected => [
   ...selected.filter(id => isMapId(id))
 ];
 
-// everything that changes the load order keeps the maps at the end
-const KEEP_MAPS_LAST = [
+// everything that changes the load order keeps the maps at the end -
+// and in the "sections" view all sections stay in their fixed order
+const KEEP_ORDER = [
   'mod/move',
   'mod/reorder',
   'mod/select',
   'mods/drop',
   'mod/insert',
   'mods/replaceIds',
-  'mods/setOrder'
+  'mods/setOrder',
+  'mod/toSection',
+  'sections/load',
+  'sections/mode',
+  'sections/normalize',
+  'sections/assignFolder',
+  'sections/assignMod'
 ];
 
 export function reducer(state, action) {
   const next = baseReducer(state, action);
-  if (next === state || KEEP_MAPS_LAST.indexOf(action.type) < 0) return next;
+  if (next === state || KEEP_ORDER.indexOf(action.type) < 0) return next;
 
-  const fixed = mapsLast(next.package.selected);
+  const fixed = next.sectionMode
+    ? sortBySections(next.package.selected, next.mods, next.sectionRules)
+    : mapsLast(next.package.selected);
   const same =
     fixed.length === next.package.selected.length &&
     fixed.every((id, i) => id === next.package.selected[i]);
@@ -357,3 +433,5 @@ export function reducer(state, action) {
     ? next
     : { ...next, package: { ...next.package, selected: fixed } };
 }
+
+export { isSectionSorted };
