@@ -13,7 +13,7 @@ const Wrapper = styled(InputContainerStyle)`
   color: red;
   flex-wrap: wrap;
   /* keeps its width next to a search box: longer texts (Russian, Turkish) stay readable */
-  flex-shrink: 0;
+  flex-shrink: ${({ fluid }) => (fluid ? 1 : 0)};
   position: relative;
   cursor: pointer;
 

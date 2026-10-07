@@ -22,6 +22,7 @@ import {
   ModStats,
   PackageAreaNew,
   SectionFrame,
+  TabSwitch,
   TwinsModal,
   PlayIcon,
   PlayOverlay
@@ -81,55 +82,6 @@ const NotesStyle = styled.div`
     font-size: 12px;
     text-transform: uppercase;
     color: ${({ theme }) => theme.color.meta};
-  }
-`;
-
-const ViewSwitchStyle = styled.div`
-  display: flex;
-  width: 240px;
-  max-width: 100%;
-  margin: 0 0 10px 0;
-  border-radius: ${({ theme }) => theme.border.radius};
-  border: 1px solid ${({ theme }) => theme.border.idle};
-  overflow: hidden;
-
-  button {
-    position: relative;
-    flex: 1;
-    padding: 5px 8px;
-    cursor: pointer;
-    font-family: inherit;
-    font-size: 14px;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    color: ${({ theme }) => theme.button.idle};
-    background: ${({ theme }) => theme.color.backdrop};
-    border: none;
-    transition: ${({ theme }) => theme.transition.short};
-  }
-
-  /* the line grows from the middle, like in the main menu */
-  button::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    width: 0;
-    height: 2px;
-    background-color: ${({ theme }) => theme.color.active};
-    box-shadow: ${({ theme }) => theme.font.glow};
-    transition: ${({ theme }) => theme.transition.short};
-  }
-
-  button:hover,
-  button.on {
-    color: ${({ theme }) => theme.color.active};
-  }
-
-  button:hover::after,
-  button.on::after {
-    left: 0;
-    width: 100%;
   }
 `;
 
@@ -1053,7 +1005,22 @@ const Wads = () => {
               : undefined
           }
         >
-          <Box fixed={<PackageAreaNew />}>
+          <Box
+            fixedExtra={46}
+            fixed={
+              <>
+                <TabSwitch
+                  tabs={[
+                    { value: 'list', label: t('wads:viewList') },
+                    { value: 'sections', label: t('wads:viewSections') }
+                  ]}
+                  value={view}
+                  onChange={onView}
+                />
+                <PackageAreaNew />
+              </>
+            }
+          >
             {gstate.package.notes ? (
               <NotesStyle>
                 <b>{t('wads:notesTitle')}</b>
@@ -1104,24 +1071,6 @@ const Wads = () => {
                 <a onClick={() => checkConflicts()}>{t('wads:checkConflicts')}</a>
                 <a onClick={onSortByFolder}>{t('wads:sortByFolder')}</a>
               </ToolbarStyle>
-            ) : null}
-            {gstate.package.selected.length > 0 ? (
-              <ViewSwitchStyle>
-                <button
-                  type="button"
-                  className={view === 'list' ? 'on' : undefined}
-                  onClick={() => onView('list')}
-                >
-                  {t('wads:viewList')}
-                </button>
-                <button
-                  type="button"
-                  className={view === 'sections' ? 'on' : undefined}
-                  onClick={() => onView('sections')}
-                >
-                  {t('wads:viewSections')}
-                </button>
-              </ViewSwitchStyle>
             ) : null}
             {view === 'sections' ? (
               <ul>

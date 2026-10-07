@@ -14,7 +14,8 @@ export const BoxStyle = styled.div`
   .scroll {
     overflow-y: ${p => (p.noscroll ? 'hidden' : 'scroll')};
     ${p => (p.noscroll ? null : p.theme.scrollbar)};
-    height: ${p => (p.fixed ? 'calc(100vh - 195px)' : '100%')};
+    height: ${p =>
+      p.fixed ? `calc(100vh - ${195 + (p.fixedExtra || 0)}px)` : '100%'};
     overflow-x: hidden;
   }
 
@@ -24,9 +25,9 @@ export const BoxStyle = styled.div`
   }
 `;
 
-const Box = ({ children, fixed, noscroll = false }) => {
+const Box = ({ children, fixed, fixedExtra = 0, noscroll = false }) => {
   return (
-    <BoxStyle noscroll={noscroll} fixed={fixed}>
+    <BoxStyle noscroll={noscroll} fixed={fixed} fixedExtra={fixedExtra}>
       {fixed ? <div className="fixed">{fixed}</div> : null}
 
       <div className="scroll">
@@ -39,6 +40,7 @@ const Box = ({ children, fixed, noscroll = false }) => {
 Box.propTypes = {
   children: PropTypes.any,
   fixed: PropTypes.element,
+  fixedExtra: PropTypes.number,
   noscroll: PropTypes.bool
 };
 

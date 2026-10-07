@@ -5,68 +5,12 @@ import styled from 'styled-components';
 import refreshSvg from '../../assets/icon/refresh.svg';
 import { useTranslation } from '../../utils';
 import { Dropdown, IconButton, Input } from '../Form';
+import TabSwitch from '../Mods/TabSwitch';
 
 const ModFilterStyle = styled.div`
   display: flex;
 `;
 
-const SwitchStyle = styled.div`
-  display: flex;
-  margin-bottom: 8px;
-  border-radius: ${({ theme }) => theme.border.radius};
-  border: 1px solid ${({ theme }) => theme.border.idle};
-  overflow: hidden;
-
-  button {
-    position: relative;
-    flex: 1;
-    padding: 8px 10px;
-    cursor: pointer;
-    font-family: inherit;
-    font-size: 16px;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    color: ${({ theme }) => theme.button.idle};
-    background: ${({ theme }) => theme.color.backdrop};
-    border: none;
-    transition: ${({ theme }) => theme.transition.short};
-  }
-
-  /* the line: grows from the middle to both sides, like the line of the main menu */
-  button::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    width: 0;
-    height: 3px;
-    background-color: ${({ theme }) => theme.color.active};
-    box-shadow: ${({ theme }) => theme.font.glow};
-    transition: ${({ theme }) => theme.transition.short};
-  }
-
-  button:hover {
-    color: ${({ theme }) => theme.color.active};
-  }
-
-  /* same background as the other tab - only the line marks the open one */
-  button.on {
-    color: ${({ theme }) => theme.color.active};
-    text-shadow: ${({ theme }) => theme.font.glow};
-  }
-
-  button:hover::after,
-  button.on::after {
-    left: 0;
-    width: 100%;
-  }
-
-  small {
-    margin-inline-start: 8px;
-    font-size: 13px;
-    opacity: 0.7;
-  }
-`;
 const ModFilter = ({
   filterValue,
   sortValue,
@@ -159,24 +103,14 @@ const ModFilter = ({
 
   return (
     <>
-      <SwitchStyle>
-        <button
-          type="button"
-          className={section === 'maps' ? 'on' : undefined}
-          onClick={() => onSection('maps')}
-        >
-          {t('wads:tabMaps')}
-          <small>{counts.maps}</small>
-        </button>
-        <button
-          type="button"
-          className={section === 'mods' ? 'on' : undefined}
-          onClick={() => onSection('mods')}
-        >
-          {t('wads:tabMods')}
-          <small>{counts.mods}</small>
-        </button>
-      </SwitchStyle>
+      <TabSwitch
+        tabs={[
+          { value: 'maps', label: t('wads:tabMaps'), count: counts.maps },
+          { value: 'mods', label: t('wads:tabMods'), count: counts.mods }
+        ]}
+        value={section}
+        onChange={onSection}
+      />
       {filterInput}
     </>
   );
