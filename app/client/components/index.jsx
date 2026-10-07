@@ -18,6 +18,7 @@ import FolderNameModal from './Mods/FolderNameModal';
 import DuplicatesModal from './Mods/DuplicatesModal';
 import ModItem from './Mods/ModItem';
 import ModStats from './Mods/ModStats';
+import SectionFrame from './Mods/SectionFrame';
 import TwinsModal from './Mods/TwinsModal';
 import PackageAreaNew from './PackageAreaNew';
 import PlayIcon from './PlayIcon';
@@ -48,6 +49,7 @@ export {
   ConflictsModal,
   BrokenFilesModal,
   TwinsModal,
+  SectionFrame,
   iWad,
   Routes,
   Modal,

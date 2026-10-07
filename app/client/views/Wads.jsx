@@ -21,6 +21,7 @@ import {
   ModItem,
   ModStats,
   PackageAreaNew,
+  SectionFrame,
   TwinsModal,
   PlayIcon,
   PlayOverlay
@@ -31,6 +32,7 @@ import { explainError, useSound } from '../utils';
 import { trackFirstSeen } from '../utils/firstSeen';
 import { useDialog } from '../components/Dialog';
 import { findFixes } from '../utils/fixes';
+import { groupBySection, SECTION_NUMBER } from '../utils/sections';
 import { findTwins, twinKey } from '../utils/twins';
 import { modsInFolder, sortByFolder } from '../utils/groupByFolder';
 import AnimatedView from './AnimatedView';
@@ -79,6 +81,55 @@ const NotesStyle = styled.div`
     font-size: 12px;
     text-transform: uppercase;
     color: ${({ theme }) => theme.color.meta};
+  }
+`;
+
+const ViewSwitchStyle = styled.div`
+  display: flex;
+  width: 240px;
+  max-width: 100%;
+  margin: 0 0 10px 0;
+  border-radius: ${({ theme }) => theme.border.radius};
+  border: 1px solid ${({ theme }) => theme.border.idle};
+  overflow: hidden;
+
+  button {
+    position: relative;
+    flex: 1;
+    padding: 5px 8px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 14px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: ${({ theme }) => theme.button.idle};
+    background: ${({ theme }) => theme.color.backdrop};
+    border: none;
+    transition: ${({ theme }) => theme.transition.short};
+  }
+
+  /* the line grows from the middle, like in the main menu */
+  button::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 0;
+    height: 2px;
+    background-color: ${({ theme }) => theme.color.active};
+    box-shadow: ${({ theme }) => theme.font.glow};
+    transition: ${({ theme }) => theme.transition.short};
+  }
+
+  button:hover,
+  button.on {
+    color: ${({ theme }) => theme.color.active};
+  }
+
+  button:hover::after,
+  button.on::after {
+    left: 0;
+    width: 100%;
   }
 `;
 
@@ -151,7 +202,16 @@ const loadOpenFolders = () => {
   }
 };
 
+const VIEW_KEY = 'ssgl.loadView';
 const SECTION_KEY = 'ssgl.section';
+
+const loadView = () => {
+  try {
+    return localStorage.getItem(VIEW_KEY) === 'sections' ? 'sections' : 'list';
+  } catch (e) {
+    return 'list';
+  }
+};
 
 const loadSection = () => {
   try {
@@ -176,6 +236,7 @@ const Wads = () => {
   const [poActive, setPoActive] = useState(false);
   const [sort, setSort] = useState(loadSort);
   const [wanted, setWanted] = useState(loadSection);
+  const [view, setView] = useState(loadView);
   const [openFolders, setOpenFolders] = useState(loadOpenFolders);
   const [dragging, setDragging] = useState(false);
   const [dragFrom, setDragFrom] = useState(null);
@@ -245,6 +306,18 @@ const Wads = () => {
   }, [gstate.mods, gstate.package.selected]);
 
   const selectedKey = gstate.package.selected.join('|');
+
+  // the same load order, grouped for the "sections" view
+  const sectionGroups = useMemo(
+    () => groupBySection(gstate.package.selected, gstate.mods),
+    [gstate.package.selected, gstate.mods]
+  );
+  const onView = value => {
+    setView(value);
+    try {
+      localStorage.setItem(VIEW_KEY, value);
+    } catch (e) {}
+  };
 
   // conflicts are looked for quietly whenever the load order changes
   useEffect(() => {
@@ -509,6 +582,35 @@ const Wads = () => {
     } catch (err) {
       toast('danger', t('common:error'), explainError(err, t));
     }
+  };
+
+  // one entry of the load order (same in the list and in the sections view)
+  const renderLoadItem = (id, itemindex) => {
+    const item = gstate.mods.find(i => i.id === id);
+    return item ? (
+      <ModItem
+        key={`selected_${item.id}`}
+        item={item}
+        onSelect={onSelect(item.id)}
+        onUp={onSort(itemindex, 'up')}
+        onCircle={onCircle(item.path)}
+        onDown={onSort(itemindex, 'down')}
+        onTag={onTag}
+        dragProps={itemDragProps(itemindex)}
+        dragState={itemDragState(itemindex)}
+        conflicts={conflictInfo.counts.get(item.id) || 0}
+        onConflicts={() => checkConflicts()}
+        twin={twinIds.has(item.id)}
+        onTwin={() => setTwinsOpen(true)}
+        selected
+      />
+    ) : (
+      <ErrorItem
+        key={`NOTFOUND_ERROR${id}`}
+        id={id}
+        onSelect={onSelect(id)}
+      />
+    );
   };
 
   // keep one of the twins: the others leave the load order
@@ -1003,38 +1105,53 @@ const Wads = () => {
                 <a onClick={onSortByFolder}>{t('wads:sortByFolder')}</a>
               </ToolbarStyle>
             ) : null}
-            <ul>
-              <AnimatePresence>
-                {gstate.package.selected.length &&
-                  gstate.package.selected.map((id, itemindex) => {
-                    const item = gstate.mods.find(i => i.id === id);
-                    return item ? (
-                      <ModItem
-                        key={`selected_${item.id}`}
-                        item={item}
-                        onSelect={onSelect(item.id)}
-                        onUp={onSort(itemindex, 'up')}
-                        onCircle={onCircle(item.path)}
-                        onDown={onSort(itemindex, 'down')}
-                        onTag={onTag}
-                        dragProps={itemDragProps(itemindex)}
-                        dragState={itemDragState(itemindex)}
-                        conflicts={conflictInfo.counts.get(item.id) || 0}
-                        onConflicts={() => checkConflicts()}
-                        twin={twinIds.has(item.id)}
-                        onTwin={() => setTwinsOpen(true)}
-                        selected
-                      />
-                    ) : (
-                      <ErrorItem
-                        key={`NOTFOUND_ERROR${id}`}
-                        id={id}
-                        onSelect={onSelect(id)}
-                      />
-                    );
-                  })}
-              </AnimatePresence>
-            </ul>
+            {gstate.package.selected.length > 0 ? (
+              <ViewSwitchStyle>
+                <button
+                  type="button"
+                  className={view === 'list' ? 'on' : undefined}
+                  onClick={() => onView('list')}
+                >
+                  {t('wads:viewList')}
+                </button>
+                <button
+                  type="button"
+                  className={view === 'sections' ? 'on' : undefined}
+                  onClick={() => onView('sections')}
+                >
+                  {t('wads:viewSections')}
+                </button>
+              </ViewSwitchStyle>
+            ) : null}
+            {view === 'sections' ? (
+              <ul>
+                {sectionGroups.map((group, groupIndex) => {
+                  const number = SECTION_NUMBER[group.section];
+                  const name = t(`wads:sec_${group.section}`);
+                  return (
+                    <SectionFrame
+                      key={`section_${groupIndex}_${group.section}`}
+                      title={number === undefined ? name : `${number} · ${name}`}
+                      count={group.entries.length}
+                      note={t(`wads:secNote_${group.section}`)}
+                    >
+                      {group.entries.map(entry =>
+                        renderLoadItem(entry.id, entry.index)
+                      )}
+                    </SectionFrame>
+                  );
+                })}
+              </ul>
+            ) : (
+              <ul>
+                <AnimatePresence>
+                  {gstate.package.selected.length > 0 &&
+                    gstate.package.selected.map((id, itemindex) =>
+                      renderLoadItem(id, itemindex)
+                    )}
+                </AnimatePresence>
+              </ul>
+            )}
           </Box>
         </Flex.Col>
       </Flex.Grid>
