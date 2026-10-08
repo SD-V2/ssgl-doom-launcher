@@ -7,6 +7,7 @@ import { copyfile, createPath } from '../utils/common';
 import { AppError, toPayload } from '../utils/errors';
 import { getJSON, setJSON } from '../utils/json';
 import { walkWadDir } from '../utils/mods';
+import { remember, startIn } from '../utils/lastFolder';
 
 const FORMAT = 'ssgl-packages';
 const MAX_COVER_BYTES = 5 * 1024 * 1024;
@@ -76,15 +77,16 @@ ipcMain.handle('packages/export', async (e, data) => {
 
     const res = await dialog.showSaveDialog(win, {
       title: (data.labels && data.labels.title) || 'Export packages',
-      defaultPath: `${
-        chosen.length === 1 ? safeName(chosen[0].name) : 'ssgl-packages'
-      }.json`,
+      defaultPath: startIn(
+        `${chosen.length === 1 ? safeName(chosen[0].name) : 'ssgl-packages'}.json`
+      ),
       filters: filters(data.labels)
     });
 
     if (res.canceled || !res.filePath) {
       return { data: { canceled: true }, error: null };
     }
+    remember(res.filePath);
 
     const out = {
       format: FORMAT,
@@ -109,12 +111,14 @@ ipcMain.handle('packages/import', async (e, data) => {
     const res = await dialog.showOpenDialog(win, {
       title: (data && data.labels && data.labels.title) || 'Import packages',
       properties: ['openFile'],
+      defaultPath: startIn(),
       filters: filters(data && data.labels)
     });
 
     if (res.canceled || !res.filePaths || !res.filePaths.length) {
       return { data: { canceled: true }, error: null };
     }
+    remember(res.filePaths[0]);
 
     let raw;
     try {

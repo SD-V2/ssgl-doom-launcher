@@ -1,5 +1,7 @@
 import { app, BrowserWindow, dialog, ipcMain, Menu, shell } from 'electron';
 
+import { remember, startIn } from '../utils/lastFolder';
+
 // Things the screens ask the main part of the program to do (they used the old
 // "remote" module for this, which Electron removed). See client/utils/native.js.
 
@@ -15,7 +17,13 @@ ipcMain.handle('native/trashItem', (e, file) =>
   )
 );
 
-ipcMain.handle('native/showOpenDialog', (e, options) => dialog.showOpenDialog(options));
+ipcMain.handle('native/showOpenDialog', async (e, options) => {
+  const res = await dialog.showOpenDialog({ ...options, defaultPath: startIn(options && options.defaultPath) });
+  if (!res.canceled && res.filePaths && res.filePaths[0]) {
+    remember(res.filePaths[0], (options.properties || []).indexOf('openDirectory') > -1);
+  }
+  return res;
+});
 
 ipcMain.on('native/appVersion', e => {
   e.returnValue = app.getVersion();

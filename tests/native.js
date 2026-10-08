@@ -11,7 +11,7 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
 require('@babel/register')({
   presets: [[APP + '/node_modules/@babel/preset-env', { targets: { node: 'current' } }]],
   babelrc: false, configFile: false, cache: false, extensions: ['.js'],
-  only: [/app\/(client\/utils\/native|electron\/handlers\/native)/]
+  only: [/app\/(client\/utils\/native|electron\/handlers\/native|electron\/utils\/lastFolder)/]
 });
 
 // a fake Electron: records what the two sides do
@@ -19,6 +19,7 @@ const sent = [];
 const handlers = {};
 let lastMenu = null;
 let trashWorks = true;
+const dialogs = [];
 const fake = {
   ipcRenderer: {
     invoke: async (ch, d) => { sent.push([ch, d]); return handlers[ch] ? handlers[ch]({ sender: {} }, d) : null; },
@@ -31,7 +32,7 @@ const fake = {
     openPath: async f => { sent.push(['shell.openPath', f]); return ''; },
     trashItem: async f => { sent.push(['shell.trashItem', f]); if (!trashWorks) throw new Error('no'); }
   },
-  dialog: { showOpenDialog: async o => ({ canceled: false, filePaths: ['C:\\picked.png'], o }) },
+  dialog: { showOpenDialog: async o => { dialogs.push(o); return { canceled: false, filePaths: [o.properties && o.properties[0] === 'openDirectory' ? '/games/doom/wads' : '/games/doom/pics/picked.png'] }; } },
   app: { getVersion: () => '9.9.9' },
   BrowserWindow: { fromWebContents: () => null },
   Menu: { buildFromTemplate: t => ({ popup: opts => { lastMenu = { template: t, opts }; } }) }
@@ -55,7 +56,15 @@ Module.prototype.require = function (r) { return r === 'electron' ? fake : origR
   check('...false when it did not (the screen shows an error)', (await native.trashItem('C:\\m\\b.pk3')) === false);
 
   const picked = await native.showOpenDialog({ properties: ['openFile'] });
-  check('the file picker answers { canceled, filePaths }', picked.canceled === false && picked.filePaths[0] === 'C:\\picked.png');
+  check('the file picker answers { canceled, filePaths }', picked.canceled === false && picked.filePaths[0] === '/games/doom/pics/picked.png');
+  check('...the first time it starts where Windows wants (no folder given)', dialogs[0].defaultPath === undefined);
+  await native.showOpenDialog({ properties: ['openFile'] });
+  check('...the next time it starts in the folder used last (Electron 43 would open Downloads)', dialogs[1].defaultPath === '/games/doom/pics');
+  await native.showOpenDialog({ properties: ['openDirectory'] });
+  await native.showOpenDialog({ properties: ['openFile'] });
+  check('...a chosen folder is remembered itself', dialogs[3].defaultPath === '/games/doom/wads');
+  const lf = require(APP + '/electron/utils/lastFolder.js');
+  check('...a suggested file name (export) goes into the last folder; a full path stays as it is', lf.startIn('my pack.json') === '/games/doom/pics/my pack.json' && lf.startIn('/x/y.json') === '/x/y.json');
 
   check('the program version comes from the main part (About)', native.appVersion() === '9.9.9');
 

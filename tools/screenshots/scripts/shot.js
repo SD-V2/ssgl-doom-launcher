@@ -7,7 +7,12 @@ app.on('window-all-closed', () => {});
 app.on('ready', async () => {
   for (const scene of scenes) {
     const w = new BrowserWindow({ width: size[0], height: size[1], show: false, webPreferences: { nodeIntegration: true, contextIsolation: false, webSecurity: false }, useContentSize: true });
-    w.webContents.on('console-message', (e, level, msg, line, src) => { if (level >= 2) console.log('  [browser ' + (level === 2 ? 'warning' : 'error') + '] ' + String(msg).slice(0, 300)); });
+    // Electron 35+: the details are on the event (level 'warning' / 'error'); older: arguments
+    w.webContents.on('console-message', (e, oldLevel, oldMsg) => {
+      const level = e.level !== undefined ? e.level : ['verbose', 'info', 'warning', 'error'][oldLevel];
+      const msg = e.message !== undefined ? e.message : oldMsg;
+      if (level === 'warning' || level === 'error') console.log('  [browser ' + level + '] ' + String(msg).slice(0, 300));
+    });
     await w.loadURL(page(scene));
     // the page counts as focused, as in the real (visible) program: newer Chromium shows
     // :focus styles only in a focused page, and a hidden test window is not focused by itself

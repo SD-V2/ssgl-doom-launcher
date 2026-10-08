@@ -15,6 +15,17 @@ if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
     Write-Host "`nNode.js installed. Please CLOSE this window and double-click Build-SSGL.cmd again." -ForegroundColor Yellow
     exit 0
 }
+# Electron 44 (the program's base) needs Node.js 22.12 or newer to build
+$nodeText = "$(& node --version)".Trim().TrimStart('v')
+$nodeVersion = $null
+try { $nodeVersion = [version]($nodeText -replace '[^0-9.].*$', '') } catch { }
+if ($nodeVersion -and $nodeVersion -lt [version]'22.12.0') {
+    Write-Host "`nYour Node.js ($nodeText) is too old for this SSGL version (it needs 22.12 or newer). Updating it now (a Windows prompt may ask permission)..."
+    winget upgrade -e --id OpenJS.NodeJS.LTS --accept-package-agreements --accept-source-agreements
+    if ($LASTEXITCODE -ne 0) { winget install -e --id OpenJS.NodeJS.LTS --accept-package-agreements --accept-source-agreements }
+    Write-Host "`nNode.js updated. Please CLOSE this window and double-click Build-SSGL.cmd again." -ForegroundColor Yellow
+    exit 0
+}
 
 # 2) Download your fork
 # the commit GitHub writes into the comment of the zip it makes ('' if it is not there)
