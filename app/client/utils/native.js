@@ -1,4 +1,4 @@
-import { ipcRenderer } from 'electron';
+import { ipcRenderer, webUtils } from 'electron';
 
 // What the screens ask the main part of the program to do: open links and files, the
 // Recycle Bin, the file picker, right-click menus (electron/handlers/native.js).
@@ -14,6 +14,20 @@ export const openPath = file => invoke('native/openPath', file);
 export const trashItem = file => invoke('native/trashItem', file);
 // the answer: { canceled, filePaths }
 export const showOpenDialog = options => invoke('native/showOpenDialog', options);
+
+// where a file dragged in from Explorer lives on the disk (Electron 32 removed File.path;
+// webUtils.getPathForFile is the replacement)
+export const pathOfFile = file => {
+  if (!file) return '';
+  if (webUtils && webUtils.getPathForFile) {
+    try {
+      return webUtils.getPathForFile(file) || '';
+    } catch (e) {
+      return '';
+    }
+  }
+  return file.path || '';
+};
 
 let version = null;
 export const appVersion = () => {

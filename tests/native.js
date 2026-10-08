@@ -85,6 +85,14 @@ Module.prototype.require = function (r) { return r === 'electron' ? fake : origR
   lastMenu.opts.callback();          // the menu closes without a choice
   check('closing a menu without a choice runs nothing', (await p2) === null && clicked.join() === 'monsters');
 
+  // files dragged in from Explorer: where they are on the disk
+  check('a dropped file without Electron\'s webUtils (old way): its .path', native.pathOfFile({ path: 'C:\\m\\new.pk3' }) === 'C:\\m\\new.pk3' && native.pathOfFile(null) === '');
+  fake.webUtils = { getPathForFile: f => (f.name === 'boom' ? (() => { throw new Error('x'); })() : 'D:\\Doom\\' + f.name) };
+  check('...with webUtils (Electron 29 and newer, File.path is gone in 32): asks webUtils', native.pathOfFile({ name: 'maps.wad' }) === 'D:\\Doom\\maps.wad');
+  check('...a file webUtils cannot place gives "" (it is left out, no crash)', native.pathOfFile({ name: 'boom' }) === '');
+  const wads = fs.readFileSync(path.join(APP, 'client/views/Wads.jsx'), 'utf8');
+  check('the Mods screen gets the paths of dropped files through pathOfFile (no f.path)', (wads.match(/\.map\(pathOfFile\)/g) || []).length === 2 && !/f => f\.path/.test(wads));
+
   // nothing in the screens uses the removed "remote" module any more
   const files = [];
   const walk = d => fs.readdirSync(d).forEach(f => { const p = path.join(d, f); if (fs.statSync(p).isDirectory()) walk(p); else if (/\.jsx?$/.test(f)) files.push(p); });

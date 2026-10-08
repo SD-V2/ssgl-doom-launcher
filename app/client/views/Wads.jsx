@@ -31,7 +31,7 @@ import { StoreContext } from '../state';
 import { setTitle, sortList, useIpc, useToast, useTranslation } from '../utils';
 import { explainError, useSound } from '../utils';
 import { trackFirstSeen } from '../utils/firstSeen';
-import { openPath, popupMenu, showItemInFolder, trashItem } from '../utils/native';
+import { openPath, pathOfFile, popupMenu, showItemInFolder, trashItem } from '../utils/native';
 import { useDialog } from '../components/Dialog';
 import { findFixes } from '../utils/fixes';
 import {
@@ -618,7 +618,7 @@ const Wads = () => {
   // files dropped from Explorer straight onto a folder row
   const onDropToFolder = async (key, e) => {
     const files = Array.from(e.dataTransfer.files)
-      .map(f => f.path)
+      .map(pathOfFile)
       .filter(Boolean);
     if (!files.length) return;
 
@@ -1064,7 +1064,7 @@ const Wads = () => {
     setDragging(false);
 
     const paths = Array.from(e.dataTransfer.files)
-      .map(f => f.path)
+      .map(pathOfFile)
       .filter(Boolean);
     if (!paths.length) return;
 
