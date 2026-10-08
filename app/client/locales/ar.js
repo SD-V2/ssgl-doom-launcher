@@ -297,7 +297,7 @@ export default {
     markerChip: 'شريحة',
     markerBolt: 'صاعقة',
     markerCross: 'صليب',
-    markerRose: 'نافذة وردية',
+    markerRose: 'وردة',
     markerArch: 'قوس',
     markerChristmas: 'عيد الميلاد',
     markerHalloween: 'الهالوين',

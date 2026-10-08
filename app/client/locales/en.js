@@ -268,7 +268,7 @@ export default {
     markerChip: 'Chip',
     markerBolt: 'Bolt',
     markerCross: 'Cross',
-    markerRose: 'Rose window',
+    markerRose: 'Rose',
     markerArch: 'Arch',
     markerChristmas: 'Christmas',
     markerHalloween: 'Halloween',

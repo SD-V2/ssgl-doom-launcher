@@ -276,7 +276,7 @@ export default {
     markerChip: 'Чип',
     markerBolt: 'Молния',
     markerCross: 'Крест',
-    markerRose: 'Окно-роза',
+    markerRose: 'Роза',
     markerArch: 'Арка',
     markerChristmas: 'Рождество',
     markerHalloween: 'Хэллоуин',

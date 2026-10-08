@@ -267,7 +267,7 @@ export default {
     markerChip: 'Çip',
     markerBolt: 'Yıldırım',
     markerCross: 'Haç',
-    markerRose: 'Gül pencere',
+    markerRose: 'Gül',
     markerArch: 'Kemer',
     markerChristmas: 'Noel',
     markerHalloween: 'Cadılar Bayramı',
