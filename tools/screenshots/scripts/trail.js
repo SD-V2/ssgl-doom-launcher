@@ -3,8 +3,9 @@ const { OUT, APP, SHOTS, page } = require('../lib');
 const fs = require('fs');
 app.on('window-all-closed', () => {});
 app.on('ready', async () => {
-  const w = new BrowserWindow({ width: 1000, height: 560, show: false, webPreferences: { nodeIntegration: true, webSecurity: false }, useContentSize: true });
+  const w = new BrowserWindow({ width: 1000, height: 560, show: false, webPreferences: { nodeIntegration: true, contextIsolation: false, webSecurity: false }, useContentSize: true });
   await w.loadURL(page(process.argv[process.argv.length - 1]));
+    w.webContents.focus(); // counts as focused, like the visible program (see shot.js)
   for (let i = 0; i < 4; i++) { await new Promise(r => setTimeout(r, 400)); await w.webContents.capturePage(); }
   const js = c => w.webContents.executeJavaScript(c);
   console.log('canvas:', await js(`(() => { const c = Array.from(document.querySelectorAll('canvas')).find(x => getComputedStyle(x).position === 'fixed'); if (!c) return 'NONE'; const s = getComputedStyle(c); return JSON.stringify({ size: c.width + 'x' + c.height, pointerEvents: s.pointerEvents, zIndex: s.zIndex, ariaHidden: c.getAttribute('aria-hidden') }); })()`));

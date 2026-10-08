@@ -11,8 +11,9 @@ app.on('ready', async () => {
   const scene = process.argv[process.argv.length - 1];
   const [w0, h0] = (process.env.SIZE || '1075x610').split('x').map(Number);
   // shown (on the virtual screen), so the page draws every frame like the real app
-  const w = new BrowserWindow({ width: w0, height: h0, show: true, webPreferences: { nodeIntegration: true, webSecurity: false, backgroundThrottling: false }, useContentSize: true });
+  const w = new BrowserWindow({ width: w0, height: h0, show: true, webPreferences: { nodeIntegration: true, contextIsolation: false, webSecurity: false, backgroundThrottling: false }, useContentSize: true });
   await w.loadURL(page(scene));
+    w.webContents.focus(); // counts as focused, like the visible program (see shot.js)
   await new Promise(r => setTimeout(r, 1500));
   const tag = (process.env.NAME ? process.env.NAME + '_' : '') + scene.replace(/[^a-z0-9]+/gi, '_');
   // the page writes down every frame itself

@@ -15,7 +15,10 @@ function createWindow() {
     height: 610,
 
     webPreferences: {
+      // the screens use Electron directly (require('electron')); the defaults changed
+      // in Electron 12 (contextIsolation) - keep the old behaviour
       nodeIntegration: true,
+      contextIsolation: false,
       enableRemoteModule: true,
       webSecurity: whenProd(true, false)
     }
