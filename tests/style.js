@@ -117,6 +117,13 @@ const ReactDOM2 = require(APP + '/node_modules/react-dom');
   check('cyberpunk hand: a neon pointing hand with a small square on the finger tip, hotspot at the finger tip (13, 3)', !!cpHand && cpHand.x === 13 && cpHand.y === 3 && /M12 3\.2/.test(cpHand.svg) && (cpHand.svg.match(/<rect/g) || []).length === 1 && /#eafcff/.test(cpHand.svg));
   check('cyberpunk pointers use the colors of the theme (accent 255,168,0 -> #ffa800 lines, second color for the square on the hand)', /stroke='#ffa800'/i.test(cpArrow.svg) && /stroke='#ffa800'/i.test(cpHand.svg) && /fill='#ff0000'/i.test(cpHand.svg));
   check('the pointer pictures are 32 x 32 (the size browsers accept) and everything stays inside', /width='32' height='32' viewBox='0 0 32 32'/.test(cpArrow.svg) && /width='32' height='32' viewBox='0 0 32 32'/.test(cpHand.svg));
+  // mod rows and sections look like HUD parts (not plain boxes)
+  const itemRule = (css.match(/html body \.ssgl-item ?\{[^}]*\}/) || [''])[0];
+  check('cyberpunk mod rows: corners cut top-left AND bottom-right, scanlines, ruler, hatching and a data line', /clip-path: ?polygon\(9px 0, ?100% 0/.test(itemRule) && /calc\(100% - 14px\) 100%/.test(itemRule) && (itemRule.match(/repeating-linear-gradient/g) || []).length >= 3);
+  check('cyberpunk: an active mod gets a brighter plate with a lit dot', /\.ssgl-item\[data-active='true'\] ?\{[^}]*radial-gradient/.test(css));
+  check('cyberpunk: while dragging, the "drop here" line is drawn INSIDE the row (the cut corners would hide a line outside)', /\.ssgl-item\[data-drag='above'\] ?\{[^}]*box-shadow: ?inset 0 3px/.test(css) && /\.ssgl-item\[data-drag='below'\] ?\{[^}]*box-shadow: ?inset 0 -3px/.test(css));
+  check('cyberpunk sections: a lit band behind the title, a HUD grid in the empty "drag here" box', /\.ssgl-section-head ?\{[^}]*linear-gradient/.test(css) && /\.ssgl-section-empty ?\{[^}]*background-size: ?14px 14px/.test(css));
+  check('cyberpunk: still no clip-path on panels, inputs, windows or sections (dropdowns must stay visible)', !/\.ssgl-(panel|input|modal|section)[^{,]*\{[^}]*clip-path/.test(css));
   check('cyberpunk: a frame for keyboard use only (shows when html has data-keyboard)', /html\[data-keyboard\] body button:focus/.test(css) && /html\[data-keyboard\] body \.ssgl-input:focus-within/.test(css) && /outline: ?2px solid/.test(css));
   // windows are placed by SSGL with position: absolute - the style must never change that
   const modalRules = rules.filter(r => r.split('{')[0].includes('.ssgl-modal') && !r.split('{')[0].includes('::'));   // (the small decorations ::before / ::after have their own position)

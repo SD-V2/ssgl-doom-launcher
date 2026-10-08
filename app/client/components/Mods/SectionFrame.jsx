@@ -26,7 +26,7 @@ const Box = styled.li.attrs({ className: 'ssgl-section' })`
   }
 `;
 
-const Header = styled.div`
+const Header = styled.div.attrs({ className: 'ssgl-section-head' })`
   display: flex;
   align-items: center;
   margin-bottom: 10px;
@@ -79,7 +79,7 @@ const Note = styled.div`
   border-top: 1px solid rgba(255, 255, 255, 0.07);
 `;
 
-const Empty = styled.div`
+const Empty = styled.div.attrs({ className: 'ssgl-section-empty' })`
   padding: 12px 10px;
   text-align: center;
   font-size: 14px;

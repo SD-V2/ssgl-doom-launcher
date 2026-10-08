@@ -68,6 +68,9 @@ const second = alpha => ({ theme }) => rgba(secondOf(theme), alpha);
 // the shape of a cut corner: top-left and bottom-right are cut by n pixels
 const cut = n =>
   `polygon(${n}px 0, 100% 0, 100% calc(100% - ${n}px), calc(100% - ${n}px) 100%, 0 100%, 0 ${n}px)`;
+// top-left cut by a pixels, bottom-right by b pixels
+const cutTwo = (a, b) =>
+  `polygon(${a}px 0, 100% 0, 100% calc(100% - ${b}px), calc(100% - ${b}px) 100%, 0 100%, 0 ${a}px)`;
 // only the bottom-right corner is cut
 const cutOne = n =>
   `polygon(0 0, 100% 0, 100% calc(100% - ${n}px), calc(100% - ${n}px) 100%, 0 100%)`;
@@ -95,6 +98,36 @@ const ruler = (c, width, at) => [
   `${width}px 4px`,
   at
 ];
+
+// a neon line along a cut corner (n = size of the cut; tl = top-left, br = bottom-right)
+const cutEdge = (c, n, corner) => {
+  const a = (n * 0.7 - 1).toFixed(1);
+  const b = (n * 0.7 + 0.6).toFixed(1);
+  return `linear-gradient(${corner === 'tl' ? '135deg' : '315deg'}, transparent ${a}px, ${c} ${a}px, ${c} ${b}px, transparent ${b}px)`;
+};
+
+// the layers of a mod row in Cyberpunk (strength = how strong the colors are; on = active mod)
+const itemLayers = (theme, strength, on) => {
+  const a = theme.color.active;
+  const b = secondOf(theme);
+  return layered([
+    [cutEdge(rgba(a, on ? 1 : 0.75), 9, 'tl'), '9px 9px', '0 0'],
+    [cutEdge(rgba(b, on ? 1 : 0.85), 14, 'br'), '14px 14px', '100% 100%'],
+    // a lit "LED" in the top-right corner (only on active mods)
+    ...(on ? [[`radial-gradient(circle, ${a} 0, ${a} 2px, ${rgba(a, 0.35)} 3px, transparent 5px)`, '12px 12px', 'calc(100% - 100px) 0px']] : []),
+    // the ruler, and a thin line before the icons at the right end (they stay free)
+    ruler(rgba(a, on ? 0.6 : 0.3), 54, 'calc(100% - 38px) 4px'),
+    [line(rgba(a, on ? 0.35 : 0.2)), '1px 70%', 'calc(100% - 30px) 50%'],
+    // data line at the bottom: the main color, then a short piece in the second color
+    [line(rgba(a, on ? 0.9 : 0.55)), '38% 1px', '0 100%'],
+    [line(b), '26px 2px', '38% 100%'],
+    // diagonal hatching at the right end
+    [`repeating-linear-gradient(115deg, ${rgba(a, on ? 0.16 : 0.08)} 0, ${rgba(a, on ? 0.16 : 0.08)} 2px, transparent 2px, transparent 7px)`, '56px 100%', 'calc(100% - 32px) 0'],
+    // faint scanlines over the whole row
+    [`repeating-linear-gradient(0deg, ${rgba(a, 0.035)} 0, ${rgba(a, 0.035)} 1px, transparent 1px, transparent 3px)`, '100% 100%', '0 0'],
+    [`linear-gradient(90deg, ${rgba(a, strength)} 0%, transparent 48%)`, '100% 100%', '0 0']
+  ]);
+};
 
 // layers [[image, size, position], ...] -> the three CSS lists (the background color stays)
 const layered = layers => `
@@ -287,28 +320,46 @@ const CyberpunkStyle = createGlobalStyle`
     background-size: 8px 6px;
   }
 
-  /* ---------- mods and folders in the lists ---------- */
+  /* ---------- mods and folders in the lists ----------
+     A row is a HUD plate: corners cut top-left and bottom-right (neon lines along the
+     cuts), a glowing bar on the left, faint scanlines, a ruler and hatching at the right
+     end and a two-color data line at the bottom. No dropdown lives in a row, so the
+     clip-path is safe here (never on panels, inputs or windows). */
   html body .ssgl-item {
     position: relative;
     border-radius: 0;
-    border: 1px solid ${accent(0.22)};
-    border-left: 3px solid ${accent(0.7)};
-    clip-path: ${cutOne(12)};
+    border: 1px solid ${accent(0.24)};
+    border-left: 3px solid ${accent(0.75)};
+    clip-path: ${cutTwo(9, 14)};
     transition: all 0.15s ease-out;
-    ${({ theme }) =>
-      layered([
-        [line(secondOf(theme)), '30px 2px', '0 100%'],
-        [
-          `linear-gradient(90deg, ${rgba(theme.color.active, 0.1)} 0%, transparent 45%)`,
-          '100% 100%',
-          '0 0'
-        ]
-      ])}
+    ${({ theme }) => itemLayers(theme, 0.1)}
   }
 
   html body .ssgl-item:hover {
+    border-color: ${accent(0.55)};
     border-left-color: ${({ theme }) => theme.color.active};
-    border-color: ${accent(0.5)};
+    box-shadow: inset 6px 0 14px -6px ${glow(0.9)};
+  }
+
+  html body .ssgl-item:hover h1 {
+    text-shadow: 0 0 8px ${glow(0.8)};
+  }
+
+  /* an active mod: brighter plate, a lit "LED" in the top-right corner */
+  html body .ssgl-item[data-active='true'] {
+    border-color: ${accent(0.45)};
+    border-left-color: ${({ theme }) => theme.color.active};
+    box-shadow: inset 8px 0 18px -8px ${glow(1)};
+    ${({ theme }) => itemLayers(theme, 0.2, true)}
+  }
+
+  /* dragging: the "drop here" line is drawn inside the row (outside it would be cut off) */
+  html body .ssgl-item[data-drag='above'] {
+    box-shadow: inset 0 3px 0 0 ${({ theme }) => theme.color.active}, inset 0 10px 12px -8px ${glow(1)};
+  }
+
+  html body .ssgl-item[data-drag='below'] {
+    box-shadow: inset 0 -3px 0 0 ${({ theme }) => theme.color.active}, inset 0 -10px 12px -8px ${glow(1)};
   }
 
   html body .ssgl-item h1 {
@@ -320,8 +371,14 @@ const CyberpunkStyle = createGlobalStyle`
     border-radius: 0;
     border: 1px solid ${accent(0.22)};
     border-left: 3px solid ${second(0.9)};
-    clip-path: ${cutOne(10)};
-    background-image: linear-gradient(90deg, ${accent(0.12)} 0%, transparent 50%);
+    clip-path: ${cutTwo(8, 10)};
+    ${({ theme }) =>
+      layered([
+        [cutEdge(rgba(theme.color.active, 0.7), 8, 'tl'), '8px 8px', '0 0'],
+        [cutEdge(rgba(theme.color.active, 0.7), 10, 'br'), '10px 10px', '100% 100%'],
+        ruler(rgba(theme.color.active, 0.35), 36, 'calc(100% - 18px) 3px'),
+        [`linear-gradient(90deg, ${rgba(theme.color.active, 0.14)} 0%, transparent 50%)`, '100% 100%', '0 0']
+      ])}
   }
 
   html body .ssgl-folder h2 {
@@ -358,6 +415,26 @@ const CyberpunkStyle = createGlobalStyle`
     height: 6px;
     pointer-events: none;
     background: ${({ theme }) => hazard(secondOf(theme))};
+  }
+
+  /* the header of a section: a lit band behind the title, ending in a slant */
+  html body .ssgl-section-head {
+    margin-left: -6px;
+    margin-right: -6px;
+    padding: 4px 6px;
+    background: ${({ theme }) =>
+      `linear-gradient(100deg, ${rgba(theme.color.active, 0.16)} 0%, ${rgba(theme.color.active, 0.06)} 55%, transparent 55.2%)`};
+    border-bottom: 1px solid ${accent(0.25)};
+  }
+
+  /* the empty "drag here" box: a faint HUD grid */
+  html body .ssgl-section-empty {
+    border-radius: 0;
+    border: 1px dashed ${accent(0.35)};
+    background-color: ${accent(0.03)};
+    background-image: ${({ theme }) =>
+      `linear-gradient(${rgba(theme.color.active, 0.07)} 1px, transparent 1px), linear-gradient(90deg, ${rgba(theme.color.active, 0.07)} 1px, transparent 1px)`};
+    background-size: 14px 14px;
   }
 
   html body .ssgl-section h2 {

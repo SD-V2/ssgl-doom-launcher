@@ -247,6 +247,8 @@ const ModItem = ({
         {...dragProps}
         dragState={dragState}
         compact={compact}
+        data-active={item.active ? 'true' : undefined}
+        data-drag={dragState || undefined}
       >
         <Check
           theme={markerOf(gstate.settings)}
