@@ -83,39 +83,41 @@ const CyberpunkStyle = createGlobalStyle`
     font-family: ${({ theme }) => theme.font.content};
   }
 
-  /* ---------- big panels ---------- */
+  /* ---------- big panels ----------
+     No clip-path here: the lists of dropdowns stick out of panels, a clipped panel
+     would hide them (and block the clicks). The cut corner is a small corner flag. */
   html body .ssgl-panel {
     position: relative;
     border-radius: 0;
     border-color: ${accent(0.3)};
-    clip-path: ${cut(18)};
     box-shadow: inset 0 0 60px ${accent(0.07)};
   }
 
-  /* two small neon bars on the edge, in the second color of the theme */
+  /* corner flags: top-left in the color of the theme, bottom-right in its second color */
   html body .ssgl-panel::before,
   html body .ssgl-panel::after {
     content: '';
     position: absolute;
-    height: 3px;
+    width: 0;
+    height: 0;
     pointer-events: none;
     z-index: 2;
   }
 
   html body .ssgl-panel::before {
     top: 0;
-    right: 34px;
-    width: 90px;
-    background: ${({ theme }) => theme.color.glow};
-    box-shadow: 0 0 10px ${glow(0.9)};
+    left: 0;
+    border-top: 14px solid ${({ theme }) => theme.color.active};
+    border-right: 14px solid transparent;
+    filter: drop-shadow(0 0 4px ${accent(0.9)});
   }
 
   html body .ssgl-panel::after {
+    right: 0;
     bottom: 0;
-    left: 34px;
-    width: 46px;
-    background: ${({ theme }) => theme.color.active};
-    box-shadow: 0 0 10px ${accent(0.9)};
+    border-bottom: 14px solid ${({ theme }) => theme.color.glow};
+    border-left: 14px solid transparent;
+    filter: drop-shadow(0 0 4px ${glow(0.9)});
   }
 
   /* ---------- mods and folders in the lists ---------- */
@@ -191,10 +193,10 @@ const CyberpunkStyle = createGlobalStyle`
     text-shadow: none;
   }
 
+  /* no clip-path on inputs: the list of a dropdown sticks out of its box */
   html body .ssgl-input {
     border-radius: 0;
     border-left: 3px solid ${accent(0.8)};
-    clip-path: ${cutOne(8)};
   }
 
   html body .ssgl-input input,
@@ -221,11 +223,26 @@ const CyberpunkStyle = createGlobalStyle`
 
   /* ---------- windows ---------- */
   html body .ssgl-modal {
+    position: relative;
     border-radius: 0;
-    clip-path: ${cut(22)};
     border-top: 2px solid ${({ theme }) => theme.color.active};
+    border-left: 3px solid ${({ theme }) => theme.color.active};
     box-shadow: 0 0 40px ${glow(0.35)};
     background-image: linear-gradient(180deg, ${accent(0.08)} 0%, transparent 30%);
+  }
+
+  /* a corner flag at the bottom right (windows can hold dropdowns: no clip-path) */
+  html body .ssgl-modal::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+    border-bottom: 18px solid ${({ theme }) => theme.color.glow};
+    border-left: 18px solid transparent;
+    filter: drop-shadow(0 0 4px ${glow(0.9)});
   }
 
   html body .ssgl-modal h1 {
