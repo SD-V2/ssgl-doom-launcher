@@ -180,6 +180,7 @@ const ModBox = ({
   recentIds = new Set(),
   allFolders = [],
   maps = false,
+  sectionTag = null,
   importFolder = '',
   onFolderMenu = () => {},
   onDropFiles = () => {},
@@ -347,6 +348,7 @@ const ModBox = ({
         item={row.item}
         onSelect={onClick(row.item.id)}
         onTag={onTag}
+        sectionTag={sectionTag ? sectionTag(row.item) : null}
         fav={favorites.has(row.item.id)}
         onFav={onFavorite(row.item.id)}
         onShow={onShow(row.item.path)}
@@ -383,6 +385,7 @@ ModBox.propTypes = {
   fixedExtra: PropTypes.number,
   allFolders: PropTypes.array,
   maps: PropTypes.bool,
+  sectionTag: PropTypes.func,
   importFolder: PropTypes.string,
   onFolderMenu: PropTypes.func,
   onDropFiles: PropTypes.func,

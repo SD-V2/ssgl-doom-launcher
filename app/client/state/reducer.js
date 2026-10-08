@@ -6,6 +6,7 @@ import {
   moveSection,
   normalizeOrder,
   resolveSection,
+  sanitizeRules,
   sectionOrder,
   sortBySections
 } from '../utils/sections';
@@ -25,7 +26,7 @@ export const initState = {
   mapFolders: [],
   recovered: [],
   sectionMode: false,
-  sectionRules: { folders: {}, mods: {}, order: normalizeOrder([]) },
+  sectionRules: sanitizeRules({}),
   update: {
     available: false,
     download: null,
@@ -312,18 +313,23 @@ function baseReducer(state, action) {
       });
     }
 
-    case 'sections/load': {
-      const rules = action.rules || {};
+    case 'sections/load':
       return act({
         ...state,
         sectionMode: !!action.mode,
-        sectionRules: {
-          folders: rules.folders || {},
-          mods: rules.mods || {},
-          order: normalizeOrder(rules.order)
-        }
+        sectionRules: sanitizeRules(action.rules)
       });
-    }
+
+    // the editor: names, explanations, words, own sections, removed sections
+    case 'sections/saveConfig':
+      return act({
+        ...state,
+        sectionRules: sanitizeRules({ ...state.sectionRules, ...action.config })
+      });
+
+    // everything about the sections back to how SSGL comes (also your hand-made rules)
+    case 'sections/reset':
+      return act({ ...state, sectionRules: sanitizeRules({}) });
 
     case 'sections/mode':
       return act({ ...state, sectionMode: !!action.on });
@@ -342,7 +348,10 @@ function baseReducer(state, action) {
     case 'sections/resetOrder':
       return act({
         ...state,
-        sectionRules: { ...state.sectionRules, order: normalizeOrder([]) }
+        sectionRules: {
+          ...state.sectionRules,
+          order: normalizeOrder([], state.sectionRules)
+        }
       });
 
     case 'sections/assignFolder': {
@@ -352,10 +361,19 @@ function baseReducer(state, action) {
       return act({ ...state, sectionRules: { ...state.sectionRules, folders } });
     }
 
+    // a mod gets its section by hand (the tag in the mod list); "auto" or the section
+    // its folder gives anyway takes the rule away
     case 'sections/assignMod': {
       const mods = { ...state.sectionRules.mods };
-      if (action.section && action.section !== 'auto') mods[action.id] = action.section;
-      else delete mods[action.id];
+      const mod = state.mods.find(m => m.id === action.id);
+      const automatic = mod
+        ? resolveSection(mod, { ...state.sectionRules, mods: {} })
+        : null;
+      if (action.section && action.section !== 'auto' && action.section !== automatic) {
+        mods[action.id] = action.section;
+      } else {
+        delete mods[action.id];
+      }
       return act({ ...state, sectionRules: { ...state.sectionRules, mods } });
     }
 
@@ -367,10 +385,7 @@ function baseReducer(state, action) {
       if (!!mod.isMap !== (action.section === 'maps')) return state;
 
       const mods = { ...state.sectionRules.mods };
-      const automatic = resolveSection(mod, {
-        folders: state.sectionRules.folders,
-        mods: {}
-      });
+      const automatic = resolveSection(mod, { ...state.sectionRules, mods: {} });
       if (action.section === automatic) delete mods[mod.id];
       else mods[mod.id] = action.section;
 
@@ -437,6 +452,8 @@ const KEEP_ORDER = [
   'sections/normalize',
   'sections/move',
   'sections/resetOrder',
+  'sections/saveConfig',
+  'sections/reset',
   'sections/assignFolder',
   'sections/assignMod'
 ];

@@ -22,7 +22,8 @@ const ModFilter = ({
   size,
   section = 'mods',
   onSection = null,
-  counts = { mods: 0, maps: 0 }
+  counts = { mods: 0, maps: 0 },
+  sectionFilter = null
 }) => {
   const { t } = useTranslation(['wads', 'filters']);
 
@@ -81,6 +82,15 @@ const ModFilter = ({
         onClear={onClear}
         fluid
       />
+      {sectionFilter ? (
+        <Dropdown
+          name="sectionFilter"
+          options={sectionFilter.options}
+          width="190px"
+          onChange={sectionFilter.onChange}
+          value={sectionFilter.value}
+        />
+      ) : null}
       <Dropdown
         name="sortvalue"
         options={opts}
@@ -118,6 +128,7 @@ const ModFilter = ({
 
 ModFilter.propTypes = {
   section: PropTypes.string,
+  sectionFilter: PropTypes.object,
   onSection: PropTypes.func,
   counts: PropTypes.object,
   filterValue: PropTypes.string.isRequired,

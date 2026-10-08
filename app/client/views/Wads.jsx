@@ -22,6 +22,7 @@ import {
   ModStats,
   PackageAreaNew,
   SectionFrame,
+  SectionsEditor,
   TabSwitch,
   TwinsModal,
   PlayIcon,
@@ -38,6 +39,8 @@ import {
   isSectionSorted,
   normalizeOrder,
   resolveSection,
+  sectionName,
+  sectionNote,
   sectionNumbers,
   sectionOrder
 } from '../utils/sections';
@@ -191,6 +194,9 @@ const Wads = () => {
   const [wanted, setWanted] = useState(loadSection);
   const view = gstate.sectionMode ? 'sections' : 'list';
   const [sectionOver, setSectionOver] = useState(null);
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [sectionFilter, setSectionFilter] = useState('');
+  const rules = gstate.sectionRules;
   const [openFolders, setOpenFolders] = useState(loadOpenFolders);
   const [dragging, setDragging] = useState(false);
   const [dragFrom, setDragFrom] = useState(null);
@@ -463,6 +469,75 @@ const Wads = () => {
   };
 
   // right click on a folder of the "By folder" view
+  // every section a mod can be put into, with the number it has now
+  const sectionChoices = () =>
+    order
+      .filter(id => id !== 'maps')
+      .map(id => ({
+        id,
+        label: `${numbers[id] === undefined ? '' : `${numbers[id]} · `}${sectionName(
+          id,
+          rules,
+          t
+        )}`
+      }));
+
+  // The small tag "→ Visual" of a mod in the list. Only in the sections view.
+  // A click opens the choice of sections for this mod.
+  const sectionTag = item => {
+    if (!gstate.sectionMode || item.isMap) return null;
+    const current = resolveSection(item, rules);
+    const byHand = rules.mods && rules.mods[item.id];
+    return {
+      label: `→ ${sectionName(current, rules, t)}`,
+      title: t('wads:sectionTagTitle'),
+      onClick: () => {
+        const menu = remote.Menu.buildFromTemplate([
+          {
+            label: t('wads:menuSectionAutoMod'),
+            type: 'radio',
+            checked: !byHand,
+            click: () =>
+              dispatch({ type: 'sections/assignMod', id: item.id, section: 'auto' })
+          },
+          { type: 'separator' },
+          ...sectionChoices().map(choice => ({
+            label: choice.label,
+            type: 'radio',
+            checked: !!byHand && current === choice.id,
+            click: () =>
+              dispatch({ type: 'sections/assignMod', id: item.id, section: choice.id })
+          }))
+        ]);
+        menu.popup({ window: remote.getCurrentWindow() });
+      }
+    };
+  };
+
+  // "Section: Monsters" - shows only the mods that go to that section
+  const sectionFilterBox =
+    gstate.sectionMode && section === 'mods'
+      ? {
+          // "all" has a real value: the box shows its text from the start
+          value: sectionFilter || 'all',
+          options: [
+            { label: t('wads:sectionFilterAll'), value: 'all' },
+            ...sectionChoices().map(choice => ({
+              label: t('wads:sectionFilterOne', { name: choice.label }),
+              value: choice.id
+            }))
+          ],
+          onChange: ({ value }) => setSectionFilter(value === 'all' ? '' : value)
+        }
+      : null;
+
+  // a section filter that points to a section that is gone (or the view was left)
+  useEffect(() => {
+    if (sectionFilter && (!gstate.sectionMode || order.indexOf(sectionFilter) < 0)) {
+      setSectionFilter('');
+    }
+  }, [gstate.sectionMode, order, sectionFilter]);
+
   const onFolderMenu = row => {
     const full = path.join(
       rootPath,
@@ -519,7 +594,7 @@ const Wads = () => {
             .map(id => ({
             label: `${
               numbers[id] === undefined ? '' : `${numbers[id]} · `
-            }${t(`wads:sec_${id}`)}`,
+            }${sectionName(id, rules, t)}`,
             type: 'radio',
             checked: given === id,
             click: assign(id)
@@ -1053,6 +1128,10 @@ const Wads = () => {
   const show = useMemo(() => {
     // always work on a copy, sortList sorts in place
     let base = [...sectionMods];
+    // "Section: Monsters" (only in the sections view)
+    if (gstate.sectionMode && sectionFilter) {
+      base = base.filter(m => resolveSection(m, rules) === sectionFilter);
+    }
     if (sort === 'starred') base = base.filter(m => favSet.has(m.id));
     if (sort === 'recent') base = base.filter(m => recentIds.has(m.id));
 
@@ -1077,7 +1156,7 @@ const Wads = () => {
           ...sorted.filter(m => !favSet.has(m.id))
         ]
       : sorted;
-  }, [sectionMods, sort, filter, favSet, recentIds]);
+  }, [sectionMods, sort, filter, favSet, recentIds, sectionFilter, gstate.sectionMode, rules]);
 
   const totalBytes = useMemo(
     () => sectionMods.reduce((n, m) => n + (m.bytes || 0), 0),
@@ -1101,6 +1180,7 @@ const Wads = () => {
             data={show}
             onClick={onSelect}
             onTag={onTag}
+            sectionTag={sectionTag}
             grouped={sort === 'folder'}
             openFolders={openFolders}
             forceOpen={filter.trim() !== ''}
@@ -1149,6 +1229,7 @@ const Wads = () => {
                 section={section}
                 onSection={hasMaps ? onSection : null}
                 counts={counts}
+                sectionFilter={sectionFilterBox}
               />
             }
           ></ModBox>
@@ -1230,11 +1311,14 @@ const Wads = () => {
                 <a onClick={onSortByFolder}>{t('wads:sortByFolder')}</a>
               </ToolbarStyle>
             ) : null}
-            {view === 'sections' && orderChanged ? (
+            {view === 'sections' ? (
               <ToolbarStyle>
-                <a onClick={() => dispatch({ type: 'sections/resetOrder' })}>
-                  {t('wads:sectionsReset')}
-                </a>
+                <a onClick={() => setEditorOpen(true)}>{t('wads:sectionsEdit')}</a>
+                {orderChanged ? (
+                  <a onClick={() => dispatch({ type: 'sections/resetOrder' })}>
+                    {t('wads:sectionsReset')}
+                  </a>
+                ) : null}
               </ToolbarStyle>
             ) : null}
             {view === 'sections' ? (
@@ -1246,7 +1330,7 @@ const Wads = () => {
                   .map((id, place, shown) => {
                     const entries = fixedGroups[id];
                     const number = numbers[id];
-                    const name = t(`wads:sec_${id}`);
+                    const name = sectionName(id, rules, t);
                     // the maps keep the last place, nothing moves behind them
                     const movable = id !== 'maps';
                     const last = shown.filter(x => x !== 'maps').length - 1;
@@ -1255,7 +1339,7 @@ const Wads = () => {
                         key={`section_${id}`}
                         title={number === undefined ? name : `${number} · ${name}`}
                         count={entries.length}
-                        note={t(`wads:secNote_${id}`)}
+                        note={sectionNote(id, rules, t)}
                         empty={entries.length ? undefined : t('wads:sectionEmpty')}
                         moveable={movable}
                         canUp={movable && place > 0}
@@ -1304,6 +1388,15 @@ const Wads = () => {
         onOpenDuplicates={() => {
           setUsageOpen(false);
           setDupesOpen(true);
+        }}
+      />
+      <SectionsEditor
+        active={editorOpen}
+        rules={rules}
+        onClose={() => setEditorOpen(false)}
+        onSave={config => {
+          dispatch({ type: 'sections/saveConfig', config });
+          setEditorOpen(false);
         }}
       />
       <TwinsModal

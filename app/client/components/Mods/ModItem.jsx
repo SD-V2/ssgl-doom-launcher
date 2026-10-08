@@ -209,6 +209,7 @@ const ModItem = ({
   onDown,
   onCircle = () => null,
   onTag = null,
+  sectionTag = null,
   selected = false,
   dragProps = {},
   dragState = null,
@@ -267,7 +268,7 @@ const ModItem = ({
           <Meta>
             {item.size} {item.kind}{' '}
           </Meta>
-          <TagList item={item} onTag={onTag} />
+          <TagList item={item} onTag={onTag} sectionTag={sectionTag} />
         </Content>
         {!selected && onFav ? (
           <ActionsStyle compact={compact}>
@@ -320,6 +321,7 @@ ModItem.propTypes = {
   onCircle: PropTypes.func,
   onSelect: PropTypes.func.isRequired,
   onTag: PropTypes.any,
+  sectionTag: PropTypes.object,
   selected: PropTypes.bool,
   dragProps: PropTypes.object,
   dragState: PropTypes.string,

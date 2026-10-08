@@ -19,6 +19,7 @@ import DuplicatesModal from './Mods/DuplicatesModal';
 import ModItem from './Mods/ModItem';
 import ModStats from './Mods/ModStats';
 import SectionFrame from './Mods/SectionFrame';
+import SectionsEditor from './Mods/SectionsEditor';
 import TabSwitch from './Mods/TabSwitch';
 import TwinsModal from './Mods/TwinsModal';
 import PackageAreaNew from './PackageAreaNew';
@@ -52,6 +53,7 @@ export {
   TwinsModal,
   TabSwitch,
   SectionFrame,
+  SectionsEditor,
   iWad,
   Routes,
   Modal,

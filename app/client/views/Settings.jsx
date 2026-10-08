@@ -1,6 +1,7 @@
 import React, { useContext, useEffect, useRef, useState } from 'react';
 
 import { Box, Flex } from '../components';
+import { useDialog } from '../components/Dialog';
 import {
   Button,
   Checkbox,
@@ -29,6 +30,7 @@ const Settings = () => {
   setTitle('settings');
   const { t } = useTranslation(['settings', 'common', 'nav']);
   const { gstate, dispatch } = useContext(StoreContext);
+  const dialog = useDialog();
   const { settings } = gstate;
   const [form, setForm] = useState(settings);
 
@@ -119,6 +121,22 @@ const Settings = () => {
       ...form,
       [name]: value ? value : ''
     });
+  };
+
+  // sections back to how SSGL comes: names, explanations, words, your own and the
+  // removed sections, the order, and the sections you picked by hand
+  const onResetSections = async () => {
+    const sure = await dialog.confirm({
+      title: t('settings:sectionsResetTitle'),
+      message: t('settings:sectionsResetMessage'),
+      detail: t('settings:sectionsResetDetail'),
+      confirmText: t('settings:sectionsResetConfirm'),
+      cancelText: t('common:cancel'),
+      danger: true
+    });
+    if (!sure) return;
+    dispatch({ type: 'sections/reset' });
+    toast('ok', t('common:success'), t('settings:sectionsResetDone'));
   };
 
   const onInput = e => {
@@ -294,6 +312,17 @@ const Settings = () => {
                   value={form.language}
                   onChange={onComponent}
                 />
+                <Label>{t('settings:sectionsLabel')}</Label>
+                <Button
+                  type="button"
+                  width="auto"
+                  border="#f55945"
+                  glow="#b8342a"
+                  color="#ff2f00"
+                  onClick={onResetSections}
+                >
+                  {t('settings:sectionsResetButton')}
+                </Button>
                 {gstate.packages.length > 0 ? (
                   <Dropdown
                     name="startView"

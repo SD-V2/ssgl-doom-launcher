@@ -26,18 +26,31 @@ const Tag = styled.li`
     border: ${({ theme }) => `1px solid ${theme.color.active}`};
     color: ${({ theme }) => theme.color.active};
   }
+
+  /* where the mod goes in the load order: in the color of the accent */
+  &.section {
+    color: ${({ theme }) => theme.color.active};
+    border-style: dashed;
+    border-color: ${({ theme }) => theme.color.active};
+  }
+
+  &.section:hover {
+    border-style: solid;
+  }
 `;
 
-const TagList = ({ item, onTag }) => {
-  return item.tags.length ? (
+const TagList = ({ item, onTag, sectionTag = null }) => {
+  return item.tags.length || sectionTag ? (
     <Tags>
-      <Tag
-        key={`${item.id}_##BACK##`}
-        className={onTag ? 'clickable' : ''}
-        onClick={onTag ? onTag('##BACK##') : null}
-      >
-        /
-      </Tag>
+      {item.tags.length ? (
+        <Tag
+          key={`${item.id}_##BACK##`}
+          className={onTag ? 'clickable' : ''}
+          onClick={onTag ? onTag('##BACK##') : null}
+        >
+          /
+        </Tag>
+      ) : null}
       {item.tags.map((tag, idx) => {
         return (
           <Tag
@@ -49,11 +62,22 @@ const TagList = ({ item, onTag }) => {
           </Tag>
         );
       })}
+      {sectionTag ? (
+        <Tag
+          key={`${item.id}_##SECTION##`}
+          className="clickable section"
+          title={sectionTag.title}
+          onClick={sectionTag.onClick}
+        >
+          {sectionTag.label}
+        </Tag>
+      ) : null}
     </Tags>
   ) : null;
 };
 
 TagList.propTypes = {
+  sectionTag: PropTypes.object,
   item: PropTypes.any,
   onTag: PropTypes.any
 };
