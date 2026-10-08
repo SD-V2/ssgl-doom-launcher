@@ -88,7 +88,8 @@ const Settings = () => {
 
   const styleOptions = [
     { label: t('settings:styleClassic'), value: 'classic' },
-    { label: t('settings:styleCyberpunk'), value: 'cyberpunk' }
+    { label: t('settings:styleCyberpunk'), value: 'cyberpunk' },
+    { label: t('settings:styleGothic'), value: 'gothic' }
   ];
 
   const themeOptions = [
@@ -121,6 +122,7 @@ const Settings = () => {
     { label: 'Steel', value: 'steel' },
     { label: 'Neon', value: 'neon' },
     { label: 'Night City', value: 'nightcity' },
+    { label: 'Blood Moon', value: 'bloodmoon' },
     { label: 'Custom color...', value: 'custom' }
   ];
   const viewOptions = [

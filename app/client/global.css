@@ -84,15 +84,29 @@ html, body {
 
 @font-face {
   font-family: 'CyberText';
-  font-weight: 400 600;
+  font-weight: 400;
   src: url('./assets/fonts/Play-Cyrillic-Regular.woff') format('woff');
   unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
 }
 
 @font-face {
   font-family: 'CyberText';
-  font-weight: 400 600;
+  font-weight: 600;
+  src: url('./assets/fonts/Play-Cyrillic-Regular.woff') format('woff');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+
+@font-face {
+  font-family: 'CyberText';
+  font-weight: 400;
   src: url('./assets/fonts/Cairo-Arabic-Regular.woff') format('woff');
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0898-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
+}
+
+@font-face {
+  font-family: 'CyberText';
+  font-weight: 600;
+  src: url('./assets/fonts/Cairo-Arabic-Bold.woff') format('woff');
   unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0898-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
 }
 
@@ -115,6 +129,86 @@ html, body {
 
 @font-face {
   font-family: 'CyberHead';
+  src: url('./assets/fonts/Cairo-Arabic-Bold.woff') format('woff');
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0898-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
+}
+
+/* ---- fonts of the "Gothic" interface style ----
+   GothText = EB Garamond (text), GothHead = Cinzel Decorative (titles). Like the fonts above they
+   also cover Turkish, Russian and Arabic letters, so every language keeps working. */
+@font-face {
+  font-family: 'GothText';
+  font-weight: 400;
+  src: url('./assets/fonts/EBGaramond-Latin-Regular.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'GothText';
+  font-weight: 600;
+  src: url('./assets/fonts/EBGaramond-Latin-SemiBold.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'GothText';
+  font-weight: 400;
+  src: url('./assets/fonts/EBGaramond-LatinExt-Regular.woff') format('woff');
+  unicode-range: U+0100-02AF, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'GothText';
+  font-weight: 600;
+  src: url('./assets/fonts/EBGaramond-LatinExt-SemiBold.woff') format('woff');
+  unicode-range: U+0100-02AF, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'GothText';
+  font-weight: 400;
+  src: url('./assets/fonts/EBGaramond-Cyrillic-Regular.woff') format('woff');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+
+@font-face {
+  font-family: 'GothText';
+  font-weight: 600;
+  src: url('./assets/fonts/EBGaramond-Cyrillic-SemiBold.woff') format('woff');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+
+@font-face {
+  font-family: 'GothText';
+  font-weight: 400;
+  src: url('./assets/fonts/Cairo-Arabic-Regular.woff') format('woff');
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0898-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
+}
+
+@font-face {
+  font-family: 'GothText';
+  font-weight: 600;
+  src: url('./assets/fonts/Cairo-Arabic-Bold.woff') format('woff');
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0898-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
+}
+
+@font-face {
+  font-family: 'GothHead';
+  src: url('./assets/fonts/CinzelDecorative-Latin-Bold.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'GothHead';
+  src: url('./assets/fonts/CinzelDecorative-LatinExt-Bold.woff') format('woff');
+  unicode-range: U+0100-02AF, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'GothHead';
+  src: url('./assets/fonts/CormorantSC-Cyrillic-Bold.woff') format('woff');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+
+@font-face {
+  font-family: 'GothHead';
   src: url('./assets/fonts/Cairo-Arabic-Bold.woff') format('woff');
   unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0898-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
 }

@@ -279,6 +279,7 @@ export default {
     sectionsResetDone: 'Разделы возвращены по умолчанию.',
     interfaceStyle: 'Стиль интерфейса',
     styleClassic: 'Классический',
+    styleGothic: 'Готика',
     styleCyberpunk: 'Киберпанк',
     autoRefresh: 'Автоматически обновлять список модов при изменении файлов',
     compactList: 'Компактный список модов (больше модов на экране)',

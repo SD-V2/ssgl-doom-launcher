@@ -271,6 +271,7 @@ export default {
     sectionsResetDone: 'Sections are back to default.',
     interfaceStyle: 'Interface style',
     styleClassic: 'Classic',
+    styleGothic: 'Gothic',
     styleCyberpunk: 'Cyberpunk',
     autoRefresh: 'Refresh mod list automatically when files change',
     compactList: 'Compact mod list (more mods on screen)',

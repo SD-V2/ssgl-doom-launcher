@@ -387,6 +387,14 @@ const nightcity = makeTheme({
   dark: '#073B44'
 });
 
+// antique gold with blood red, like old chapel windows - made for the Gothic interface style
+const bloodmoon = makeTheme({
+  active: '#D9B25F',
+  glow: '#8E1B25',
+  second: '#B8212E',
+  dark: '#4A3912'
+});
+
 // yellow and cyan on black - made for the Cyberpunk interface style
 const neon = makeTheme({
   active: '#FCEE0A',
@@ -408,7 +416,8 @@ const themes = {
   berserk,
   steel,
   neon,
-  nightcity
+  nightcity,
+  bloodmoon
 };
 
 export default themes;

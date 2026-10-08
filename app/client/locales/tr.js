@@ -270,6 +270,7 @@ export default {
     sectionsResetDone: 'Bölümler varsayılana döndü.',
     interfaceStyle: 'Arayüz stili',
     styleClassic: 'Klasik',
+    styleGothic: 'Gotik',
     styleCyberpunk: 'Cyberpunk',
     autoRefresh: 'Dosyalar değişince mod listesini otomatik yenile',
     compactList: 'Sıkışık mod listesi (ekranda daha fazla mod)',

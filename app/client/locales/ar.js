@@ -300,6 +300,7 @@ export default {
     sectionsResetDone: 'عادت الأقسام إلى الافتراضي.',
     interfaceStyle: 'نمط الواجهة',
     styleClassic: 'كلاسيكي',
+    styleGothic: 'قوطي',
     styleCyberpunk: 'سايبربانك',
     autoRefresh: 'تحديث قائمة المودات تلقائياً عند تغيّر الملفات',
     compactList: 'قائمة مودات مضغوطة (مودات أكثر على الشاشة)',
