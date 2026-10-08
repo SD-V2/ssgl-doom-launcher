@@ -240,7 +240,12 @@ const ModItem = ({
         type: 'tween'
       }}
     >
-      <ItemStyle {...dragProps} dragState={dragState} compact={compact}>
+      <ItemStyle
+        className="ssgl-item"
+        {...dragProps}
+        dragState={dragState}
+        compact={compact}
+      >
         <Check
           theme={gstate.settings.theme}
           size={compact ? '30' : '50'}

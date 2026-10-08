@@ -25,7 +25,7 @@ const BoxStyle = styled.div`
   }
 `;
 
-const FolderStyle = styled.div`
+const FolderStyle = styled.div.attrs({ className: 'ssgl-folder' })`
   display: flex;
   align-items: center;
   height: 40px;

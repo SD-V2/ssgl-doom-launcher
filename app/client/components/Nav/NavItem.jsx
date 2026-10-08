@@ -4,7 +4,7 @@ import styled from 'styled-components';
 
 import { useHashLocation } from '../../utils';
 
-const NavItemStyle = styled.li`
+const NavItemStyle = styled.li.attrs({ className: 'ssgl-nav' })`
   display: table-cell;
   position: relative;
   cursor: pointer;

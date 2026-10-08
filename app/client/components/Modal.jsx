@@ -45,6 +45,7 @@ const ModalMotion = ({ children, title, tiny }) => {
   };
   return (
     <Dialog
+      className="ssgl-modal"
       tiny={tiny}
       variants={variants}
       transition={{ type: 'tween', ease: 'anticipate' }}

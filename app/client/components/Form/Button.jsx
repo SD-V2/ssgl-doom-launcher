@@ -62,6 +62,7 @@ const Button = ({
   return (
     <ButtonStyle
       {...rest}
+      className={['ssgl-button', rest.className].filter(Boolean).join(' ')}
       type={type}
       onClick={onClick}
       load={load}

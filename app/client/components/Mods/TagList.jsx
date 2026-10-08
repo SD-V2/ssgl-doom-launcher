@@ -8,7 +8,7 @@ const Tags = styled.ul`
   display: inline-block;
 `;
 
-const Tag = styled.li`
+const Tag = styled.li.attrs({ className: 'ssgl-tag' })`
   transition: ${({ theme }) => theme.transition.out};
   color: ${({ theme }) => theme.color.meta};
   display: inline;

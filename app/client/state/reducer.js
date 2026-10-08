@@ -58,6 +58,7 @@ export const initState = {
     obligeBinary: '',
     obligeConfigPath: '',
     theme: 'hell',
+    style: 'classic',
     startView: '/',
     language: 'en',
     defaultsourceport: '',

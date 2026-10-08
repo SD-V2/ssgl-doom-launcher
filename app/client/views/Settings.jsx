@@ -37,21 +37,27 @@ const Settings = () => {
   // the saved values come back.
   const savedLook = useRef({
     dim: settings.wallpaperDim,
-    blur: settings.wallpaperBlur
+    blur: settings.wallpaperBlur,
+    style: settings.style
   });
   useEffect(() => {
     dispatch({
       type: 'settings/preview',
-      data: { wallpaperDim: form.wallpaperDim, wallpaperBlur: form.wallpaperBlur }
+      data: {
+        wallpaperDim: form.wallpaperDim,
+        wallpaperBlur: form.wallpaperBlur,
+        style: form.style
+      }
     });
-  }, [form.wallpaperDim, form.wallpaperBlur]);
+  }, [form.wallpaperDim, form.wallpaperBlur, form.style]);
   useEffect(
     () => () =>
       dispatch({
         type: 'settings/preview',
         data: {
           wallpaperDim: savedLook.current.dim,
-          wallpaperBlur: savedLook.current.blur
+          wallpaperBlur: savedLook.current.blur,
+          style: savedLook.current.style
         }
       }),
     []
@@ -67,6 +73,12 @@ const Settings = () => {
     { label: t('settings:notifyBeta'), value: 'beta' },
     { label: t('settings:notifyStable'), value: 'stable' },
     { label: t('settings:notifyOff'), value: 'off' }
+  ];
+
+  // how the menus look and feel (the color theme only decides the colors)
+  const styleOptions = [
+    { label: t('settings:styleClassic'), value: 'classic' },
+    { label: t('settings:styleCyberpunk'), value: 'cyberpunk' }
   ];
 
   const themeOptions = [
@@ -97,6 +109,7 @@ const Settings = () => {
     { label: 'Toxic', value: 'toxic' },
     { label: 'Berserk', value: 'berserk' },
     { label: 'Steel', value: 'steel' },
+    { label: 'Neon', value: 'neon' },
     { label: 'Custom color...', value: 'custom' }
   ];
   const viewOptions = [
@@ -180,7 +193,11 @@ const Settings = () => {
     if (!hasError) {
       const newSettings = await saveSettings('settings/save', form);
       // what is saved now is what comes back when the sliders are left unsaved later
-      savedLook.current = { dim: form.wallpaperDim, blur: form.wallpaperBlur };
+      savedLook.current = {
+        dim: form.wallpaperDim,
+        blur: form.wallpaperBlur,
+        style: form.style
+      };
       dispatch({ type: 'settings/save', data: newSettings });
 
       const newState = await fetchInit('main/init', null);
@@ -352,6 +369,13 @@ const Settings = () => {
                     />
                   </>
                 ) : null}
+                <Dropdown
+                  name="style"
+                  options={styleOptions}
+                  label={t('settings:interfaceStyle')}
+                  value={form.style || 'classic'}
+                  onChange={onComponent}
+                />
                 {gstate.sourceports.length > 0 ? (
                   <Dropdown
                     name="defaultsourceport"

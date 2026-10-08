@@ -22,7 +22,9 @@ export const InputStyle = styled.input`
   }
 `;
 
-export const InputContainerStyle = styled.div`
+export const InputContainerStyle = styled.div.attrs({
+  className: 'ssgl-input'
+})`
   background-color: ${({ theme }) => theme.color.backdrop};
   border-radius: ${({ theme }) => theme.border.radius};
   border: ${p =>

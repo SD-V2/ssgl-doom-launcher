@@ -7,7 +7,7 @@ import Icon from './Icon';
 // One section of the load order, drawn like the other boxes of SSGL
 // (same background, border and corners as the mods and the folder rows).
 
-const Box = styled.li`
+const Box = styled.li.attrs({ className: 'ssgl-section' })`
   list-style: none;
   margin: 0 0 14px 0;
   padding: 10px;

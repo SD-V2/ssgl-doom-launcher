@@ -27,7 +27,12 @@ export const BoxStyle = styled.div`
 
 const Box = ({ children, fixed, fixedExtra = 0, noscroll = false }) => {
   return (
-    <BoxStyle noscroll={noscroll} fixed={fixed} fixedExtra={fixedExtra}>
+    <BoxStyle
+      className="ssgl-panel"
+      noscroll={noscroll}
+      fixed={fixed}
+      fixedExtra={fixedExtra}
+    >
       {fixed ? <div className="fixed">{fixed}</div> : null}
 
       <div className="scroll">

@@ -17,18 +17,23 @@ import Update from './components/Update';
 import i18n from './i18n';
 import { initState, reducer, StoreContext } from './state';
 import themes, { customTheme } from './Theme';
+import { applyStyle, StyleLayer } from './Theme/styles';
 import { useIpc } from './utils';
 import { useHashLocation } from './utils';
 
 const App = () => {
   const [gstate, dispatch] = useReducer(reducer, initState);
 
+  // colors (color theme) + shapes, fonts and effects (interface style)
   const activeTheme = useMemo(
     () =>
-      gstate.settings.theme === 'custom'
-        ? customTheme(gstate.settings.accent)
-        : themes[gstate.settings.theme] || themes.hell,
-    [gstate.settings.theme, gstate.settings.accent]
+      applyStyle(
+        gstate.settings.theme === 'custom'
+          ? customTheme(gstate.settings.accent)
+          : themes[gstate.settings.theme] || themes.hell,
+        gstate.settings.style
+      ),
+    [gstate.settings.theme, gstate.settings.accent, gstate.settings.style]
   );
   // sections: which folder / mod was put into which section, and the view mode.
   // Loaded once at the start, saved whenever they change.
@@ -157,6 +162,8 @@ const App = () => {
     <StoreContext.Provider value={{ gstate, dispatch }}>
       <AudioProvider>
         <ThemeProvider theme={activeTheme}>
+          <>
+          <StyleLayer style={gstate.settings.style} />
           <DialogProvider>
           <ToastContainer>
             <PackageTransfer />
@@ -176,6 +183,7 @@ const App = () => {
             )}
           </ToastContainer>
           </DialogProvider>
+          </>
         </ThemeProvider>
       </AudioProvider>
     </StoreContext.Provider>

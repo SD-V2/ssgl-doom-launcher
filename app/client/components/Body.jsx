@@ -16,7 +16,7 @@ const clamp = (value, min, max) => {
 export default styled.div`
   position: relative;
   isolation: isolate;
-  font-family: 'Rajdhani', sans-serif;
+  font-family: ${({ theme }) => (theme.font && theme.font.content) || "'Rajdhani', sans-serif"};
   color: white;
   background-color: #000;
   width: 100vw;

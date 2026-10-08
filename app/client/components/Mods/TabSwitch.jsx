@@ -2,7 +2,7 @@ import PropTypes from 'prop-types';
 import React from 'react';
 import styled from 'styled-components';
 
-const SwitchStyle = styled.div`
+const SwitchStyle = styled.div.attrs({ className: 'ssgl-tabs' })`
   display: flex;
   margin-bottom: 8px;
   border-radius: ${({ theme }) => theme.border.radius};

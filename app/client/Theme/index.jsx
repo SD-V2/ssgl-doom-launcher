@@ -378,6 +378,13 @@ const steel = makeTheme({
   dark: '#3E454C'
 });
 
+// yellow and cyan on black - made for the Cyberpunk interface style
+const neon = makeTheme({
+  active: '#FCEE0A',
+  glow: '#00F0FF',
+  dark: '#4A4600'
+});
+
 const themes = {
   slayer,
   hell,
@@ -390,7 +397,8 @@ const themes = {
   archvile,
   toxic,
   berserk,
-  steel
+  steel,
+  neon
 };
 
 export default themes;

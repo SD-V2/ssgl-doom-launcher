@@ -9,3 +9,9 @@ Subsets obtained from the Fontsource packages (@fontsource/rajdhani, @fontsource
 Cyrillic (Russian) text:
   Play-Cyrillic-Regular.woff - Play, cyrillic subset     (c) 2011 Jonas Hecksher, Playtypes, e-types AS, SIL OFL 1.1
   RussoOne-Cyrillic.woff     - Russo One, cyrillic subset (c) 2011-2012 Jovanny Lemonad, SIL OFL 1.1
+
+Fonts of the "Cyberpunk" interface style (SIL Open Font License 1.1, https://scripts.sil.org/OFL):
+  ChakraPetch-*.woff   - Chakra Petch, latin and latin-ext subsets (c) 2018 The Chakra Petch Project Authors (https://github.com/m4rc1e/Chakra-Petch)
+  Orbitron-Latin-Bold.woff - Orbitron, latin subset            (c) 2018 The Orbitron Project Authors (https://github.com/theleagueof/orbitron)
+
+Subsets obtained from the Fontsource packages (@fontsource/chakra-petch, @fontsource/orbitron).
