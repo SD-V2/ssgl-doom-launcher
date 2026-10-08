@@ -2,10 +2,10 @@ import PropTypes from 'prop-types';
 import React from 'react';
 import styled from 'styled-components';
 
-import Check, { MARKER_GROUPS, MARKERS } from './Mods/Checkmarks';
+import Check, { MARKERS } from './Mods/Checkmarks';
 
-// "Active mod marker": the five designs as small pictures to click, and "Automatic"
-// (the design that belongs to the color theme).
+// "Active mod marker": "Automatic" (the design that belongs to the color theme and style)
+// and every design, as small pictures to click, all in one grid under the title.
 
 const Tiles = styled.div`
   display: flex;
@@ -57,23 +57,13 @@ const Tile = styled.div`
   }
 `;
 
-const Group = styled.div`
-  width: 100%;
-  margin: 2px 0 6px 0;
-  font-size: 12px;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  color: ${({ theme }) => theme.color.meta};
-`;
-
 const MarkerPicker = ({
   value,
   onChange,
   colorTheme,
   names,
   autoLabel,
-  autoMarker,
-  groupNames
+  autoMarker
 }) => {
   const pick = id => () => onChange({ name: 'marker', value: id });
   const key = id => e => {
@@ -106,12 +96,7 @@ const MarkerPicker = ({
   return (
     <Tiles>
       {tile('auto', autoMarker || colorTheme, autoLabel)}
-      {Object.keys(MARKER_GROUPS).map(group => (
-        <React.Fragment key={group}>
-          <Group>{groupNames[group]}</Group>
-          {MARKER_GROUPS[group].map(id => tile(id, id, names[id]))}
-        </React.Fragment>
-      ))}
+      {MARKERS.map(id => tile(id, id, names[id]))}
     </Tiles>
   );
 };
@@ -121,7 +106,6 @@ MarkerPicker.propTypes = {
   onChange: PropTypes.func.isRequired,
   colorTheme: PropTypes.string,
   autoMarker: PropTypes.string,
-  groupNames: PropTypes.object.isRequired,
   names: PropTypes.object.isRequired,
   autoLabel: PropTypes.string.isRequired
 };

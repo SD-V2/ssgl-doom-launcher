@@ -523,11 +523,6 @@ const Settings = () => {
                     style: form.style
                   })}
                   autoLabel={t('settings:markerAuto')}
-                  groupNames={{
-                    classic: t('settings:styleClassic'),
-                    cyberpunk: t('settings:styleCyberpunk'),
-                    gothic: t('settings:styleGothic')
-                  }}
                   names={{
                     hell: t('settings:markerHell'),
                     uac: t('settings:markerUac'),
@@ -539,7 +534,11 @@ const Settings = () => {
                     bolt: t('settings:markerBolt'),
                     cross: t('settings:markerCross'),
                     rose: t('settings:markerRose'),
-                    arch: t('settings:markerArch')
+                    arch: t('settings:markerArch'),
+                    christmas: t('settings:markerChristmas'),
+                    halloween: t('settings:markerHalloween'),
+                    ramadan: t('settings:markerRamadan'),
+                    eid: t('settings:markerEid')
                   }}
                 />
                 {gstate.sourceports.length > 0 ? (

@@ -4,18 +4,21 @@ import React from 'react';
 import CheckMarkStyle from './CheckMarkStyle';
 import collection from './Collection';
 
-// The five designs of the active mod marker (the pictures are in Collection.jsx)
-// the groups: the five classic ones, three for Cyberpunk, three for Gothic
+// The designs of the active mod marker (the pictures are in Collection.jsx)
+// the groups: five classic ones, three for Cyberpunk, three for Gothic, four for the holidays
+// (the groups only decide the order in the picker; it shows them all in one grid)
 export const MARKER_GROUPS = {
   classic: ['hell', 'uac', 'bfg', 'pinkie', 'slayer'],
   cyberpunk: ['target', 'chip', 'bolt'],
-  gothic: ['cross', 'rose', 'arch']
+  gothic: ['cross', 'rose', 'arch'],
+  seasonal: ['christmas', 'halloween', 'ramadan', 'eid']
 };
 
 export const MARKERS = [
   ...MARKER_GROUPS.classic,
   ...MARKER_GROUPS.cyberpunk,
-  ...MARKER_GROUPS.gothic
+  ...MARKER_GROUPS.gothic,
+  ...MARKER_GROUPS.seasonal
 ];
 
 // The design in use: the one chosen in Settings ("marker"). When it says "auto"
