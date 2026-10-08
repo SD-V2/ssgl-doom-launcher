@@ -4,6 +4,7 @@ import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
 import locales from './locales';
+import { followTextDirection } from './utils/textDirection';
 
 const lngs = {
   de: de,
@@ -31,13 +32,17 @@ i18n.use(initReactI18next).init({
   resources: locales
 });
 
-// The whole window follows the language: reading direction (Arabic is written
-// from right to left) and the lang attribute
+// The layout is the same in every language (left to right, nothing is mirrored).
+// Only the text follows the language: in Arabic every line of text reads from right
+// to left and lines up on the right (global.css, data-text-dir), English names stay
+// left to right.
 const applyDirection = lng => {
   if (typeof document === 'undefined') return;
   const root = document.documentElement;
   root.setAttribute('lang', lng);
-  root.setAttribute('dir', i18n.dir(lng));
+  root.setAttribute('dir', 'ltr');
+  root.setAttribute('data-text-dir', i18n.dir(lng));
+  followTextDirection(i18n.dir(lng) === 'rtl');
 };
 
 i18n.on('languageChanged', applyDirection);

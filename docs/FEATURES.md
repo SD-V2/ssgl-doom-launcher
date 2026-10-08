@@ -32,7 +32,8 @@ Everything below exists in `app/`. "(Settings)" = can be changed in the Settings
 - **Sounds** (Settings > Sounds, off by default): volume and "sounds match the interface style" (Cyberpunk = digital beeps,
   Gothic = stone and bells; Classic = the click). Files: `client/assets/sounds`.
 - Cyberpunk: neon mouse pointers (arrow, hand), a live sparkle trail behind the pointer, click burst. Settings > "Cursor effects" (only shown for Cyberpunk): trail on/off, trail size and length (50-200 %), click effect on/off - all shown at once (live preview).
-- Languages: English, Turkish, Arabic (right to left), Russian (Settings > Language).
+- Languages: English, Turkish, Arabic, Russian (Settings > Language). Arabic keeps the English layout (nothing is
+  mirrored); only the text reads right to left (utils/textDirection.js + global.css).
 
 ## Updates
 - Update notice for newer releases and for **new uploads to the fork** (compares the commit the program was built from with the

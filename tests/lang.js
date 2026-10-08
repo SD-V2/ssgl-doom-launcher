@@ -57,7 +57,7 @@ const check = (label, ok) => console.log((ok ? 'OK  ' : 'MISS') + ' ' + label);
 (async () => {
   // ---- direction follows the language
   await i18n.changeLanguage('ar');
-  check('ar -> <html dir="rtl" lang="ar">', document.documentElement.getAttribute('dir') === 'rtl' && document.documentElement.getAttribute('lang') === 'ar');
+  check('ar -> <html dir="ltr" lang="ar" data-text-dir="rtl"> (layout as in English, only the text reads right to left)', document.documentElement.getAttribute('dir') === 'ltr' && document.documentElement.getAttribute('lang') === 'ar' && document.documentElement.getAttribute('data-text-dir') === 'rtl');
   await i18n.changeLanguage('tr');
   check('tr -> <html dir="ltr" lang="tr">', document.documentElement.getAttribute('dir') === 'ltr' && document.documentElement.getAttribute('lang') === 'tr');
   await i18n.changeLanguage('en');

@@ -102,7 +102,7 @@ const { AppError, toPayload } = require(APP + '/electron/utils/errors.js');
 
   // other languages unaffected
   await i18n.changeLanguage('tr'); check('tr still works', i18n.t('wads:statsUsage') === 'Disk kullanımı');
-  await i18n.changeLanguage('ar'); check('ar still works + rtl', i18n.t('wads:statsUsage') === 'استخدام القرص' && document.documentElement.getAttribute('dir') === 'rtl');
-  await i18n.changeLanguage('ru'); check('back to ru -> ltr again', document.documentElement.getAttribute('dir') === 'ltr');
+  await i18n.changeLanguage('ar'); check('ar still works: layout ltr, text rtl', i18n.t('wads:statsUsage') === 'استخدام القرص' && document.documentElement.getAttribute('dir') === 'ltr' && document.documentElement.getAttribute('data-text-dir') === 'rtl');
+  await i18n.changeLanguage('ru'); check('back to ru -> ltr again', document.documentElement.getAttribute('dir') === 'ltr' && document.documentElement.getAttribute('data-text-dir') === 'ltr');
   process.exit(0);
 })();

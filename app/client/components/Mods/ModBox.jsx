@@ -186,8 +186,9 @@ const ModBox = ({
   onDropFiles = () => {},
   onNewFolder = () => {}
 }) => {
-  const { t, i18n } = useTranslation(['wads']);
-  const rtl = i18n.dir() === 'rtl';
+  const { t } = useTranslation(['wads']);
+  // the layout is left to right in every language (see i18n.jsx)
+  const rtl = document.documentElement.getAttribute('dir') === 'rtl';
   const boxRef = useRef(null);
   const [dropKey, setDropKey] = useState(null);
   const [height, setHeight] = useState(365);
