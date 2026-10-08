@@ -312,17 +312,22 @@ const Settings = () => {
                   value={form.language}
                   onChange={onComponent}
                 />
-                <Label>{t('settings:sectionsLabel')}</Label>
-                <Button
-                  type="button"
-                  width="auto"
-                  border="#f55945"
-                  glow="#b8342a"
-                  color="#ff2f00"
-                  onClick={onResetSections}
-                >
-                  {t('settings:sectionsResetButton')}
-                </Button>
+                <div>
+                  <Label>{t('settings:sectionsLabel')}</Label>
+                </div>
+                <div style={{ marginBottom: '15px' }}>
+                  <Button
+                    type="button"
+                    width="auto"
+                    border="#f55945"
+                    glow="#b8342a"
+                    color="#ff2f00"
+                    style={{ margin: 0 }}
+                    onClick={onResetSections}
+                  >
+                    {t('settings:sectionsResetButton')}
+                  </Button>
+                </div>
                 {gstate.packages.length > 0 ? (
                   <Dropdown
                     name="startView"
