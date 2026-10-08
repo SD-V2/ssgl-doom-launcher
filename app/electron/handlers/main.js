@@ -4,7 +4,7 @@ import got from 'got';
 import { getJSON, takeRecovered } from '../utils/json';
 import { scanLibrary } from '../utils/mods';
 import { DEFAULT_UPDATE_REPO } from '../constants';
-import { cleanRepo, findNewerCommit, findUpdate } from '../utils/versions';
+import { findNewerCommit, findUpdate } from '../utils/versions';
 import { watchModDir } from '../utils/watcher';
 
 ipcMain.handle('main/checkupdate', async () => {
@@ -19,13 +19,9 @@ ipcMain.handle('main/checkupdate', async () => {
 
   try {
     const settings = await getJSON('settings');
-    // only the GitHub page named in the settings is asked, nothing by default
-    const repo = cleanRepo(
-      settings.updateRepo === undefined
-        ? DEFAULT_UPDATE_REPO
-        : settings.updateRepo
-    );
-    if (!repo) return { error: null, data: none };
+    // the fork is the only place that is asked; "Update notifier: Off" asks nobody
+    const repo = DEFAULT_UPDATE_REPO;
+    if (settings.notifyRelease === 'off') return { error: null, data: none };
 
     const build = {
       time: typeof __BUILD_TIME__ === 'undefined' ? '' : __BUILD_TIME__,

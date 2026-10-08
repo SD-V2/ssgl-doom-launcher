@@ -283,8 +283,6 @@ export default {
     titleOblige: 'تكامل Oblige',
     colorTheme: 'سمة الألوان',
     accentColor: 'لون تمييز مخصص',
-    updateRepo: 'أخبرني عن الإصدارات والرفع الجديد في (اسم GitHub/المستودع أو الرابط، فارغ = لا تفحص أبداً)',
-    updateRepoInvalid: 'هذا ليس مستودع GitHub. اكتبه بالشكل اسمك/ssgl-doom-launcher أو الصق رابط المستودع.',
     hideWhilePlaying: 'تصغير SSGL أثناء تشغيل اللعبة',
     wallpaperDim: 'تعتيم صورة الخلفية (٪)',
     wallpaperBlur: 'تمويه صورة الخلفية (بكسل)',

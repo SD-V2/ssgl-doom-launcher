@@ -11,6 +11,7 @@ import { DialogProvider } from './components/Dialog';
 import PackageTransfer from './components/PackageTransfer';
 import UnsavedGuard from './components/UnsavedGuard';
 import { isDismissed } from './utils/dismissed';
+import { canCheck, isVisible, noticeKey, shouldAnnounce } from './utils/updateNotice';
 import { rememberUpdates } from './utils/fixes';
 import Update from './components/Update';
 import i18n from './i18n';
@@ -107,19 +108,33 @@ const App = () => {
   // eslint-disable-next-line no-unused-vars
   const [location, navigate] = useHashLocation();
 
-  const openNotifier = state => {
-    if (state.update.available) {
-      if (
-        state.settings.notifyRelease === 'stable' &&
-        state.update.prerelease === true
-      ) {
-        return false;
-      }
-      return true;
-    }
+  const openNotifier = state =>
+    isVisible(state.settings.notifyRelease, state.update);
 
-    return false;
+  // The update notice: at the start, and again when you come back to SSGL (after you
+  // uploaded something to GitHub), but not more than once in 10 minutes.
+  const notifier = useRef('beta');
+  const lastCheck = useRef(0);
+  const announced = useRef('');
+  const checkForUpdate = async () => {
+    if (!canCheck(notifier.current, lastCheck.current, Date.now())) return;
+    lastCheck.current = Date.now();
+    try {
+      const update = await fetch('main/checkupdate');
+      if (!shouldAnnounce(update, announced.current, isDismissed)) return;
+      announced.current = noticeKey(update);
+      dispatch({ type: 'update/set', data: update, done: false });
+    } catch (e) {
+      console.log(e);
+    }
   };
+  useEffect(() => {
+    notifier.current = gstate.settings.notifyRelease;
+  }, [gstate.settings.notifyRelease]);
+  useEffect(() => {
+    window.addEventListener('focus', checkForUpdate);
+    return () => window.removeEventListener('focus', checkForUpdate);
+  }, []);
 
   useEffect(() => {
     async function resolve() {
@@ -129,17 +144,8 @@ const App = () => {
         i18n.changeLanguage(data.settings.language || 'en');
         navigate(data.settings.startView || '/');
         //navigate('/settings');
-        if (data.settings.notifyRelease !== 'off' && data.settings.updateRepo) {
-          try {
-            const update = await fetch('main/checkupdate');
-            // an upload you already said "not now" to is not announced again
-            if (!(update.kind === 'files' && isDismissed(update.sha))) {
-              dispatch({ type: 'update/set', data: update, done: false });
-            }
-          } catch (e) {
-            console.log(e);
-          }
-        }
+        notifier.current = data.settings.notifyRelease;
+        checkForUpdate();
       } catch (e) {
         navigate('/settings');
       }

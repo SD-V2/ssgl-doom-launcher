@@ -253,8 +253,6 @@ export default {
     titleOblige: 'Oblige entegrasyonu',
     colorTheme: 'Renk teması',
     accentColor: 'Özel vurgu rengi',
-    updateRepo: 'Yeni sürümleri ve yüklemeleri şurada bildir (GitHub adı/depo veya bağlantı, boşsa hiç denetleme)',
-    updateRepoInvalid: 'Bu bir GitHub deposu değil. Adı/depo biçiminde yazın (ör. adınız/ssgl-doom-launcher) veya deponun bağlantısını yapıştırın.',
     hideWhilePlaying: 'Oyun çalışırken SSGL’yi simge durumuna küçült',
     wallpaperDim: 'Duvar kağıdını karart (%)',
     wallpaperBlur: 'Duvar kağıdı bulanıklığı (piksel)',

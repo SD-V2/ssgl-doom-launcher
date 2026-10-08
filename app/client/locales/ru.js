@@ -262,8 +262,6 @@ export default {
     titleOblige: 'Интеграция с Oblige',
     colorTheme: 'Цветовая тема',
     accentColor: 'Свой акцентный цвет',
-    updateRepo: 'Сообщать о новых релизах и загрузках на GitHub (имя/репозиторий или ссылка, пусто = не проверять)',
-    updateRepoInvalid: 'Это не репозиторий GitHub. Напишите в виде ваше-имя/ssgl-doom-launcher или вставьте ссылку на репозиторий.',
     hideWhilePlaying: 'Сворачивать SSGL, пока запущена игра',
     wallpaperDim: 'Затемнение обоев (%)',
     wallpaperBlur: 'Размытие обоев (пиксели)',

@@ -254,8 +254,6 @@ export default {
     titleOblige: 'Oblige Integration',
     colorTheme: 'Color Theme',
     accentColor: 'Custom accent color',
-    updateRepo: 'Tell me about new releases and uploads at (GitHub name/repository or link, empty = never check)',
-    updateRepoInvalid: 'That is not a GitHub repository. Write it like your-name/ssgl-doom-launcher or paste the link of the repository.',
     hideWhilePlaying: 'Minimize SSGL while a game is running',
     wallpaperDim: 'Wallpaper darkening (%)',
     wallpaperBlur: 'Wallpaper blur (pixels)',

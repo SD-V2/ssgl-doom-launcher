@@ -68,7 +68,6 @@ export const initState = {
     compactList: false,
     importFolder: '',
     mappath: '',
-    updateRepo: 'SD-V2/ssgl-doom-launcher',
     wallpaperDim: 0,
     wallpaperBlur: 0,
     hideWhilePlaying: false,
