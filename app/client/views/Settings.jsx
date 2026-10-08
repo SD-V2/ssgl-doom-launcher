@@ -43,6 +43,7 @@ const Settings = () => {
     blur: settings.wallpaperBlur,
     fit: settings.wallpaperFit,
     marker: settings.marker,
+    trail: settings.cursorTrail,
     sound: settings.soundActive,
     volume: settings.volume,
     styleSounds: settings.styleSounds,
@@ -56,6 +57,7 @@ const Settings = () => {
         wallpaperBlur: form.wallpaperBlur,
         wallpaperFit: form.wallpaperFit,
         marker: form.marker,
+        cursorTrail: form.cursorTrail,
         soundActive: form.soundActive,
         volume: form.volume,
         styleSounds: form.styleSounds,
@@ -67,6 +69,7 @@ const Settings = () => {
     form.wallpaperBlur,
     form.wallpaperFit,
     form.marker,
+    form.cursorTrail,
     form.soundActive,
     form.volume,
     form.styleSounds,
@@ -81,6 +84,7 @@ const Settings = () => {
           wallpaperBlur: savedLook.current.blur,
           wallpaperFit: savedLook.current.fit,
           marker: savedLook.current.marker,
+          cursorTrail: savedLook.current.trail,
           soundActive: savedLook.current.sound,
           volume: savedLook.current.volume,
           styleSounds: savedLook.current.styleSounds,
@@ -250,6 +254,7 @@ const Settings = () => {
         blur: form.wallpaperBlur,
         fit: form.wallpaperFit,
         marker: form.marker,
+        trail: form.cursorTrail,
         sound: form.soundActive,
         volume: form.volume,
         styleSounds: form.styleSounds,
@@ -440,6 +445,14 @@ const Settings = () => {
                   value={form.style || 'classic'}
                   onChange={onComponent}
                 />
+                {form.style === 'cyberpunk' ? (
+                  <Checkbox
+                    value={form.cursorTrail === undefined ? true : form.cursorTrail}
+                    label={t('settings:cursorTrail')}
+                    name="cursorTrail"
+                    onChange={onComponent}
+                  />
+                ) : null}
                 <Label>{t('settings:marker')}</Label>
                 <MarkerPicker
                   value={form.marker || 'auto'}
