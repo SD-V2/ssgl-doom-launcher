@@ -28,7 +28,8 @@ export const installCloseGuard = (win, ipc = ipcMain) => {
   });
 
   // a window that crashed or hangs cannot answer, it must not keep SSGL open
-  win.webContents.on('crashed', () => {
+  // ('render-process-gone': the old 'crashed' event was removed in Electron 29)
+  win.webContents.on('render-process-gone', () => {
     unsaved = false;
   });
   win.on('unresponsive', () => {
