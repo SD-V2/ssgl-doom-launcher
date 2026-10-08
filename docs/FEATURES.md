@@ -30,7 +30,7 @@ Everything below exists in `app/`. "(Settings)" = can be changed in the Settings
   "Automatic" = the design of the color theme in Classic, the target in Cyberpunk, the cross in Gothic.
 - **Sounds** (Settings > Sounds, off by default): volume and "sounds match the interface style" (Cyberpunk = digital beeps,
   Gothic = stone and bells; Classic = the click). Files: `client/assets/sounds`.
-- Cyberpunk: neon mouse pointers (arrow, hand), a live sparkle trail behind the pointer, click burst (Settings checkbox).
+- Cyberpunk: neon mouse pointers (arrow, hand), a live sparkle trail behind the pointer, click burst. Settings > "Cursor effects" (only shown for Cyberpunk): trail on/off, trail size and length (50-200 %), click effect on/off - all shown at once (live preview).
 - Languages: English, Turkish, Arabic (right to left), Russian (Settings > Language).
 
 ## Updates

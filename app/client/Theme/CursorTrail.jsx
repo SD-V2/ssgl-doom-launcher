@@ -11,17 +11,42 @@ const reducedMotion = () =>
   typeof window.matchMedia === 'function' &&
   window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+// the cursor effect settings, read from the saved settings: an unticked box is saved
+// as '', a missing one means the default (on, normal size and length)
+const scale = v => {
+  const n = Number(v);
+  if (v === undefined || v === '' || isNaN(n)) return 1;
+  return Math.min(2, Math.max(0.5, n / 100));
+};
+export const effectsOf = (settings = {}) => ({
+  trail: settings.cursorTrail === undefined ? true : !!settings.cursorTrail,
+  click: settings.cursorClick === undefined ? true : !!settings.cursorClick,
+  size: scale(settings.trailSize),
+  length: scale(settings.trailLength)
+});
+
 // One transparent canvas over the whole window (the mouse goes through it). Only runs
 // while there is something to draw, so it costs nothing when the pointer rests.
-const CursorTrail = ({ colors, onEngine }) => {
+const CursorTrail = ({ colors, onEngine, trail: trailOn = true, click = true, size = 1, length = 1 }) => {
   const canvasRef = useRef(null);
+  const engineRef = useRef(null);
+  // the latest choices, read by the mouse handlers (changing them does not restart the canvas)
+  const opts = useRef({ trailOn, click });
+  opts.current = { trailOn, click };
+  useEffect(() => {
+    if (engineRef.current) {
+      engineRef.current.size = size;
+      engineRef.current.length = length;
+    }
+  }, [size, length]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas && canvas.getContext ? canvas.getContext('2d') : null;
     if (!canvas || !ctx) return undefined;
 
-    const trail = new Trail({ colors });
+    const trail = new Trail({ colors, size, length });
+    engineRef.current = trail;
     if (onEngine) onEngine(trail);
 
     let width = 0;
@@ -55,10 +80,15 @@ const CursorTrail = ({ colors, onEngine }) => {
     const onMove = e => {
       pointer = { x: e.clientX, y: e.clientY };
       lastMove = now();
+      if (!opts.current.trailOn) {
+        trail.leave(); // no jump from an old place when the trail comes back on
+        return;
+      }
       const hand = !!(e.target && e.target.closest && e.target.closest(CLICKABLE));
       if (trail.move(e.clientX, e.clientY, lastMove, hand) > 0) run();
     };
     const onDown = e => {
+      if (!opts.current.click) return;
       trail.click(e.clientX, e.clientY, now());
       run();
     };
@@ -69,7 +99,7 @@ const CursorTrail = ({ colors, onEngine }) => {
 
     // resting pointer: one slow square from time to time, so it never looks dead
     idleTimer = window.setInterval(() => {
-      if (pointer && now() - lastMove > 700 && document.hasFocus()) {
+      if (opts.current.trailOn && pointer && now() - lastMove > 700 && document.hasFocus()) {
         trail.idle(pointer.x, pointer.y, now());
         run();
       }
@@ -91,6 +121,7 @@ const CursorTrail = ({ colors, onEngine }) => {
       window.clearInterval(idleTimer);
       if (frame) window.cancelAnimationFrame(frame);
       trail.clear();
+      engineRef.current = null;
       if (onEngine) onEngine(null);
     };
   }, [colors.main, colors.second, colors.hot]);
@@ -118,7 +149,11 @@ CursorTrail.propTypes = {
     second: PropTypes.string.isRequired,
     hot: PropTypes.string.isRequired
   }).isRequired,
-  onEngine: PropTypes.func
+  onEngine: PropTypes.func,
+  trail: PropTypes.bool,
+  click: PropTypes.bool,
+  size: PropTypes.number,
+  length: PropTypes.number
 };
 
 export { reducedMotion };

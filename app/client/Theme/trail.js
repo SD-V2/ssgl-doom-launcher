@@ -4,6 +4,7 @@
 // canvas and the mouse events are in CursorTrail.jsx.
 //
 //   colors = { main, second, hot }  (hex colors)
+//   size, length = how big the squares are and how long they live (1 = normal, 0.5 - 2)
 
 export const SETTINGS = {
   max: 110, // never more squares than this
@@ -16,9 +17,11 @@ export const SETTINGS = {
 const between = (rnd, [a, b]) => a + (b - a) * rnd();
 
 export class Trail {
-  constructor({ colors, rnd = Math.random } = {}) {
+  constructor({ colors, rnd = Math.random, size = 1, length = 1 } = {}) {
     this.colors = colors;
     this.rnd = rnd;
+    this.size = size;
+    this.length = length;
     this.particles = [];
     this.ripples = [];
     this.last = null;
@@ -48,14 +51,16 @@ export class Trail {
       vx: Math.cos(angle) * speed,
       vy: Math.sin(angle) * speed,
       born: now,
-      life: between(rnd, SETTINGS.life) * (opts.long ? 1.4 : 1),
-      size: Math.round(between(rnd, SETTINGS.size)),
+      life: between(rnd, SETTINGS.life) * (opts.long ? 1.4 : 1) * this.length,
+      size: Math.max(1, Math.round(between(rnd, SETTINGS.size) * this.size)),
       spark: rnd() < 0.25, // a square with four tiny squares around it
       color: this.pick(opts.hand),
       phase: rnd() * Math.PI * 2
     });
-    if (this.particles.length > SETTINGS.max) {
-      this.particles.splice(0, this.particles.length - SETTINGS.max);
+    // a longer trail may keep more squares
+    const max = Math.round(SETTINGS.max * Math.max(1, this.length));
+    if (this.particles.length > max) {
+      this.particles.splice(0, this.particles.length - max);
     }
   }
 

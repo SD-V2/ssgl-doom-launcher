@@ -18,6 +18,7 @@ import i18n from './i18n';
 import { initState, reducer, StoreContext } from './state';
 import themes, { customTheme } from './Theme';
 import { applyStyle, StyleLayer } from './Theme/styles';
+import { effectsOf } from './Theme/CursorTrail';
 import { useIpc } from './utils';
 import { useHashLocation } from './utils';
 
@@ -163,14 +164,7 @@ const App = () => {
       <AudioProvider>
         <ThemeProvider theme={activeTheme}>
           <>
-          <StyleLayer
-            style={gstate.settings.style}
-            trail={
-              gstate.settings.cursorTrail === undefined
-                ? true
-                : !!gstate.settings.cursorTrail
-            }
-          />
+          <StyleLayer style={gstate.settings.style} {...effectsOf(gstate.settings)} />
           <DialogProvider>
           <ToastContainer>
             <PackageTransfer />

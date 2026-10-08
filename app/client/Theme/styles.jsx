@@ -840,9 +840,9 @@ const useKeyboardMark = active => {
   }, [active]);
 };
 
-// the sparkle trail is only for the Cyberpunk style, can be switched off in Settings
-// (trail = false) and is not drawn when the system asks for less motion
-export const StyleLayer = ({ style, trail = true }) => {
+// the cursor effects (sparkle trail, click burst) are only for the Cyberpunk style, can be
+// switched off in Settings and are not drawn when the system asks for less motion
+export const StyleLayer = ({ style, trail = true, click = true, size = 1, length = 1 }) => {
   const theme = useContext(ThemeContext);
   useKeyboardMark(style === 'cyberpunk' || style === 'gothic');
   if (style === 'cyberpunk') {
@@ -852,7 +852,9 @@ export const StyleLayer = ({ style, trail = true }) => {
     return (
       <>
         <CyberpunkStyle />
-        {trail && colors && !reducedMotion() ? <CursorTrail colors={colors} /> : null}
+        {(trail || click) && colors && !reducedMotion() ? (
+          <CursorTrail colors={colors} trail={trail} click={click} size={size} length={length} />
+        ) : null}
       </>
     );
   }
@@ -860,4 +862,10 @@ export const StyleLayer = ({ style, trail = true }) => {
   return null;
 };
 
-StyleLayer.propTypes = { style: PropTypes.string, trail: PropTypes.bool };
+StyleLayer.propTypes = {
+  style: PropTypes.string,
+  trail: PropTypes.bool,
+  click: PropTypes.bool,
+  size: PropTypes.number,
+  length: PropTypes.number
+};
