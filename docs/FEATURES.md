@@ -2,6 +2,9 @@
 
 Everything below exists in `app/`. "(Settings)" = can be changed in the Settings screen.
 
+Base: Electron 44 (Chromium 152), runs on Windows 10 and 11 (64-bit). Upgraded from Electron 7 in steps (7 -> 10 -> 12 ->
+14 -> 22 -> 32 -> 44); Electron's old `remote` module is replaced by messages to the main part (`client/utils/native.js`).
+
 ## Mods and packages
 - Drag mods from Explorer into SSGL; drag to reorder the load order; add all / remove all of a folder.
 - Sort by folder (nested, collapsible); folders can be created, renamed and deleted; "Add all" on a folder.
