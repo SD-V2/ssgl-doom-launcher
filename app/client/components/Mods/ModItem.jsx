@@ -222,7 +222,9 @@ const ModItem = ({
   conflicts = 0,
   onConflicts = () => {},
   twin = false,
-  onTwin = () => {}
+  onTwin = () => {},
+  // the big mod list scrolls rows in and out all the time: no fade there
+  fadeIn = true
 }) => {
   const { gstate } = useContext(StoreContext);
   const { t } = useTranslation(['wads']);
@@ -230,7 +232,7 @@ const ModItem = ({
   return (
     <motion.li
       style={style}
-      initial={{ opacity: 0 }}
+      initial={fadeIn ? { opacity: 0 } : false}
       animate={{
         opacity: 1,
         scale: 1
@@ -339,7 +341,8 @@ ModItem.propTypes = {
   conflicts: PropTypes.number,
   onConflicts: PropTypes.func,
   twin: PropTypes.bool,
-  onTwin: PropTypes.func
+  onTwin: PropTypes.func,
+  fadeIn: PropTypes.bool
 };
 
 export default ModItem;

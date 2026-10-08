@@ -1366,7 +1366,7 @@ const Wads = () => {
               </ul>
             ) : (
               <ul>
-                <AnimatePresence>
+                <AnimatePresence initial={false}>
                   {gstate.package.selected.length > 0 &&
                     gstate.package.selected.map((id, itemindex) =>
                       renderLoadItem(id, itemindex)

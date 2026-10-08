@@ -5,6 +5,7 @@
 //   node run.js cur  "settings,en,nightcity,cyberpunk"   (mouse pointers)
 //   node run.js trail "wads-sections-few,en,nightcity,mods,new,cyberpunk"
 //   node run.js snd                                      (can the browser play every sound file?)
+//   node run.js tab "settings,en,nightcity,cyberpunk"    (a screen coming in after a tab switch, filmed)
 // Pictures go to ./out/shots. Size: SIZE=1275x700 node run.js shot ...
 const { spawnSync } = require('child_process');
 const fs = require('fs');

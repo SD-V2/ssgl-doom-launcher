@@ -1,5 +1,5 @@
 import { ipcRenderer } from 'electron';
-import React, { useReducer } from 'react';
+import React, { useEffect, useReducer } from 'react';
 import ReactDOM from 'react-dom';
 import { ThemeProvider } from 'styled-components';
 
@@ -27,6 +27,8 @@ const themed = themes[themeName];
 const markerName = (hashParts.find(x => x.indexOf('marker:') === 0) || 'marker:auto').slice(7);
 const bgPath = (hashParts.find(x => x.indexOf('bg:') === 0) || '').slice(3);
 const fitName = (hashParts.find(x => x.indexOf('fit:') === 0) || 'fit:cover').slice(4);
+// "scroll:marker" scrolls Settings so the marker picker is in view
+const scrollTo = (hashParts.find(x => x.indexOf('scroll:') === 0) || '').slice(7);
 
 const longMessage =
   'Add Russian language, update notice for new uploads and a safer way of saving packages\n\n' +
@@ -132,6 +134,14 @@ const Ask = () => {
 };
 
 const SettingsScene = () => {
+  useEffect(() => {
+    if (scrollTo !== 'marker') return;
+    const timer = setTimeout(() => {
+      const tile = document.querySelector('[role=button][aria-pressed]');
+      if (tile) tile.parentElement.previousElementSibling.scrollIntoView({ block: 'start' });
+    }, 600);
+    return () => clearTimeout(timer);
+  }, []);
   const init = { ...initState, packages: [{ id: 'p1', name: 'x', selected: [], cover: { isFile: false, use: 'doom2' } }], settings: { ...initState.settings, language: lng, marker: markerName, theme: themeName, theme: themeName, style: styleName, modpath: 'C:\\SSGL\\WADS', mappath: 'C:\\SSGL\\Maps' } };
   const [gstate, dispatch] = useReducer(reducer, init);
   return (
@@ -192,7 +202,17 @@ const App = () => {
 };
 
 ipcRenderer.invoke = async ch => (ch === 'mods/conflicts' ? { error: null, data: { checked: 3, skipped: [], conflicts: [] } } : { error: null, data: null });
+// window.__remount() draws the scene again from the start (for "node run.js tab": the
+// screen comes in again, as after a tab switch)
+const Remountable = () => {
+  const [n, setN] = React.useState(0);
+  useEffect(() => {
+    window.__remount = () => setN(x => x + 1);
+  }, []);
+  return <App key={n} />;
+};
+
 i18n.changeLanguage(lng).then(() => {
-  ReactDOM.render(<App />, document.getElementById('root'));
+  ReactDOM.render(<Remountable />, document.getElementById('root'));
   window.__ready = true;
 });

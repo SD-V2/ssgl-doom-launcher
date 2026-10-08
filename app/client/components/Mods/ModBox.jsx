@@ -356,6 +356,7 @@ const ModBox = ({
         dragProps={modDragProps(row.item)}
         isNew={recentIds.has(row.item.id)}
         compact={compact}
+        fadeIn={false}
       />
     );
   };

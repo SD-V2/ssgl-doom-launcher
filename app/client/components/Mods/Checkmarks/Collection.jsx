@@ -144,6 +144,44 @@ const Arch = () => (
   </>
 );
 
+// ---- Seasonal: Christmas, Halloween, Ramadan, Eid ----
+
+// a Christmas tree with a star on top and ornaments
+const Christmas = () => (
+  <>
+    <path fillRule="evenodd" d="M174 62L178.7 75.5L193 75.8L181.6 84.5L185.8 98.2L174 90L162.2 98.2L166.4 84.5L155 75.8L169.3 75.5Z" />
+    <path fillRule="evenodd" d="M174 100L210 142H192L228 186H208L246 232H102L140 186H120L156 142H138ZM160 150a6 6 0 1 0 12 0a6 6 0 1 0 -12 0ZM184 198a6 6 0 1 0 12 0a6 6 0 1 0 -12 0ZM144 212a6 6 0 1 0 12 0a6 6 0 1 0 -12 0Z" />
+    <path fillRule="evenodd" d="M162 232H186V262H162Z" />
+  </>
+);
+
+// a Halloween pumpkin with a carved face
+const Halloween = () => (
+  <>
+    <path fillRule="evenodd" d="M82 188a92 74 0 1 0 184 0a92 74 0 1 0 -184 0ZM136 166L156 150L164 176ZM212 166L192 150L184 176ZM174 184L182 198H166ZM128 206L146 216L156 206L166 218L174 208L182 218L192 206L202 216L220 206C212 236 136 236 128 206ZM112 150C104 170 104 200 112 220C108 200 108 170 112 150ZM236 150C244 170 244 200 236 220C240 200 240 170 236 150Z" />
+    <path fillRule="evenodd" d="M166 118L170 96C172 86 184 82 194 86L190 94C182 94 180 98 180 118Z" />
+  </>
+);
+
+// a Ramadan crescent moon with a star
+const Ramadan = () => (
+  <>
+    <path fillRule="evenodd" d="M251.5 211.8A92 92 0 1 1 170.2 86.1A76 76 0 0 0 251.5 211.8Z" />
+    <path fillRule="evenodd" d="M229.4 137.2L230.1 154.1L246 160L230.1 165.9L229.4 182.8L218.9 169.5L202.6 174.1L212 160L202.6 145.9L218.9 150.5Z" />
+  </>
+);
+
+// an Eid goat head with curved horns
+const Eid = () => (
+  <>
+    <path fillRule="evenodd" d="M150 132C138 104 122 86 98 82C104 90 112 98 116 108C122 120 126 132 132 144Z" />
+    <path fillRule="evenodd" d="M198 132C210 104 226 86 250 82C244 90 236 98 232 108C226 120 222 132 216 144Z" />
+    <path fillRule="evenodd" d="M146 156C122 148 98 154 82 172C102 178 126 176 148 170Z" />
+    <path fillRule="evenodd" d="M202 156C226 148 250 154 266 172C246 178 222 176 200 170Z" />
+    <path fillRule="evenodd" d="M140 136C156 122 192 122 208 136L200 216C198 240 188 252 174 254C160 252 150 240 148 216ZM149 172a8 5 0 1 0 16 0a8 5 0 1 0 -16 0ZM183 172a8 5 0 1 0 16 0a8 5 0 1 0 -16 0ZM162.5 238a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0 -7 0ZM178.5 238a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0 -7 0Z" />
+    <path fillRule="evenodd" d="M160 250L174 284L188 250C182 254 166 254 160 250Z" />
+  </>
+);
 
 const collection = {
   hell: Hell,
@@ -156,7 +194,11 @@ const collection = {
   bolt: Bolt,
   cross: Cross,
   rose: Rose,
-  arch: Arch
+  arch: Arch,
+  christmas: Christmas,
+  halloween: Halloween,
+  ramadan: Ramadan,
+  eid: Eid
 };
 
 export default collection;
