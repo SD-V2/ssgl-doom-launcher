@@ -1,7 +1,8 @@
-import { remote } from 'electron';
 import PropTypes from 'prop-types';
 import React from 'react';
 import styled from 'styled-components';
+
+import { openExternal } from '../../utils/native';
 
 const LabelStyle = styled.label`
   display: inline-block;
@@ -20,7 +21,7 @@ const LabelStyle = styled.label`
 const Label = ({ children, info, error, ...rest }) => {
   const onInfo = e => {
     e.preventDefault();
-    remote.shell.openExternal(info);
+    openExternal(info);
   };
   return (
     <LabelStyle error={error} {...rest}>

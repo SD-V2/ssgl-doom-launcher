@@ -12,7 +12,7 @@ Module.prototype.require = function (req) {
   if (req === 'electron') return {
     ipcRenderer: { send: (...a) => (global.__sent = global.__sent || []).push(a), on() {}, removeListener() {}, invoke: async () => ({}) },
     remote: { Menu: { buildFromTemplate: t => { global.__menu = t; return { popup() {} }; } }, shell: { showItemInFolder() {}, moveItemToTrash: () => true }, dialog: { showMessageBox: async () => ({ response: 0 }) }, app: { getVersion: () => '1.0.0' }, getCurrentWindow: () => ({}) },
-    ipcRenderer: { send: (...a) => (global.__sent = global.__sent || []).push(a), invoke: async (ch, d) => (global.__invoke ? global.__invoke(ch, d) : { data: null }), on() {}, removeListener() {} }
+    ipcRenderer: { send: (...a) => (global.__sent = global.__sent || []).push(a), invoke: require('./native-mock').wrap(async (ch, d) => (global.__invoke ? global.__invoke(ch, d) : { data: null })), sendSync: require('./native-mock').sendSync, on() {}, removeListener() {} }
   };
   if (req.startsWith('#/')) req = path.join(APP, 'client', req.slice(2));
   return origReq.call(this, req);

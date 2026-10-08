@@ -1,4 +1,3 @@
-import { remote } from 'electron';
 import PropTypes from 'prop-types';
 import React from 'react';
 import styled from 'styled-components';
@@ -7,6 +6,7 @@ import { BoxStyle } from '../../components/Box';
 import Flex from '../../components/Flex';
 import Logo from '../../components/Logo';
 import { useTranslation } from '../../utils';
+import { appVersion, openExternal } from '../../utils/native';
 import AnimatedView from '../AnimatedView';
 import { contact, techs, testers } from './data';
 
@@ -68,7 +68,7 @@ const Text = styled.div`
 `;
 
 const Link = ({ children, to }) => {
-  const onClick = () => remote.shell.openExternal(to);
+  const onClick = () => openExternal(to);
   return (
     <span onClick={onClick} className="link">
       {children}
@@ -94,7 +94,7 @@ const About = () => {
           <div className="content">
             <Text>
               <h1>
-                {t('about:title', { version: remote.app.getVersion() })}
+                {t('about:title', { version: appVersion() })}
               </h1>
               {BUILD_DATE ? (
                 <p style={{ textAlign: 'center', opacity: 0.7 }}>
