@@ -26,8 +26,8 @@ Everything below exists in `app/`. "(Settings)" = can be changed in the Settings
 - Color themes: the originals + Berserk, Steel, Neon, Night City (cyan + red), Blood Moon (gold + crimson), custom accent.
 - **Interface style**: Classic, Cyberpunk, Gothic (Futuristic is planned) - see `docs/STYLES.md`.
 - Wallpaper image with **fit** (fill / fit whole picture / stretch), darkening and blur sliders (live preview).
-- **Active mod marker**: 17 designs (Pentagram, UAC, BFG, Pinkie, Slayer, Target, Chip, Bolt, Cross, Rose, Arch,
-  the seasonal Christmas, Halloween, Ramadan, Eid, and Skull, Demon skull), shown in Settings as one grid right under the title;
+- **Active mod marker**: 22 designs (Pentagram, UAC, BFG, Pinkie, Slayer, Target, Chip, Bolt, Cross, Rose, Arch,
+  the seasonal Christmas, Halloween, Ramadan, Eid, Skull, Demon skull, and the emblems Brand, Demon mask, Mecha goat, Spider, Biohazard), shown in Settings as one grid right under the title;
   "Automatic" = the design of the color theme in Classic, the target in Cyberpunk, the cross in Gothic.
 - **Sounds** (Settings > Sounds, off by default): volume and "sounds match the interface style" (Cyberpunk = digital beeps,
   Gothic = stone and bells; Classic = the click). Files: `client/assets/sounds`.
