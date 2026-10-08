@@ -22,7 +22,7 @@ sound set `cyberpunk-*.ogg`, marker designs Target / Chip / Bolt. Made for the c
 ## Gothic
 Double golden frames with corner ornaments (SVG data URLs), diamonds on the edges and before titles, pointed-arch tabs, serif letters
 (GothText = EB Garamond, GothHead = Cinzel Decorative), a faint stone grain and a warm dark edge, dagger pointers, keyboard frame
-(double golden line), sound set `gothic-*.ogg`, marker designs Cross / Rose window / Arch. Made for the color theme "Blood Moon".
+(double golden line), sound set `gothic-*.ogg`, marker designs Cross / Rose / Arch. Made for the color theme "Blood Moon".
 
 ## Futuristic (not built yet)
 Wish of the owner: a third style, next to Cyberpunk and Gothic. Suggest a direction first (clean white/blue glass? holographic?
