@@ -604,7 +604,7 @@ const Wads = () => {
     }
     template.push(
       { type: 'separator' },
-      { label: t('wads:menuOpen'), click: () => remote.shell.openItem(full) }
+      { label: t('wads:menuOpen'), click: () => remote.shell.openPath(full) }
     );
     if (row.key !== '') {
       template.push({

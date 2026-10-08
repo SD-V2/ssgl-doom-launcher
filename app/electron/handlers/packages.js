@@ -11,7 +11,7 @@ import play from '../utils/play';
 ipcMain.handle('packages/open', async (e, data) => {
   try {
     const settings = await getJSON('settings');
-    shell.openItem(path.join(settings.savepath, data.path));
+    shell.openPath(path.join(settings.savepath, data.path));
 
     return {
       data: null,

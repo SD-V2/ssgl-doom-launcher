@@ -111,7 +111,7 @@ let lastUrl = null;
 
 const openFromSettings = async property => {
   try {
-    shell.openItem(settings[property]);
+    shell.openPath(settings[property]);
   } catch (e) {
     console.log(e);
   }
@@ -119,7 +119,7 @@ const openFromSettings = async property => {
 
 const openApplicationSettings = async () => {
   try {
-    shell.openItem(getDataFile(''));
+    shell.openPath(getDataFile(''));
   } catch (e) {
     console.log(e);
   }
