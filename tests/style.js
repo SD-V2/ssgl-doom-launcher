@@ -84,7 +84,7 @@ const ReactDOM2 = require(APP + '/node_modules/react-dom');
   check('...and the original theme is not changed', base.font.head === "'Michroma', sans-serif" && base.border.radius === '3px');
   check('...works on every color theme (all of them keep their own accent)', Object.keys(themesAll).every(k => styles.applyStyle(themesAll[k], 'cyberpunk').color.active === themesAll[k].color.active));
   check('a color theme "Neon" (yellow + cyan) exists for the cyberpunk look', themesAll.neon && themesAll.neon.color.active.toLowerCase() === '#fcee0a' && themesAll.neon.color.glow.toLowerCase() === '#00f0ff');
-  check('a color theme "Night City": cyan lines, red as the second accent', themesAll.nightcity && themesAll.nightcity.color.active.toLowerCase() === '#2dd4e8' && themesAll.nightcity.color.second.toLowerCase() === '#ff2d46');
+  check('a color theme "Night City": cyan lines, red as the second accent', themesAll.nightcity && themesAll.nightcity.color.active.toLowerCase() === '#55e6f7' && themesAll.nightcity.color.second.toLowerCase() === '#ff2d46');
   check('every color theme has a second accent (or falls back to its glow)', Object.keys(themesAll).every(k => !!(themesAll[k].color.second || themesAll[k].color.glow)));
   check('themes without their own second color use the glow color (Neon: cyan, Hell: red)', themesAll.neon.color.second === themesAll.neon.color.glow && themesAll.hell.color.glow.toLowerCase() === '#ff0000');
   check('rgba(): hex colors, short hex, wrong text', styles.rgba('#ffa800', 0.5) === 'rgba(255, 168, 0, 0.5)' && styles.rgba('#fa0', 1) === 'rgba(255, 170, 0, 1)' && /^rgba\(255, 168, 0, 0\.3\)$/.test(styles.rgba('banana', 0.3)));
