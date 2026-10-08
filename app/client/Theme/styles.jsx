@@ -121,21 +121,36 @@ const dataUrl = svg =>
 const svgOf = body =>
   `<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'>${body}</svg>`;
 
+// The Cyberpunk pointers, drawn like neon tubes: a dark fill, a soft glow, the colored
+// line and a white-hot thin line in the middle.
+const NEON_ARROW = 'M3 3 L3 24 L9 19 L13 28 L17 26.3 L13 17.5 L21 17.5 Z';
+// a pointing hand
+const NEON_HAND =
+  'M12 3.2 Q12 2 13.2 2 Q14.4 2 14.4 3.2 V13 H16.2 Q16.8 11.8 18 11.8 Q19.2 11.8 19.6 13 Q20.6 12.2 21.8 12.6 Q22.8 13 23 14.2 Q24.2 14 25 15 Q25.6 16 25.6 17.5 V22 Q25.6 28.5 19 28.5 H15.4 Q11 28.5 8.6 24.2 L5.6 19 Q5 17.8 6.2 17.2 Q7.4 16.6 8.4 17.4 L12 21 Z';
+const HOT = '#eafcff';
+
+const neon = (d, main) =>
+  `<path d='${d}' fill='#00131a' fill-opacity='0.6' stroke='${main}' stroke-opacity='0.3' stroke-width='4.5' stroke-linejoin='round'/>` +
+  `<path d='${d}' fill='none' stroke='${main}' stroke-width='1.8' stroke-linejoin='round'/>` +
+  `<path d='${d}' fill='none' stroke='${HOT}' stroke-width='0.6' stroke-linejoin='round'/>`;
+
 const cyberCursors = (main, other) => ({
-  // an angular arrow with a small square in the second color
+  // a neon arrow with a trail of small digital squares behind it
   arrow: `${dataUrl(
     svgOf(
-      `<path d='M3 3 L3 24 L9 19 L13 28 L17 26.3 L13 17.5 L21 17.5 Z' fill='#000' fill-opacity='0.65' stroke='${main}' stroke-width='1.6' stroke-linejoin='miter'/>` +
-        `<rect x='22' y='22' width='6' height='6' fill='${other}'/>`
+      `<rect x='24' y='24' width='4' height='4' fill='${main}' fill-opacity='0.9'/>` +
+        `<rect x='28' y='20' width='2.6' height='2.6' fill='${main}' fill-opacity='0.55'/>` +
+        `<rect x='21' y='29' width='2.6' height='2.6' fill='${other}' fill-opacity='0.8'/>` +
+        neon(NEON_ARROW, main)
     )
   )} 3 3, default`,
-  // a target: four brackets and a dot
+  // a neon pointing hand, with a small square in the second color on the finger tip
   hand: `${dataUrl(
     svgOf(
-      `<path d='M4 11 V4 H11 M21 4 H28 V11 M28 21 V28 H21 M11 28 H4 V21' fill='none' stroke='${main}' stroke-width='2'/>` +
-        `<rect x='14' y='14' width='4' height='4' fill='${other}'/>`
+      neon(NEON_HAND, main) +
+        `<rect x='12.4' y='1' width='2.4' height='2.4' fill='${other}'/>`
     )
-  )} 16 16, pointer`
+  )} 13 3, pointer`
 });
 
 const gothicCursors = (main, other) => {
