@@ -2,6 +2,7 @@ import React, { useContext, useEffect, useRef, useState } from 'react';
 
 import { Box, Flex } from '../components';
 import { useDialog } from '../components/Dialog';
+import MarkerPicker from '../components/MarkerPicker';
 import {
   Button,
   Checkbox,
@@ -39,6 +40,7 @@ const Settings = () => {
     dim: settings.wallpaperDim,
     blur: settings.wallpaperBlur,
     fit: settings.wallpaperFit,
+    marker: settings.marker,
     style: settings.style
   });
   useEffect(() => {
@@ -48,10 +50,17 @@ const Settings = () => {
         wallpaperDim: form.wallpaperDim,
         wallpaperBlur: form.wallpaperBlur,
         wallpaperFit: form.wallpaperFit,
+        marker: form.marker,
         style: form.style
       }
     });
-  }, [form.wallpaperDim, form.wallpaperBlur, form.wallpaperFit, form.style]);
+  }, [
+    form.wallpaperDim,
+    form.wallpaperBlur,
+    form.wallpaperFit,
+    form.marker,
+    form.style
+  ]);
   useEffect(
     () => () =>
       dispatch({
@@ -60,6 +69,7 @@ const Settings = () => {
           wallpaperDim: savedLook.current.dim,
           wallpaperBlur: savedLook.current.blur,
           wallpaperFit: savedLook.current.fit,
+          marker: savedLook.current.marker,
           style: savedLook.current.style
         }
       }),
@@ -210,6 +220,7 @@ const Settings = () => {
         dim: form.wallpaperDim,
         blur: form.wallpaperBlur,
         fit: form.wallpaperFit,
+        marker: form.marker,
         style: form.style
       };
       dispatch({ type: 'settings/save', data: newSettings });
@@ -396,6 +407,20 @@ const Settings = () => {
                   label={t('settings:interfaceStyle')}
                   value={form.style || 'classic'}
                   onChange={onComponent}
+                />
+                <Label>{t('settings:marker')}</Label>
+                <MarkerPicker
+                  value={form.marker || 'auto'}
+                  onChange={onComponent}
+                  colorTheme={form.theme}
+                  autoLabel={t('settings:markerAuto')}
+                  names={{
+                    hell: t('settings:markerHell'),
+                    uac: t('settings:markerUac'),
+                    bfg: t('settings:markerBfg'),
+                    pinkie: t('settings:markerPinkie'),
+                    slayer: t('settings:markerSlayer')
+                  }}
                 />
                 {gstate.sourceports.length > 0 ? (
                   <Dropdown

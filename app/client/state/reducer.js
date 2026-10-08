@@ -72,6 +72,7 @@ export const initState = {
     wallpaperDim: 0,
     wallpaperBlur: 0,
     wallpaperFit: 'cover',
+    marker: 'auto',
     hideWhilePlaying: false,
     volume: 0.5
   }

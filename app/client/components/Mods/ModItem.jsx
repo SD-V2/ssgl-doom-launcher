@@ -5,7 +5,7 @@ import styled from 'styled-components';
 
 import { StoreContext } from '../../state';
 import { useTranslation } from '../../utils';
-import Check from './Checkmarks';
+import Check, { markerOf } from './Checkmarks';
 import Icon from './Icon';
 import TagList from './TagList';
 
@@ -247,7 +247,7 @@ const ModItem = ({
         compact={compact}
       >
         <Check
-          theme={gstate.settings.theme}
+          theme={markerOf(gstate.settings)}
           size={compact ? '30' : '50'}
           active={item.active}
           onClick={onSelect}

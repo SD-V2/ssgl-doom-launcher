@@ -4,6 +4,14 @@ import React from 'react';
 import CheckMarkStyle from './CheckMarkStyle';
 import collection from './Collection';
 
+// The five designs of the active mod marker (the pictures are in Collection.jsx)
+export const MARKERS = ['hell', 'uac', 'bfg', 'pinkie', 'slayer'];
+
+// The design in use: the one chosen in Settings ("marker"), or - when it says
+// "auto" (or nothing) - the one that belongs to the color theme, as it always was.
+export const markerOf = settings =>
+  MARKERS.indexOf(settings.marker) > -1 ? settings.marker : settings.theme;
+
 const CheckMark = ({ theme, active, size, onClick }) => {
   const ThemedCheckMark = collection[theme] || collection['hell'];
   return (
