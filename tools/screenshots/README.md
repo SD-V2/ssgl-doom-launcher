@@ -15,6 +15,7 @@ node run.js geom "dlg-discard,en,hell,cyberpunk" # where a window opens, after t
 node run.js cur  "settings,en,nightcity,cyberpunk"   # the mouse pointers of a style (+ an enlarged picture)
 node run.js trail "wads-sections-few,en,nightcity,mods,new,cyberpunk"   # the sparkle trail: moves, click, fade
 node run.js snd                                   # can the browser play every sound file?
+node run.js tab "wads-sections-few,en,nightcity,mods,new,cyberpunk"   # a screen coming in after a tab switch: every frame + a few pictures
 ```
 
 On Linux without a screen, `run.js` uses `xvfb-run` (install `xvfb`). Set `ELECTRON=/path/to/electron` to use another Electron.

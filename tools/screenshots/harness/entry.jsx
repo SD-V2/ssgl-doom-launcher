@@ -202,7 +202,17 @@ const App = () => {
 };
 
 ipcRenderer.invoke = async ch => (ch === 'mods/conflicts' ? { error: null, data: { checked: 3, skipped: [], conflicts: [] } } : { error: null, data: null });
+// window.__remount() draws the scene again from the start (for "node run.js tab": the
+// screen comes in again, as after a tab switch)
+const Remountable = () => {
+  const [n, setN] = React.useState(0);
+  useEffect(() => {
+    window.__remount = () => setN(x => x + 1);
+  }, []);
+  return <App key={n} />;
+};
+
 i18n.changeLanguage(lng).then(() => {
-  ReactDOM.render(<App />, document.getElementById('root'));
+  ReactDOM.render(<Remountable />, document.getElementById('root'));
   window.__ready = true;
 });

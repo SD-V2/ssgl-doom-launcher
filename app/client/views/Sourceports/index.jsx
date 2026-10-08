@@ -100,7 +100,7 @@ const SourcePorts = () => {
               Add Sourceport
             </Button>
             <SourcePortListStyle>
-              <AnimatePresence>
+              <AnimatePresence initial={false}>
                 {sourcePorts.map(item => (
                   <SourcePortItem
                     className={

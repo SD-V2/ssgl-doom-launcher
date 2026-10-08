@@ -113,7 +113,7 @@ const Packages = () => {
           />
         }
       >
-        <AnimatePresence>
+        <AnimatePresence initial={false}>
           {show.map(pack => (
             <Pack
               pack={pack}
