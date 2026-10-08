@@ -132,7 +132,7 @@ const ReactDOM2 = require(APP + '/node_modules/react-dom');
   // ---------- inside the style layer
   const layer = async (style, trail, theme) => { ReactDOM2.unmountComponentAtNode(host); ReactDOM2.render(React.createElement(ThemeProvider, { theme: styles.applyStyle(theme || themes.nightcity, style) }, React.createElement(styles.StyleLayer, { style, trail })), host); await wait2(80); return !!canvasEl(); };
   check('Cyberpunk: the trail is there', await layer('cyberpunk', true));
-  check('Cyberpunk with the trail switched off in Settings: no canvas', !(await layer('cyberpunk', false)));
+  check('Cyberpunk with the trail and the click effect switched off in Settings: no canvas', !(await (async () => { ReactDOM2.unmountComponentAtNode(host); ReactDOM2.render(React.createElement(ThemeProvider, { theme: styles.applyStyle(themes.nightcity, 'cyberpunk') }, React.createElement(styles.StyleLayer, { style: 'cyberpunk', trail: false, click: false })), host); await wait2(80); return !!canvasEl(); })()));
   check('Cyberpunk, setting not given (old settings): the trail is on', await (async () => { ReactDOM2.unmountComponentAtNode(host); ReactDOM2.render(React.createElement(ThemeProvider, { theme: styles.applyStyle(themes.hell, 'cyberpunk') }, React.createElement(styles.StyleLayer, { style: 'cyberpunk' })), host); await wait2(80); return !!canvasEl(); })());
   check('Gothic: no trail (it is a Cyberpunk thing)', !(await layer('gothic', true, themes.bloodmoon)));
   check('Classic: no trail', !(await layer('classic', true, themes.hell)));

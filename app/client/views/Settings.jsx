@@ -1,4 +1,5 @@
 import React, { useContext, useEffect, useRef, useState } from 'react';
+import styled from 'styled-components';
 
 import { Box, Flex } from '../components';
 import { useDialog } from '../components/Dialog';
@@ -28,6 +29,17 @@ import {
 } from '../utils';
 import AnimatedView from './AnimatedView';
 
+// the Cursor effects group (Cyberpunk only): a thin accent line on its start side
+const EffectsGroup = styled.div`
+  border-inline-start: 2px solid ${({ theme }) => theme.color.active};
+  padding-inline-start: 12px;
+  margin-bottom: 15px;
+
+  > label:first-child {
+    margin-bottom: 8px;
+  }
+`;
+
 const Settings = () => {
   setTitle('settings');
   const { t } = useTranslation(['settings', 'common', 'nav']);
@@ -44,6 +56,9 @@ const Settings = () => {
     fit: settings.wallpaperFit,
     marker: settings.marker,
     trail: settings.cursorTrail,
+    click: settings.cursorClick,
+    trailSize: settings.trailSize,
+    trailLength: settings.trailLength,
     sound: settings.soundActive,
     volume: settings.volume,
     styleSounds: settings.styleSounds,
@@ -58,6 +73,9 @@ const Settings = () => {
         wallpaperFit: form.wallpaperFit,
         marker: form.marker,
         cursorTrail: form.cursorTrail,
+        cursorClick: form.cursorClick,
+        trailSize: form.trailSize,
+        trailLength: form.trailLength,
         soundActive: form.soundActive,
         volume: form.volume,
         styleSounds: form.styleSounds,
@@ -70,6 +88,9 @@ const Settings = () => {
     form.wallpaperFit,
     form.marker,
     form.cursorTrail,
+    form.cursorClick,
+    form.trailSize,
+    form.trailLength,
     form.soundActive,
     form.volume,
     form.styleSounds,
@@ -85,6 +106,9 @@ const Settings = () => {
           wallpaperFit: savedLook.current.fit,
           marker: savedLook.current.marker,
           cursorTrail: savedLook.current.trail,
+          cursorClick: savedLook.current.click,
+          trailSize: savedLook.current.trailSize,
+          trailLength: savedLook.current.trailLength,
           soundActive: savedLook.current.sound,
           volume: savedLook.current.volume,
           styleSounds: savedLook.current.styleSounds,
@@ -255,6 +279,9 @@ const Settings = () => {
         fit: form.wallpaperFit,
         marker: form.marker,
         trail: form.cursorTrail,
+        click: form.cursorClick,
+        trailSize: form.trailSize,
+        trailLength: form.trailLength,
         sound: form.soundActive,
         volume: form.volume,
         styleSounds: form.styleSounds,
@@ -446,12 +473,45 @@ const Settings = () => {
                   onChange={onComponent}
                 />
                 {form.style === 'cyberpunk' ? (
-                  <Checkbox
-                    value={form.cursorTrail === undefined ? true : form.cursorTrail}
-                    label={t('settings:cursorTrail')}
-                    name="cursorTrail"
-                    onChange={onComponent}
-                  />
+                  <EffectsGroup className="ssgl-cursor-effects">
+                    <Label>{t('settings:cursorEffects')}</Label>
+                    <Checkbox
+                      value={form.cursorTrail === undefined ? true : form.cursorTrail}
+                      label={t('settings:cursorTrail')}
+                      name="cursorTrail"
+                      onChange={onComponent}
+                    />
+                    {form.cursorTrail === undefined || form.cursorTrail ? (
+                      <>
+                        <Range
+                          value={form.trailSize === undefined ? 100 : form.trailSize}
+                          min="50"
+                          max="200"
+                          step="10"
+                          name="trailSize"
+                          label={t('settings:trailSize')}
+                          onChange={onInput}
+                          fluid
+                        />
+                        <Range
+                          value={form.trailLength === undefined ? 100 : form.trailLength}
+                          min="50"
+                          max="200"
+                          step="10"
+                          name="trailLength"
+                          label={t('settings:trailLength')}
+                          onChange={onInput}
+                          fluid
+                        />
+                      </>
+                    ) : null}
+                    <Checkbox
+                      value={form.cursorClick === undefined ? true : form.cursorClick}
+                      label={t('settings:cursorClick')}
+                      name="cursorClick"
+                      onChange={onComponent}
+                    />
+                  </EffectsGroup>
                 ) : null}
                 <Label>{t('settings:marker')}</Label>
                 <MarkerPicker

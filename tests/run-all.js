@@ -7,7 +7,7 @@ const { spawnSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-const SUITES = ['ssr', 'lang', 'lang2', 'lang3', 'lang4', 'lang5', 'lang6', 'lang7', 'lang8', 'lang9', 'lang10', 'lang12', 'lang13', 'lang14', 'dialog', 'style', 'marker', 'feel', 'trailui', 'upd', 'notice', 'unsaved', 'json', 'hide', 'twins', 'order', 'maps', 'closeguard', 'sections', 'fixed', 'secorder', 'custom', 'trail', 'i18ncheck'];
+const SUITES = ['ssr', 'lang', 'lang2', 'lang3', 'lang4', 'lang5', 'lang6', 'lang7', 'lang8', 'lang9', 'lang10', 'lang12', 'lang13', 'lang14', 'dialog', 'style', 'marker', 'feel', 'trailui', 'cursorfx', 'upd', 'notice', 'unsaved', 'json', 'hide', 'twins', 'order', 'maps', 'closeguard', 'sections', 'fixed', 'secorder', 'custom', 'trail', 'i18ncheck'];
 
 if (!fs.existsSync(path.join(__dirname, 'node_modules', 'jsdom'))) {
   console.log('Please run "npm install" in the tests folder first.');
