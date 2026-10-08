@@ -5,14 +5,16 @@ import CheckMarkStyle from './CheckMarkStyle';
 import collection from './Collection';
 
 // The designs of the active mod marker (the pictures are in Collection.jsx)
-// the groups: five classic ones, three for Cyberpunk, three for Gothic, four for the holidays, two skulls
+// the groups: five classic ones, three for Cyberpunk, three for Gothic, four for the holidays, two skulls,
+// five emblems
 // (the groups only decide the order in the picker; it shows them all in one grid)
 export const MARKER_GROUPS = {
   classic: ['hell', 'uac', 'bfg', 'pinkie', 'slayer'],
   cyberpunk: ['target', 'chip', 'bolt'],
   gothic: ['cross', 'rose', 'arch'],
   seasonal: ['christmas', 'halloween', 'ramadan', 'eid'],
-  skulls: ['skull', 'demonskull']
+  skulls: ['skull', 'demonskull'],
+  emblems: ['brand', 'demonmask', 'mechagoat', 'spider', 'biohazard']
 };
 
 export const MARKERS = [
@@ -20,7 +22,8 @@ export const MARKERS = [
   ...MARKER_GROUPS.cyberpunk,
   ...MARKER_GROUPS.gothic,
   ...MARKER_GROUPS.seasonal,
-  ...MARKER_GROUPS.skulls
+  ...MARKER_GROUPS.skulls,
+  ...MARKER_GROUPS.emblems
 ];
 
 // The design in use: the one chosen in Settings ("marker"). When it says "auto"

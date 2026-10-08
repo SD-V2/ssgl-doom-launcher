@@ -540,7 +540,12 @@ const Settings = () => {
                     ramadan: t('settings:markerRamadan'),
                     eid: t('settings:markerEid'),
                     skull: t('settings:markerSkull'),
-                    demonskull: t('settings:markerDemonSkull')
+                    demonskull: t('settings:markerDemonSkull'),
+                    brand: t('settings:markerBrand'),
+                    demonmask: t('settings:markerDemonMask'),
+                    mechagoat: t('settings:markerMechaGoat'),
+                    spider: t('settings:markerSpider'),
+                    biohazard: t('settings:markerBiohazard')
                   }}
                 />
                 {gstate.sourceports.length > 0 ? (
