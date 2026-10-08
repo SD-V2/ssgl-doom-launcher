@@ -1,5 +1,8 @@
 name: Audit/lint
-on: [push]
+# Inherited from the original project. It does not fit this fork (it fails on the old
+# packages / uses Node 10), so it only runs when started by hand from the Actions tab.
+# The automatic checks are checks.yml and windows-build.yml.
+on: workflow_dispatch
 jobs:
   lint:
     runs-on: ubuntu-latest

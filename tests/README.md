@@ -31,3 +31,6 @@ When you add a feature: add checks for it in the file that fits (or a new file, 
 `SUITES` in `run-all.js`).
 
 Tip: a failing check prints `MISS <what was expected>`. Run the one file with `node <file>.js`.
+
+On GitHub, `.github/workflows/checks.yml` runs `yarn build` and `node run-all.js` for every pull request
+(job "Build and checks"), with no screen (the checks use jsdom).
