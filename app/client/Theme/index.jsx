@@ -381,8 +381,8 @@ const steel = makeTheme({
 
 // cyan lines and glow with red accents, like the posters of Night City
 const nightcity = makeTheme({
-  active: '#2DD4E8',
-  glow: '#2DD4E8',
+  active: '#55E6F7',
+  glow: '#55E6F7',
   second: '#FF2D46',
   dark: '#073B44'
 });
