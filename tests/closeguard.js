@@ -25,7 +25,7 @@ g = mk(); g.h['app/dirty']({}, { dirty: true }); g.win.minimized = true; g.tryCl
 t('closed from the taskbar while minimized -> window is restored first so the question is seen', g.calls.join() === 'restore,focus,send:app/close-request');
 g = mk(); g.h['app/dirty']({}, { dirty: true }); g.h['app/dirty']({}, { dirty: false });
 t('changes saved again -> closes normally', g.tryClose() === false);
-g = mk(); g.h['app/dirty']({}, { dirty: true }); g.wh['wc:crashed']();
+g = mk(); g.h['app/dirty']({}, { dirty: true }); g.wh['wc:render-process-gone']();
 t('window crashed -> SSGL can still be closed', g.tryClose() === false);
 g = mk(); g.h['app/dirty']({}, { dirty: true }); g.wh.unresponsive();
 t('window not responding -> SSGL can still be closed', g.tryClose() === false);

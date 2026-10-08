@@ -1,4 +1,3 @@
-import { remote } from 'electron';
 import React, { useContext } from 'react';
 import ReactMarkdown from 'react-markdown';
 import styled from 'styled-components';
@@ -6,6 +5,7 @@ import styled from 'styled-components';
 import { StoreContext } from '../state';
 import { useTranslation } from '../utils';
 import { dismiss } from '../utils/dismissed';
+import { openExternal } from '../utils/native';
 import { Button } from './Form';
 import { Modal } from './index';
 
@@ -117,7 +117,7 @@ const Update = () => {
   const files = gstate.update.kind === 'files';
 
   const onOk = () => {
-    remote.shell.openExternal(gstate.update.download);
+    openExternal(gstate.update.download);
     if (files) dismiss(gstate.update.sha);
     dispatch({ type: 'update/done' });
   };

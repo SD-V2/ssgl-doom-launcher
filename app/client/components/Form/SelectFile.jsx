@@ -1,9 +1,9 @@
-import { remote } from 'electron';
 import PropTypes from 'prop-types';
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 
 import { useTranslation } from '../../utils';
+import { showOpenDialog } from '../../utils/native';
 import { ButtonStyle } from './Button';
 import { InputContainerStyle, InputStyle } from './Input';
 import Label from './Label';
@@ -46,7 +46,7 @@ const SelectFile = ({
         ? { properties: ['openDirectory'] }
         : { properties: ['openFile'] };
 
-      remote.dialog.showOpenDialog(openSettings).then(res => {
+      showOpenDialog(openSettings).then(res => {
         setFile(res.filePaths[0]);
         onFile({ name: name, value: res.filePaths[0] });
       });

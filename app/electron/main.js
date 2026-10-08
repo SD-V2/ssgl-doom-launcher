@@ -15,7 +15,10 @@ function createWindow() {
     height: 610,
 
     webPreferences: {
+      // the screens use Electron directly (require('electron')); the defaults changed
+      // in Electron 12 (contextIsolation) - keep the old behaviour
       nodeIntegration: true,
+      contextIsolation: false,
       webSecurity: whenProd(true, false)
     }
   });
@@ -47,6 +50,7 @@ app.on('activate', function() {
 });
 
 require('./handlers/main');
+require('./handlers/native');
 require('./handlers/mods');
 require('./handlers/transfer');
 require('./handlers/conflicts');

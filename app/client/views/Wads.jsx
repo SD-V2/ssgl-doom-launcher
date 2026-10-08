@@ -1,4 +1,3 @@
-import { remote } from 'electron';
 import { AnimatePresence } from 'framer-motion';
 import byteSize from 'byte-size';
 import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
@@ -32,6 +31,7 @@ import { StoreContext } from '../state';
 import { setTitle, sortList, useIpc, useToast, useTranslation } from '../utils';
 import { explainError, useSound } from '../utils';
 import { trackFirstSeen } from '../utils/firstSeen';
+import { openPath, pathOfFile, popupMenu, showItemInFolder, trashItem } from '../utils/native';
 import { useDialog } from '../components/Dialog';
 import { findFixes } from '../utils/fixes';
 import {
@@ -354,7 +354,7 @@ const Wads = () => {
     dispatch({ type: 'mod/select', id });
   };
 
-  const onCircle = path => () => remote.shell.showItemInFolder(path);
+  const onCircle = path => () => showItemInFolder(path);
 
   const onSort = (index, direction) => () =>
     dispatch({ type: 'mod/move', direction, index });
@@ -382,7 +382,7 @@ const Wads = () => {
     } catch (e) {}
   };
 
-  const onShowMod = file => () => remote.shell.showItemInFolder(file);
+  const onShowMod = file => () => showItemInFolder(file);
 
   // ---- update mods inside packages ----
   const applyFixes = async items => {
@@ -492,7 +492,7 @@ const Wads = () => {
       label: `→ ${sectionName(current, rules, t)}`,
       title: t('wads:sectionTagTitle'),
       onClick: () => {
-        const menu = remote.Menu.buildFromTemplate([
+        popupMenu([
           {
             label: t('wads:menuSectionAutoMod'),
             type: 'radio',
@@ -509,7 +509,6 @@ const Wads = () => {
               dispatch({ type: 'sections/assignMod', id: item.id, section: choice.id })
           }))
         ]);
-        menu.popup({ window: remote.getCurrentWindow() });
       }
     };
   };
@@ -604,7 +603,7 @@ const Wads = () => {
     }
     template.push(
       { type: 'separator' },
-      { label: t('wads:menuOpen'), click: () => remote.shell.openItem(full) }
+      { label: t('wads:menuOpen'), click: () => openPath(full) }
     );
     if (row.key !== '') {
       template.push({
@@ -613,13 +612,13 @@ const Wads = () => {
         click: () => deleteFolder(row.key)
       });
     }
-    remote.Menu.buildFromTemplate(template).popup();
+    popupMenu(template);
   };
 
   // files dropped from Explorer straight onto a folder row
   const onDropToFolder = async (key, e) => {
     const files = Array.from(e.dataTransfer.files)
-      .map(f => f.path)
+      .map(pathOfFile)
       .filter(Boolean);
     if (!files.length) return;
 
@@ -798,7 +797,7 @@ const Wads = () => {
     });
     if (!sure) return;
 
-    if (!remote.shell.moveItemToTrash(path)) {
+    if (!(await trashItem(path))) {
       toast('danger', t('common:error'), t('wads:toastDeleteFailed', { name }));
       return;
     }
@@ -1065,7 +1064,7 @@ const Wads = () => {
     setDragging(false);
 
     const paths = Array.from(e.dataTransfer.files)
-      .map(f => f.path)
+      .map(pathOfFile)
       .filter(Boolean);
     if (!paths.length) return;
 

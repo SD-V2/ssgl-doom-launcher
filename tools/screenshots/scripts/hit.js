@@ -3,8 +3,9 @@ const { OUT, APP, SHOTS, page } = require('../lib');
 app.on('window-all-closed', () => {});
 app.on('ready', async () => {
   const scene = process.argv[process.argv.length - 1];
-  const w = new BrowserWindow({ width: 1275, height: 900, show: false, webPreferences: { nodeIntegration: true, webSecurity: false }, useContentSize: true });
+  const w = new BrowserWindow({ width: 1275, height: 900, show: false, webPreferences: { nodeIntegration: true, contextIsolation: false, webSecurity: false }, useContentSize: true });
   await w.loadURL(page(scene));
+    w.webContents.focus(); // counts as focused, like the visible program (see shot.js)
   await new Promise(r => setTimeout(r, 2500));
   const js = c => w.webContents.executeJavaScript(c);
   // open each dropdown of the page and test: is the first and the LAST option visible and is it what a click would hit?

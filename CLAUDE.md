@@ -20,7 +20,8 @@ Read this first. It was written at the end of a long working session in the Clau
 
 ## The project in one paragraph
 
-SSGL ("Super Shotgun Launcher") is an Electron 7 + React 16 + styled-components 4 + webpack 4 launcher for Doom mods.
+SSGL ("Super Shotgun Launcher") is an Electron 44 + React 16 + styled-components 4 + webpack 4 launcher for Doom mods.
+Electron 44 runs on **Windows 10 and 11, 64-bit only** (Windows 7/8/8.1 were dropped in Electron 23, 32-bit Windows in 44).
 `app/electron` = main process (files, play, updates), `app/client` = the screens (React). Settings and packages are
 saved as JSON in the user's data folder. See `docs/FEATURES.md` for everything the fork added and `docs/STYLES.md`
 for the interface styles.
@@ -28,7 +29,7 @@ for the interface styles.
 ## Commands
 
 ```
-cd app && yarn install                 # once (Node 16-22; webpack 4 needs NODE_OPTIONS=--openssl-legacy-provider on Node 17+)
+cd app && yarn install                 # once (Node 22.12 or newer, Electron 44 needs it; webpack 4 needs NODE_OPTIONS=--openssl-legacy-provider)
 cd app && yarn build                   # production build (must finish with 0 "ERROR in")
 cd tests && npm install && node run-all.js     # all checks (see tests/README.md)
 cd tools/screenshots && node build.js          # pictures of screens (see tools/screenshots/README.md)
@@ -79,9 +80,18 @@ client/assets/fonts, sounds                  fonts (+ FONTS-LICENSE.txt) and sou
 4. An unticked checkbox is saved as `''`, not `false`. Treat falsy-but-defined as off, and "undefined" as the default.
 5. The `Dropdown` component only shows its text when `value` is non-empty: an "all" choice needs a real value like `'all'`.
 
-**Electron 7 = Chromium 78. Do not use newer CSS/JS features**
-6. No CSS `inset:`, no `:focus-visible`, no `:is()/:where()`, no `gap` for flexbox, no `aspect-ratio`. (`:focus` + the
-   `html[data-keyboard]` mark is how the keyboard frame is done.) Test in the screenshot tool (it runs the same Electron).
+**Electron 44 = Chromium 152** (it was Electron 7 / Chromium 78 until the upgrade)
+6. CSS: `inset:`, `:focus-visible`, `:is()` / `:where()`, `gap` for flexbox, `aspect-ratio`, `color-mix()` and native CSS nesting
+   all work now (checked in Electron 44). The keyboard frame still uses `:focus` + the `html[data-keyboard]` mark - keep it, it
+   works and is tested. The CSS goes through styled-components 4 first: check new CSS in the screenshot tool (same Electron).
+   JavaScript: webpack 4 can only read older JavaScript, so Babel keeps translating the code (do not give Babel a modern
+   `targets` setting). Write JS as before.
+6a. **Electron's `remote` module is gone** (removed in Electron 14). The screens ask the main part through
+   `client/utils/native.js` (links, show in folder, open, Recycle Bin, file picker, right-click menus, program version) ->
+   `electron/handlers/native.js`. Right-click menus: `popupMenu(template)` with the usual Menu template; the click functions
+   stay in the screen. Files dropped from Explorer: `pathOfFile(file)` (`File.path` is gone since Electron 32). File dialogs:
+   use `startIn()` / `remember()` from `electron/utils/lastFolder.js` (since Electron 43 a dialog opens Downloads otherwise).
+   The window keeps `nodeIntegration: true, contextIsolation: false` (the screens use `require('electron')`).
 
 **Interface styles (client/Theme/styles.jsx)** - see also docs/STYLES.md
 7. **Never `clip-path` anything that can hold a dropdown**: `.ssgl-panel`, `.ssgl-input`, `.ssgl-modal`. The list of a dropdown
@@ -110,7 +120,8 @@ client/assets/fonts, sounds                  fonts (+ FONTS-LICENSE.txt) and sou
 15. Saving: `electron/utils/json.js` writes a temp file and keeps a `.bak`; keep using it for anything saved.
 16. Sounds are **off by default** (as in the original). The five events: soundStart, soundDrawer, soundModSelect,
     soundToastSuccess, soundToastError.
-17. Hidden Electron windows only draw frames on demand: the screenshot scripts call `capturePage()` several times; do the same
+17. Hidden Electron windows only draw frames on demand: the screenshot scripts call `capturePage()` several times, and they call
+    `webContents.focus()` (newer Chromium shows `:focus` styles only in a focused page); do the same
     before measuring animations.
 
 ## How to check your work

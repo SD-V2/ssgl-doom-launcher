@@ -25,8 +25,6 @@ jobs:
     env:
       # webpack 4 needs this on Node 17 and newer
       NODE_OPTIONS: --openssl-legacy-provider
-      # the checks never start Electron itself: skip its download (faster)
-      ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
     steps:
       - name: Get the code
         uses: actions/checkout@v4

@@ -3,8 +3,9 @@ const { OUT, APP, SHOTS, page } = require('../lib');
 app.on('window-all-closed', () => {});
 app.on('ready', async () => {
   const scene = process.argv[process.argv.length - 1];
-  const w = new BrowserWindow({ width: 1075, height: 610, show: false, webPreferences: { nodeIntegration: true, webSecurity: false }, useContentSize: true });
+  const w = new BrowserWindow({ width: 1075, height: 610, show: false, webPreferences: { nodeIntegration: true, contextIsolation: false, webSecurity: false }, useContentSize: true });
   await w.loadURL(page(scene));
+    w.webContents.focus(); // counts as focused, like the visible program (see shot.js)
   for (const wait of [1500, 2000, 3000, 5000]) {
     await new Promise(r => setTimeout(r, wait));
     const img = await w.webContents.capturePage();   // forces frames (the hidden test window only draws on demand)

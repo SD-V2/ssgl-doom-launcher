@@ -1,6 +1,6 @@
 # Screenshot tool
 
-Draws screens of the app in the **same Electron (7)** the app uses, with fake data, and saves PNG pictures. Used to look at
+Draws screens of the app in the **same Electron (44)** the app uses, with fake data, and saves PNG pictures. Used to look at
 visual changes, and to test things a fake browser cannot (clicking dropdown lists, where a window opens, mouse pointers, sounds).
 
 ```
@@ -18,7 +18,8 @@ node run.js snd                                   # can the browser play every s
 node run.js tab "wads-sections-few,en,nightcity,mods,new,cyberpunk"   # a screen coming in after a tab switch: every frame + a few pictures
 ```
 
-On Linux without a screen, `run.js` uses `xvfb-run` (install `xvfb`). Set `ELECTRON=/path/to/electron` to use another Electron.
+On Linux without a screen, `run.js` uses `xvfb-run` (install `xvfb`). Since Electron 42 the Electron program file is
+downloaded the first time it is used (not during `yarn install`): the first run can take a little longer. Set `ELECTRON=/path/to/electron` to use another Electron.
 
 ## Scene text
 

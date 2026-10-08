@@ -16,7 +16,7 @@ export const open = async what => {
         ]);
         break;
       default:
-        shell.openItem(settings.obligeConfigPath);
+        shell.openPath(settings.obligeConfigPath);
     }
     return {
       data: null,

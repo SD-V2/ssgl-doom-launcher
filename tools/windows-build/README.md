@@ -8,5 +8,8 @@ builds with `yarn build` + electron-builder and opens the folder with the finish
 The files here are a **copy for reference**. The owner has their own copy on their PC; if you change the script, tell them to take the
 new files from the pull request (they replace the old two files).
 
+Node.js: the program is built on Electron 44, which needs **Node.js 22.12 or newer**. The script installs Node when it is
+missing and updates it (winget) when it is older, then asks to be started again.
+
 Things to keep: the commit stamp (`GITHUB_SHA` -> `__BUILD_COMMIT__`), the friendly error messages, `$ErrorActionPreference = 'Stop'`.
 The script's syntax can be checked with PowerShell's parser (`[System.Management.Automation.Language.Parser]::ParseFile`).

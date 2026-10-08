@@ -11,7 +11,7 @@ const sent = [];
 Module.prototype.require = function (req) {
   if (req === 'electron') return {
     remote: { shell: { showItemInFolder() {}, moveItemToTrash: () => true }, dialog: { showMessageBox: async () => ({ response: 0 }) }, app: { getVersion: () => '1.0.0' }, getCurrentWindow: () => ({}) },
-    ipcRenderer: { invoke: async () => ({ data: null }), on() {}, removeListener() {} }
+    ipcRenderer: { invoke: require('./native-mock').wrap(async () => ({ data: null })), sendSync: require('./native-mock').sendSync, on() {}, removeListener() {} }
   };
   if (req.startsWith('#/')) req = path.join(APP, 'client', req.slice(2));
   return origReq.call(this, req);
