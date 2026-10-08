@@ -286,6 +286,7 @@ export default {
     sectionsResetDone: 'Sections are back to default.',
     interfaceStyle: 'Interface style',
     styleClassic: 'Classic',
+    cursorTrail: 'Sparkle trail behind the mouse pointer',
     styleGothic: 'Gothic',
     styleCyberpunk: 'Cyberpunk',
     autoRefresh: 'Refresh mod list automatically when files change',

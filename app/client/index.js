@@ -163,7 +163,14 @@ const App = () => {
       <AudioProvider>
         <ThemeProvider theme={activeTheme}>
           <>
-          <StyleLayer style={gstate.settings.style} />
+          <StyleLayer
+            style={gstate.settings.style}
+            trail={
+              gstate.settings.cursorTrail === undefined
+                ? true
+                : !!gstate.settings.cursorTrail
+            }
+          />
           <DialogProvider>
           <ToastContainer>
             <PackageTransfer />

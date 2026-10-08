@@ -315,6 +315,7 @@ export default {
     sectionsResetDone: 'عادت الأقسام إلى الافتراضي.',
     interfaceStyle: 'نمط الواجهة',
     styleClassic: 'كلاسيكي',
+    cursorTrail: 'أثر شرارات خلف مؤشر الفأرة',
     styleGothic: 'قوطي',
     styleCyberpunk: 'سايبربانك',
     autoRefresh: 'تحديث قائمة المودات تلقائياً عند تغيّر الملفات',

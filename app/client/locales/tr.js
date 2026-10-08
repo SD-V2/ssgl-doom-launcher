@@ -285,6 +285,7 @@ export default {
     sectionsResetDone: 'Bölümler varsayılana döndü.',
     interfaceStyle: 'Arayüz stili',
     styleClassic: 'Klasik',
+    cursorTrail: 'Fare imlecinin arkasında kıvılcım izi',
     styleGothic: 'Gotik',
     styleCyberpunk: 'Cyberpunk',
     autoRefresh: 'Dosyalar değişince mod listesini otomatik yenile',

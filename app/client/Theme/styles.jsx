@@ -1,6 +1,8 @@
 import PropTypes from 'prop-types';
-import React, { useEffect } from 'react';
-import { createGlobalStyle } from 'styled-components';
+import React, { useContext, useEffect } from 'react';
+import { createGlobalStyle, ThemeContext } from 'styled-components';
+
+import CursorTrail, { reducedMotion } from './CursorTrail';
 
 // ---------------------------------------------------------------------------
 // Interface styles: how the menus look and feel (shapes, fonts, effects).
@@ -135,15 +137,8 @@ const neon = (d, main) =>
   `<path d='${d}' fill='none' stroke='${HOT}' stroke-width='0.6' stroke-linejoin='round'/>`;
 
 const cyberCursors = (main, other) => ({
-  // a neon arrow with a trail of small digital squares behind it
-  arrow: `${dataUrl(
-    svgOf(
-      `<rect x='24' y='24' width='4' height='4' fill='${main}' fill-opacity='0.9'/>` +
-        `<rect x='28' y='20' width='2.6' height='2.6' fill='${main}' fill-opacity='0.55'/>` +
-        `<rect x='21' y='29' width='2.6' height='2.6' fill='${other}' fill-opacity='0.8'/>` +
-        neon(NEON_ARROW, main)
-    )
-  )} 3 3, default`,
+  // a neon arrow (the trail of squares behind it is drawn live by CursorTrail)
+  arrow: `${dataUrl(svgOf(neon(NEON_ARROW, main)))} 3 3, default`,
   // a neon pointing hand, with a small square in the second color on the finger tip
   hand: `${dataUrl(
     svgOf(
@@ -845,11 +840,24 @@ const useKeyboardMark = active => {
   }, [active]);
 };
 
-export const StyleLayer = ({ style }) => {
+// the sparkle trail is only for the Cyberpunk style, can be switched off in Settings
+// (trail = false) and is not drawn when the system asks for less motion
+export const StyleLayer = ({ style, trail = true }) => {
+  const theme = useContext(ThemeContext);
   useKeyboardMark(style === 'cyberpunk' || style === 'gothic');
-  if (style === 'cyberpunk') return <CyberpunkStyle />;
+  if (style === 'cyberpunk') {
+    const colors = theme && theme.color
+      ? { main: theme.color.active, second: secondOf(theme), hot: '#eafcff' }
+      : null;
+    return (
+      <>
+        <CyberpunkStyle />
+        {trail && colors && !reducedMotion() ? <CursorTrail colors={colors} /> : null}
+      </>
+    );
+  }
   if (style === 'gothic') return <GothicStyle />;
   return null;
 };
 
-StyleLayer.propTypes = { style: PropTypes.string };
+StyleLayer.propTypes = { style: PropTypes.string, trail: PropTypes.bool };

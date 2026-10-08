@@ -49,6 +49,7 @@ export const initState = {
   settings: {
     soundActive: false,
     styleSounds: true,
+    cursorTrail: true,
     soundDrawer: '',
     soundStart: '',
     soundModSelect: '',
