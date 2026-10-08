@@ -1,0 +1,70 @@
+# Builds the Windows program (like tools/windows-build/Build-SSGL.ps1 does, without
+# publishing anything) and keeps it as a download on the run's page: "SSGL-windows-<commit>".
+# The program remembers the commit it was built from (GITHUB_SHA, see the DefinePlugin in
+# app/configs/wp.*.base.js), so the update notice works in programs built here too.
+name: Windows build
+
+on:
+  pull_request:
+  push:
+    branches: [latest]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows:
+    name: Windows program
+    runs-on: windows-latest
+    timeout-minutes: 45
+    env:
+      NODE_OPTIONS: --openssl-legacy-provider
+    steps:
+      - name: Get the code
+        uses: actions/checkout@v4
+
+      - name: Install Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+          cache-dependency-path: app/yarn.lock
+
+      # On a pull request GitHub's own GITHUB_SHA is a temporary test-merge commit that never
+      # lands in the fork. Use the pull request's last real commit instead.
+      - name: Choose the commit to stamp into the program
+        shell: pwsh
+        run: |
+          $sha = '${{ github.event.pull_request.head.sha || github.sha }}'
+          "BUILD_SHA=$sha" >> $env:GITHUB_ENV
+          "SHORT_SHA=$($sha.Substring(0, 7))" >> $env:GITHUB_ENV
+          Write-Host "Building from commit $sha"
+
+      - name: Install the app parts
+        working-directory: app
+        run: yarn install --frozen-lockfile --ignore-engines
+
+      - name: Build and package the program
+        working-directory: app
+        shell: pwsh
+        run: |
+          $env:GITHUB_SHA = $env:BUILD_SHA   # becomes the "built from" mark inside the program
+          yarn clean
+          yarn build
+          if ($LASTEXITCODE -ne 0) { throw "The build failed" }
+          npx electron-builder build --win dir --publish never
+          if ($LASTEXITCODE -ne 0) { throw "Packaging failed" }
+          if (-not (Test-Path 'dist\win-unpacked\SSGL.exe')) { throw "SSGL.exe was not made" }
+
+      - name: Keep the program as a download
+        uses: actions/upload-artifact@v4
+        with:
+          name: SSGL-windows-${{ env.SHORT_SHA }}
+          path: app/dist/win-unpacked
+          retention-days: 30
+          if-no-files-found: error
