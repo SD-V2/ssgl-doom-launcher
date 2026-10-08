@@ -126,6 +126,8 @@ client/assets/fonts, sounds                  fonts (+ FONTS-LICENSE.txt) and sou
 
 ## How to check your work
 
+- GitHub runs the same build + checks by itself on every pull request (`.github/workflows/checks.yml`, "Build and checks")
+  and builds the Windows program as a download (`windows-build.yml`, artifact `SSGL-windows-<commit>`). Keep both green.
 - Logic and screens: `cd tests && node run-all.js` (jsdom, fast).
 - Look of a screen: `cd tools/screenshots && node build.js && node run.js shot "settings,en,hell,classic"` then open the picture in `out/shots`.
   Scene names are in `tools/screenshots/harness/entry.jsx` (settings, wads-sections-few, dlg-discard, markers, ...).

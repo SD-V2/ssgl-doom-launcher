@@ -1,0 +1,68 @@
+# Runs the build and all the checks (tests/run-all.js) for every pull request and every
+# push to the default branch, so a green or red mark shows on GitHub before Merge.
+# The checks use a fake browser (jsdom): no screen is needed. The screenshot tool is not run here.
+name: Checks
+
+on:
+  pull_request:
+  push:
+    branches: [latest]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# a newer push to the same pull request stops the older run
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Build and checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # webpack 4 needs this on Node 17 and newer
+      NODE_OPTIONS: --openssl-legacy-provider
+      # the checks never start Electron itself: skip its download (faster)
+      ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+    steps:
+      - name: Get the code
+        uses: actions/checkout@v4
+
+      - name: Install Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+          cache-dependency-path: app/yarn.lock
+
+      - name: Keep the downloads of the checks between runs
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: npm-tests-${{ runner.os }}-${{ hashFiles('tests/package.json') }}
+          restore-keys: npm-tests-${{ runner.os }}-
+
+      - name: Install the app parts
+        working-directory: app
+        run: yarn install --frozen-lockfile
+
+      - name: Build the app (must have no "ERROR in")
+        working-directory: app
+        run: |
+          set -o pipefail
+          yarn build 2>&1 | tee build.log
+          if grep -q "ERROR in" build.log; then
+            echo "::error::The build has errors (see \"ERROR in\" above)."
+            exit 1
+          fi
+
+      - name: Install the checks
+        working-directory: tests
+        run: npm install --no-audit --no-fund
+
+      - name: Run all checks
+        working-directory: tests
+        run: node run-all.js
