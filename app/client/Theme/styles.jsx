@@ -47,6 +47,9 @@ export const rgba = (hex, alpha) => {
 
 const accent = alpha => ({ theme }) => rgba(theme.color.active, alpha);
 const glow = alpha => ({ theme }) => rgba(theme.color.glow, alpha);
+// the second accent of the theme (red next to cyan); themes without one use their glow color
+const secondOf = theme => theme.color.second || theme.color.glow;
+const second = alpha => ({ theme }) => rgba(secondOf(theme), alpha);
 
 // the shape of a cut corner: top-left and bottom-right are cut by n pixels
 const cut = n =>
@@ -54,6 +57,45 @@ const cut = n =>
 // only the bottom-right corner is cut
 const cutOne = n =>
   `polygon(0 0, 100% 0, 100% calc(100% - ${n}px), calc(100% - ${n}px) 100%, 0 100%)`;
+
+// ---- drawings made of gradients (no clipping, so nothing can hide a dropdown) ----
+
+const line = c => `linear-gradient(${c}, ${c})`;
+
+// Four corner brackets like on a HUD: top-left and bottom-right in the main color,
+// top-right and bottom-left in the second color. size = length of an arm, t = thickness.
+const bracketLayers = (a, b, size, t) => [
+  [line(a), `${size}px ${t}px`, '0 0'],
+  [line(a), `${t}px ${size}px`, '0 0'],
+  [line(b), `${size}px ${t}px`, '100% 0'],
+  [line(b), `${t}px ${size}px`, '100% 0'],
+  [line(b), `${size}px ${t}px`, '0 100%'],
+  [line(b), `${t}px ${size}px`, '0 100%'],
+  [line(a), `${size}px ${t}px`, '100% 100%'],
+  [line(a), `${t}px ${size}px`, '100% 100%']
+];
+
+// a ruler of small ticks: |||||||||
+const ruler = (c, width, at) => [
+  `repeating-linear-gradient(90deg, ${c} 0, ${c} 1px, transparent 1px, transparent 6px)`,
+  `${width}px 4px`,
+  at
+];
+
+// layers [[image, size, position], ...] -> the three CSS lists (the background color stays)
+const layered = layers => `
+  background-image: ${layers.map(l => l[0]).join(', ')};
+  background-size: ${layers.map(l => l[1]).join(', ')};
+  background-position: ${layers.map(l => l[2]).join(', ')};
+  background-repeat: no-repeat;
+`;
+
+// hazard stripes  ////////
+const hazard = c =>
+  `repeating-linear-gradient(115deg, ${c} 0, ${c} 3px, transparent 3px, transparent 7px)`;
+
+// a patch of small dots  . . . .
+const dots = c => `radial-gradient(circle, ${c} 1px, transparent 1.6px)`;
 
 // "html body .x" is stronger than the single class of any normal component style
 const CyberpunkStyle = createGlobalStyle`
@@ -83,55 +125,71 @@ const CyberpunkStyle = createGlobalStyle`
     font-family: ${({ theme }) => theme.font.content};
   }
 
-  /* ---------- big panels ----------
-     No clip-path here: the lists of dropdowns stick out of panels, a clipped panel
-     would hide them (and block the clicks). The cut corner is a small corner flag. */
+  /* ---------- big panels: a thin frame with HUD brackets ----------
+     No clip-path on panels, inputs and windows: the lists of dropdowns stick out of
+     them, a clipped box would hide the list (and block the clicks). */
   html body .ssgl-panel {
     position: relative;
     border-radius: 0;
-    border-color: ${accent(0.3)};
-    box-shadow: inset 0 0 60px ${accent(0.07)};
+    border: 1px solid ${accent(0.4)};
+    box-shadow: inset 0 0 60px ${accent(0.06)}, 0 0 18px ${accent(0.1)};
+    ${({ theme }) =>
+      layered([
+        ...bracketLayers(theme.color.active, secondOf(theme), 26, 2),
+        ruler(rgba(theme.color.active, 0.8), 130, '52px 0'),
+        ruler(rgba(secondOf(theme), 0.8), 90, 'calc(100% - 54px) 100%')
+      ])}
   }
 
-  /* corner flags: top-left in the color of the theme, bottom-right in its second color */
+  /* red hazard stripes on the top edge, a patch of dots on the bottom edge */
   html body .ssgl-panel::before,
   html body .ssgl-panel::after {
     content: '';
     position: absolute;
-    width: 0;
-    height: 0;
     pointer-events: none;
     z-index: 2;
   }
 
   html body .ssgl-panel::before {
-    top: 0;
-    left: 0;
-    border-top: 14px solid ${({ theme }) => theme.color.active};
-    border-right: 14px solid transparent;
-    filter: drop-shadow(0 0 4px ${accent(0.9)});
+    top: -1px;
+    right: 44px;
+    width: 76px;
+    height: 7px;
+    background: ${({ theme }) => hazard(secondOf(theme))};
   }
 
   html body .ssgl-panel::after {
-    right: 0;
-    bottom: 0;
-    border-bottom: 14px solid ${({ theme }) => theme.color.glow};
-    border-left: 14px solid transparent;
-    filter: drop-shadow(0 0 4px ${glow(0.9)});
+    bottom: 5px;
+    left: 40px;
+    width: 40px;
+    height: 12px;
+    opacity: 0.8;
+    background: ${({ theme }) => dots(secondOf(theme))};
+    background-size: 8px 6px;
   }
 
   /* ---------- mods and folders in the lists ---------- */
   html body .ssgl-item {
+    position: relative;
     border-radius: 0;
-    border-left: 3px solid ${accent(0.55)};
+    border: 1px solid ${accent(0.22)};
+    border-left: 3px solid ${accent(0.7)};
     clip-path: ${cutOne(12)};
-    background-image: linear-gradient(90deg, ${accent(0.1)} 0%, transparent 45%);
     transition: all 0.15s ease-out;
+    ${({ theme }) =>
+      layered([
+        [line(secondOf(theme)), '30px 2px', '0 100%'],
+        [
+          `linear-gradient(90deg, ${rgba(theme.color.active, 0.1)} 0%, transparent 45%)`,
+          '100% 100%',
+          '0 0'
+        ]
+      ])}
   }
 
   html body .ssgl-item:hover {
     border-left-color: ${({ theme }) => theme.color.active};
-    background-image: linear-gradient(90deg, ${accent(0.22)} 0%, transparent 60%);
+    border-color: ${accent(0.5)};
   }
 
   html body .ssgl-item h1 {
@@ -139,8 +197,10 @@ const CyberpunkStyle = createGlobalStyle`
   }
 
   html body .ssgl-folder {
+    position: relative;
     border-radius: 0;
-    border-left: 3px solid ${accent(0.55)};
+    border: 1px solid ${accent(0.22)};
+    border-left: 3px solid ${second(0.9)};
     clip-path: ${cutOne(10)};
     background-image: linear-gradient(90deg, ${accent(0.12)} 0%, transparent 50%);
   }
@@ -154,32 +214,72 @@ const CyberpunkStyle = createGlobalStyle`
     letter-spacing: 0.5px;
   }
 
-  /* ---------- sections ---------- */
+  /* ---------- sections: "[ 2 · MONSTERS ]" ---------- */
   html body .ssgl-section {
+    position: relative;
     border-radius: 0;
-    border-color: ${accent(0.3)};
-    border-left: 3px solid ${({ theme }) => theme.color.active};
-    clip-path: ${cut(14)};
-    background-image: linear-gradient(135deg, ${accent(0.1)} 0%, transparent 35%);
+    border: 1px solid ${accent(0.35)};
+    ${({ theme }) =>
+      layered([
+        ...bracketLayers(theme.color.active, secondOf(theme), 16, 2),
+        [
+          `linear-gradient(135deg, ${rgba(theme.color.active, 0.1)} 0%, transparent 35%)`,
+          '100% 100%',
+          '0 0'
+        ]
+      ])}
+  }
+
+  html body .ssgl-section::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 36px;
+    width: 56px;
+    height: 6px;
+    pointer-events: none;
+    background: ${({ theme }) => hazard(secondOf(theme))};
   }
 
   html body .ssgl-section h2 {
     font-family: ${({ theme }) => theme.font.head};
     letter-spacing: 3px;
     font-size: 15px;
-    text-shadow: 1px 0 rgba(255, 0, 60, 0.55), -1px 0 rgba(0, 240, 255, 0.55),
-      0 0 10px ${glow(0.9)};
+    text-shadow: 0 0 10px ${glow(0.9)};
+  }
+
+  html body .ssgl-section h2::before {
+    content: '[ ';
+    color: ${second(1)};
+  }
+
+  html body .ssgl-section h2::after {
+    content: ' ]';
+    color: ${second(1)};
   }
 
   /* ---------- buttons and inputs ---------- */
   html body .ssgl-button {
+    position: relative;
     border-radius: 0;
-    clip-path: ${cut(9)};
-    border: 1px solid ${accent(0.7)};
-    background: linear-gradient(180deg, ${accent(0.2)} 0%, ${accent(0.06)} 100%);
+    clip-path: ${cut(8)};
+    border: 1px solid ${accent(0.85)};
+    background: ${accent(0.07)};
     text-transform: uppercase;
     letter-spacing: 2px;
     font-weight: 600;
+  }
+
+  /* a small square in the second color on the corner */
+  html body .ssgl-button::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 7px;
+    height: 7px;
+    background: ${({ theme }) => secondOf(theme)};
+    pointer-events: none;
   }
 
   html body .ssgl-button:hover:not(:disabled) {
@@ -189,14 +289,15 @@ const CyberpunkStyle = createGlobalStyle`
 
   html body .ssgl-button:hover:not(:disabled),
   html body .ssgl-button:hover:not(:disabled) * {
-    color: #05070a;
+    color: #03070a;
     text-shadow: none;
   }
 
-  /* no clip-path on inputs: the list of a dropdown sticks out of its box */
   html body .ssgl-input {
     border-radius: 0;
-    border-left: 3px solid ${accent(0.8)};
+    border: 1px solid ${accent(0.28)};
+    border-left: 3px solid ${second(0.95)};
+    border-bottom: 1px solid ${accent(0.7)};
   }
 
   html body .ssgl-input input,
@@ -207,7 +308,7 @@ const CyberpunkStyle = createGlobalStyle`
   /* ---------- tabs ---------- */
   html body .ssgl-tabs {
     border-radius: 0;
-    border-color: ${accent(0.3)};
+    border-color: ${accent(0.35)};
   }
 
   html body .ssgl-tabs button {
@@ -222,33 +323,61 @@ const CyberpunkStyle = createGlobalStyle`
   }
 
   /* ---------- windows ---------- */
+  /* NO "position" here: windows are placed with position: absolute by SSGL */
   html body .ssgl-modal {
-    position: relative;
     border-radius: 0;
-    border-top: 2px solid ${({ theme }) => theme.color.active};
-    border-left: 3px solid ${({ theme }) => theme.color.active};
-    box-shadow: 0 0 40px ${glow(0.35)};
-    background-image: linear-gradient(180deg, ${accent(0.08)} 0%, transparent 30%);
+    border: 1px solid ${accent(0.55)};
+    box-shadow: 0 0 40px ${glow(0.3)};
+    ${({ theme }) =>
+      layered([
+        ...bracketLayers(theme.color.active, secondOf(theme), 26, 2),
+        ruler(rgba(theme.color.active, 0.8), 120, '52px 0'),
+        [
+          `linear-gradient(180deg, ${rgba(theme.color.active, 0.08)} 0%, transparent 30%)`,
+          '100% 100%',
+          '0 0'
+        ]
+      ])}
   }
 
-  /* a corner flag at the bottom right (windows can hold dropdowns: no clip-path) */
+  html body .ssgl-modal::before,
   html body .ssgl-modal::after {
     content: '';
     position: absolute;
-    right: 0;
-    bottom: 0;
-    width: 0;
-    height: 0;
     pointer-events: none;
-    border-bottom: 18px solid ${({ theme }) => theme.color.glow};
-    border-left: 18px solid transparent;
-    filter: drop-shadow(0 0 4px ${glow(0.9)});
+  }
+
+  html body .ssgl-modal::before {
+    top: -1px;
+    right: 44px;
+    width: 76px;
+    height: 7px;
+    background: ${({ theme }) => hazard(secondOf(theme))};
+  }
+
+  html body .ssgl-modal::after {
+    bottom: 5px;
+    left: 40px;
+    width: 40px;
+    height: 12px;
+    opacity: 0.8;
+    background: ${({ theme }) => dots(secondOf(theme))};
+    background-size: 8px 6px;
   }
 
   html body .ssgl-modal h1 {
     letter-spacing: 3px;
-    text-shadow: 2px 0 rgba(255, 0, 60, 0.55), -2px 0 rgba(0, 240, 255, 0.55),
-      0 0 14px ${glow(0.9)};
+    text-shadow: 0 0 14px ${glow(0.9)};
+  }
+
+  html body .ssgl-modal h1::before {
+    content: '[ ';
+    color: ${second(1)};
+  }
+
+  html body .ssgl-modal h1::after {
+    content: ' ]';
+    color: ${second(1)};
   }
 
   /* ---------- the main menu ---------- */
@@ -261,7 +390,7 @@ const CyberpunkStyle = createGlobalStyle`
   html body .ssgl-nav span.active::before {
     content: '//';
     margin-inline-end: 8px;
-    color: ${({ theme }) => theme.color.active};
+    color: ${({ theme }) => secondOf(theme)};
   }
 
   /* ---------- scrollbars ---------- */

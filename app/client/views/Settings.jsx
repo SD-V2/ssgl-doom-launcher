@@ -110,6 +110,7 @@ const Settings = () => {
     { label: 'Berserk', value: 'berserk' },
     { label: 'Steel', value: 'steel' },
     { label: 'Neon', value: 'neon' },
+    { label: 'Night City', value: 'nightcity' },
     { label: 'Custom color...', value: 'custom' }
   ];
   const viewOptions = [

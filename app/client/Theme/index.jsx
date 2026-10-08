@@ -294,7 +294,7 @@ export const slayer = {
 };
 
 // Builds a full theme from three colors (same look as the built-in ones)
-const makeTheme = ({ active, glow, dark }) => ({
+const makeTheme = ({ active, glow, dark, second }) => ({
   ...hell,
   font: { ...hell.font, glow: `0 0 5px ${glow}, 0 0 15px ${glow};` },
   svg: {
@@ -303,7 +303,8 @@ const makeTheme = ({ active, glow, dark }) => ({
     dark,
     bright: active
   },
-  color: { ...hell.color, glow, active },
+  // second = the second accent of an interface style (defaults to the glow color)
+  color: { ...hell.color, glow, active, second: second || glow },
   border: { ...hell.border, active },
   scrollbar: hell.scrollbar.replace(/#ffa800/g, active)
 });
@@ -378,6 +379,14 @@ const steel = makeTheme({
   dark: '#3E454C'
 });
 
+// cyan lines and glow with red accents, like the posters of Night City
+const nightcity = makeTheme({
+  active: '#2DD4E8',
+  glow: '#2DD4E8',
+  second: '#FF2D46',
+  dark: '#073B44'
+});
+
 // yellow and cyan on black - made for the Cyberpunk interface style
 const neon = makeTheme({
   active: '#FCEE0A',
@@ -398,7 +407,8 @@ const themes = {
   toxic,
   berserk,
   steel,
-  neon
+  neon,
+  nightcity
 };
 
 export default themes;
