@@ -19,6 +19,7 @@ What they cover (a short map):
 | `style` | the interface styles (Cyberpunk, Gothic): the generated style sheet, safety rules (see CLAUDE.md), fonts, pointers |
 | `marker` | the active mod markers and the picker in Settings |
 | `feel` | sounds per style, keyboard frame mark, Sounds section in Settings |
+| `arabic` | Arabic: layout as in English (nothing mirrored), the text reads right to left |
 | `tabs` | switching tabs: the short slide + fade of a screen, no row-by-row fades |
 | `trail`, `trailui`, `cursorfx` | the Cyberpunk sparkle trail (engine and canvas) and the Cursor effects options |
 | `sections`, `fixed`, `secorder`, `custom` | the sections of the load order: rules, order, own sections, drag into a section |

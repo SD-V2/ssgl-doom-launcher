@@ -65,7 +65,10 @@ client/assets/fonts, sounds                  fonts (+ FONTS-LICENSE.txt) and sou
 
 **Texts and languages**
 1. Every new text goes into **all four** locale files (`en`, `tr`, `ar`, `ru`) with the same key. `tests/i18ncheck.js` checks it.
-   Arabic is right-to-left: use `margin-inline-*` / `padding-inline-*` / `inset-inline` style properties, not left/right, in UI.
+   Arabic: the owner wants the **English layout, not mirrored** (html stays `dir="ltr"`); only the text reads right to left.
+   `utils/textDirection.js` gives every text-only block `dir="auto"` (not flex/grid boxes, texts starting with a number keep
+   the English order) and global.css keeps each text on the side it has in English. Do not set `dir="rtl"` on the page again.
+   Keep using `margin-inline-*` / `padding-inline-*` (they now act as in English). `tests/arabic.js` checks this.
    Brand names (UAC, BFG, Pinkie, Slayer) stay in Latin letters in Russian.
 2. Never show a Windows message box. Use `useDialog()` (`dialog.confirm`, `dialog.info`).
 

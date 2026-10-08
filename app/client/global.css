@@ -4,6 +4,36 @@ html, body {
   overflow: hidden;
 }
 
+/* Arabic: the layout stays as in English (html dir="ltr"). Each piece of text finds
+   its own direction from its first letter: Arabic reads right to left and lines up
+   on the right of its box, English names and paths stay left to right. */
+html[data-text-dir='rtl'] body *,
+html[data-text-dir='rtl'] input,
+html[data-text-dir='rtl'] textarea {
+  unicode-bidi: plaintext;
+}
+
+/* text boxes (also the chosen item of a dropdown) keep their text on the left as in
+   English; typed Arabic still reads right to left */
+html[data-text-dir='rtl'] input,
+html[data-text-dir='rtl'] textarea {
+  text-align: left;
+}
+
+/* every text keeps the side of its box it has in English (utils/textDirection.js) */
+html[data-text-dir='rtl'] [data-keep-align='left'] {
+  text-align: left;
+}
+html[data-text-dir='rtl'] [data-keep-align='right'] {
+  text-align: right;
+}
+
+/* a block of text with its own direction (dir="auto", or "ltr" when it starts with
+   a number) follows that direction instead of guessing again */
+html[data-text-dir='rtl'] body [data-auto-dir] {
+  unicode-bidi: isolate;
+}
+
 @font-face {
   font-family: 'Michroma';
   src: url('./assets/fonts/Michroma.woff') format('woff');
