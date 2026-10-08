@@ -303,6 +303,8 @@ export default {
     markerHalloween: 'الهالوين',
     markerRamadan: 'رمضان',
     markerEid: 'العيد',
+    markerSkull: 'جمجمة',
+    markerDemonSkull: 'جمجمة شيطان',
     markerUac: 'UAC',
     markerBfg: 'BFG',
     markerPinkie: 'Pinkie',

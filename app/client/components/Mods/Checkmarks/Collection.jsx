@@ -183,6 +183,25 @@ const Eid = () => (
   </>
 );
 
+// ---- Skulls: human skull, demon skull ----
+
+// a human skull with its jaw
+const Skull = () => (
+  <>
+    <path fillRule="evenodd" d="M174 80C228 80 260 116 260 162C260 190 248 208 234 216V234C234 243 227 248 218 248H130C121 248 114 243 114 234V216C100 208 88 190 88 162C88 116 120 80 174 80ZM117 168a23 21 0 1 0 46 0a23 21 0 1 0 -46 0ZM185 168a23 21 0 1 0 46 0a23 21 0 1 0 -46 0ZM174 190L186 214H162ZM151 226H156V248H151ZM164 226H169V248H164ZM177 226H182V248H177ZM190 226H195V248H190Z" />
+    <path fillRule="evenodd" d="M132 254H216C216 266 200 276 174 276C148 276 132 266 132 254ZM151 254H156V266H151ZM164 254H169V266H164ZM177 254H182V266H177ZM190 254H195V266H190Z" />
+  </>
+);
+
+// a horned demon skull with fangs
+const DemonSkull = () => (
+  <>
+    <path fillRule="evenodd" d="M120 128C100 112 86 90 88 62C100 86 120 100 142 108Z" />
+    <path fillRule="evenodd" d="M228 128C248 112 262 90 260 62C248 86 228 100 206 108Z" />
+    <path fillRule="evenodd" d="M174 92C226 92 256 124 256 166C256 194 242 212 228 222L214 260L174 282L134 260L120 222C106 212 92 194 92 166C92 124 122 92 174 92ZM118 156L166 170L160 192L126 186ZM230 156L182 170L188 192L222 186ZM174 196L184 216H164ZM138 232H210L202 252L194 240L186 258L178 242H170L162 258L154 240L146 252Z" />
+  </>
+);
+
 const collection = {
   hell: Hell,
   uac: Uac,
@@ -198,7 +217,9 @@ const collection = {
   christmas: Christmas,
   halloween: Halloween,
   ramadan: Ramadan,
-  eid: Eid
+  eid: Eid,
+  skull: Skull,
+  demonskull: DemonSkull
 };
 
 export default collection;

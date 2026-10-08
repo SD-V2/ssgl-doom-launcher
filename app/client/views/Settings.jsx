@@ -538,7 +538,9 @@ const Settings = () => {
                     christmas: t('settings:markerChristmas'),
                     halloween: t('settings:markerHalloween'),
                     ramadan: t('settings:markerRamadan'),
-                    eid: t('settings:markerEid')
+                    eid: t('settings:markerEid'),
+                    skull: t('settings:markerSkull'),
+                    demonskull: t('settings:markerDemonSkull')
                   }}
                 />
                 {gstate.sourceports.length > 0 ? (
