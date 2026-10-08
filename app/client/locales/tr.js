@@ -237,6 +237,8 @@ export default {
     toastDeleted: 'Sourceport silindi'
   },
   settings: {
+    volume: 'Ses düzeyi',
+    styleSounds: 'Sesler arayüz stiline uysun',
     titleSound: 'Sesler',
     soundStart: 'Sourceport başlatma sesini değiştir',
     soundDrawer: 'IWAD çekmecesi açma sesini değiştir',
@@ -261,6 +263,12 @@ export default {
     marker: 'Etkin mod işareti',
     markerAuto: 'Otomatik',
     markerHell: 'Pentagram',
+    markerTarget: 'Hedef',
+    markerChip: 'Çip',
+    markerBolt: 'Yıldırım',
+    markerCross: 'Haç',
+    markerRose: 'Gül pencere',
+    markerArch: 'Kemer',
     markerUac: 'UAC',
     markerBfg: 'BFG',
     markerPinkie: 'Pinkie',

@@ -5,12 +5,28 @@ import CheckMarkStyle from './CheckMarkStyle';
 import collection from './Collection';
 
 // The five designs of the active mod marker (the pictures are in Collection.jsx)
-export const MARKERS = ['hell', 'uac', 'bfg', 'pinkie', 'slayer'];
+// the groups: the five classic ones, three for Cyberpunk, three for Gothic
+export const MARKER_GROUPS = {
+  classic: ['hell', 'uac', 'bfg', 'pinkie', 'slayer'],
+  cyberpunk: ['target', 'chip', 'bolt'],
+  gothic: ['cross', 'rose', 'arch']
+};
 
-// The design in use: the one chosen in Settings ("marker"), or - when it says
-// "auto" (or nothing) - the one that belongs to the color theme, as it always was.
-export const markerOf = settings =>
-  MARKERS.indexOf(settings.marker) > -1 ? settings.marker : settings.theme;
+export const MARKERS = [
+  ...MARKER_GROUPS.classic,
+  ...MARKER_GROUPS.cyberpunk,
+  ...MARKER_GROUPS.gothic
+];
+
+// The design in use: the one chosen in Settings ("marker"). When it says "auto"
+// (or nothing): the target in the Cyberpunk style, the cross in the Gothic style,
+// and in the Classic style the one that belongs to the color theme, as it always was.
+export const markerOf = settings => {
+  if (MARKERS.indexOf(settings.marker) > -1) return settings.marker;
+  if (settings.style === 'cyberpunk') return 'target';
+  if (settings.style === 'gothic') return 'cross';
+  return settings.theme;
+};
 
 const CheckMark = ({ theme, active, size, onClick }) => {
   const ThemedCheckMark = collection[theme] || collection['hell'];

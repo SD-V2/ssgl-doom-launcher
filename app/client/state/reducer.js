@@ -48,6 +48,7 @@ export const initState = {
   sourceports: [],
   settings: {
     soundActive: false,
+    styleSounds: true,
     soundDrawer: '',
     soundStart: '',
     soundModSelect: '',

@@ -246,6 +246,8 @@ export default {
     toastDeleted: 'Порт удалён'
   },
   settings: {
+    volume: 'Громкость',
+    styleSounds: 'Звуки подходят стилю интерфейса',
     titleSound: 'Звуки',
     soundStart: 'Заменить звук запуска порта',
     soundDrawer: 'Заменить звук открытия ящика IWAD',
@@ -270,6 +272,12 @@ export default {
     marker: 'Значок активного мода',
     markerAuto: 'Авто',
     markerHell: 'Пентаграмма',
+    markerTarget: 'Прицел',
+    markerChip: 'Чип',
+    markerBolt: 'Молния',
+    markerCross: 'Крест',
+    markerRose: 'Окно-роза',
+    markerArch: 'Арка',
     markerUac: 'UAC',
     markerBfg: 'BFG',
     markerPinkie: 'Pinkie',

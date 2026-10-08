@@ -2,7 +2,7 @@ import PropTypes from 'prop-types';
 import React from 'react';
 import styled from 'styled-components';
 
-import Check, { MARKERS } from './Mods/Checkmarks';
+import Check, { MARKER_GROUPS, MARKERS } from './Mods/Checkmarks';
 
 // "Active mod marker": the five designs as small pictures to click, and "Automatic"
 // (the design that belongs to the color theme).
@@ -57,7 +57,24 @@ const Tile = styled.div`
   }
 `;
 
-const MarkerPicker = ({ value, onChange, colorTheme, names, autoLabel }) => {
+const Group = styled.div`
+  width: 100%;
+  margin: 2px 0 6px 0;
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: ${({ theme }) => theme.color.meta};
+`;
+
+const MarkerPicker = ({
+  value,
+  onChange,
+  colorTheme,
+  names,
+  autoLabel,
+  autoMarker,
+  groupNames
+}) => {
   const pick = id => () => onChange({ name: 'marker', value: id });
   const key = id => e => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -68,24 +85,32 @@ const MarkerPicker = ({ value, onChange, colorTheme, names, autoLabel }) => {
 
   const current = MARKERS.indexOf(value) > -1 ? value : 'auto';
 
+  const tile = (id, preview, label) => (
+    <Tile
+      key={id}
+      role="button"
+      tabIndex={0}
+      aria-pressed={current === id}
+      title={label}
+      className={current === id ? 'on' : undefined}
+      onClick={pick(id)}
+      onKeyDown={key(id)}
+    >
+      <div>
+        <Check theme={preview} active size="44" />
+      </div>
+      <small>{label}</small>
+    </Tile>
+  );
+
   return (
     <Tiles>
-      {['auto', ...MARKERS].map(id => (
-        <Tile
-          key={id}
-          role="button"
-          tabIndex={0}
-          aria-pressed={current === id}
-          title={id === 'auto' ? autoLabel : names[id]}
-          className={current === id ? 'on' : undefined}
-          onClick={pick(id)}
-          onKeyDown={key(id)}
-        >
-          <div>
-            <Check theme={id === 'auto' ? colorTheme : id} active size="44" />
-          </div>
-          <small>{id === 'auto' ? autoLabel : names[id]}</small>
-        </Tile>
+      {tile('auto', autoMarker || colorTheme, autoLabel)}
+      {Object.keys(MARKER_GROUPS).map(group => (
+        <React.Fragment key={group}>
+          <Group>{groupNames[group]}</Group>
+          {MARKER_GROUPS[group].map(id => tile(id, id, names[id]))}
+        </React.Fragment>
       ))}
     </Tiles>
   );
@@ -95,6 +120,8 @@ MarkerPicker.propTypes = {
   value: PropTypes.string,
   onChange: PropTypes.func.isRequired,
   colorTheme: PropTypes.string,
+  autoMarker: PropTypes.string,
+  groupNames: PropTypes.object.isRequired,
   names: PropTypes.object.isRequired,
   autoLabel: PropTypes.string.isRequired
 };

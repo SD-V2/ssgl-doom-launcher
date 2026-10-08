@@ -237,6 +237,8 @@ export default {
     toastDeleted: 'Deleted Sourceport'
   },
   settings: {
+    volume: 'Volume',
+    styleSounds: 'Sounds match the interface style',
     titleSound: 'Sounds',
     soundStart: 'Overwrite Start Sourceport',
     soundDrawer: 'Overwrite Open IWAD Drawer',
@@ -262,6 +264,12 @@ export default {
     marker: 'Active mod marker',
     markerAuto: 'Automatic',
     markerHell: 'Pentagram',
+    markerTarget: 'Target',
+    markerChip: 'Chip',
+    markerBolt: 'Bolt',
+    markerCross: 'Cross',
+    markerRose: 'Rose window',
+    markerArch: 'Arch',
     markerUac: 'UAC',
     markerBfg: 'BFG',
     markerPinkie: 'Pinkie',

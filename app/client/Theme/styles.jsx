@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { createGlobalStyle } from 'styled-components';
 
 // ---------------------------------------------------------------------------
@@ -108,6 +108,103 @@ const hazard = c =>
 
 // a patch of small dots  . . . .
 const dots = c => `radial-gradient(circle, ${c} 1px, transparent 1.6px)`;
+
+// A picture written into CSS as data. It must not contain ; ' ( ) or // : the tool that
+// builds the style sheet would cut it there and garble everything behind it.
+const dataUrl = svg =>
+  `url("data:image/svg+xml,${encodeURIComponent(svg)
+    .replace(/'/g, '%27')
+    .replace(/\(/g, '%28')
+    .replace(/\)/g, '%29')}")`;
+
+// ---- mouse pointers (32 x 32 pictures). arrow = the normal one, hand = over things you can click
+const svgOf = body =>
+  `<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'>${body}</svg>`;
+
+const cyberCursors = (main, other) => ({
+  // an angular arrow with a small square in the second color
+  arrow: `${dataUrl(
+    svgOf(
+      `<path d='M3 3 L3 24 L9 19 L13 28 L17 26.3 L13 17.5 L21 17.5 Z' fill='#000' fill-opacity='0.65' stroke='${main}' stroke-width='1.6' stroke-linejoin='miter'/>` +
+        `<rect x='22' y='22' width='6' height='6' fill='${other}'/>`
+    )
+  )} 3 3, default`,
+  // a target: four brackets and a dot
+  hand: `${dataUrl(
+    svgOf(
+      `<path d='M4 11 V4 H11 M21 4 H28 V11 M28 21 V28 H21 M11 28 H4 V21' fill='none' stroke='${main}' stroke-width='2'/>` +
+        `<rect x='14' y='14' width='4' height='4' fill='${other}'/>`
+    )
+  )} 16 16, pointer`
+});
+
+const gothicCursors = (main, other) => {
+  // a dagger, the tip is at the top left
+  const dagger = (blade, guard) =>
+    `<g transform='rotate(-45 16 16)' stroke='#000' stroke-opacity='0.7' stroke-width='0.8'>` +
+    `<path d='M16 1 L19.5 8 V20 H12.5 V8 Z' fill='${blade}'/>` +
+    `<path d='M7 20 H25 V23.5 H7 Z' fill='${guard}'/>` +
+    `<rect x='14.2' y='23.5' width='3.6' height='5' fill='${guard}'/>` +
+    `<circle cx='16' cy='29.5' r='2.2' fill='${other}'/></g>`;
+  return {
+    arrow: `${dataUrl(svgOf(dagger(main, main)))} 5 5, default`,
+    // the same dagger, with a blood red guard: "this can be used"
+    hand: `${dataUrl(svgOf(dagger('#fff3d0', other)))} 5 5, pointer`
+  };
+};
+
+// the pointer rules of a style
+const cursorRules = c => `
+  html body,
+  html body * {
+    cursor: ${c.arrow} !important;
+  }
+
+  html body button,
+  html body a,
+  html body [role='button'],
+  html body [draggable='true'],
+  html body input[type='range'],
+  html body input[type='checkbox'],
+  html body label,
+  html body .ssgl-item,
+  html body .ssgl-folder,
+  html body .ssgl-tabs button,
+  html body .ssgl-button,
+  html body .ssgl-input input[readonly] {
+    cursor: ${c.hand} !important;
+  }
+
+  html body input[type='text'],
+  html body textarea {
+    cursor: text !important;
+  }
+
+  html body .ssgl-input input[readonly] {
+    cursor: ${c.hand} !important;
+  }
+`;
+
+// ---- the frame around what you reached with the keyboard (Tab).
+// (it only shows when the Tab key was used last: html gets the mark data-keyboard)
+const focusRules = (ring, glowing, offset) => `
+  html[data-keyboard] body button:focus,
+  html[data-keyboard] body a:focus,
+  html[data-keyboard] body [role='button']:focus,
+  html[data-keyboard] body [tabindex]:focus,
+  html[data-keyboard] body .ssgl-input:focus-within {
+    outline: ${ring};
+    outline-offset: ${offset}px;
+    box-shadow: ${glowing};
+  }
+
+  /* inside a box the box shows the frame, not the text field itself */
+  html[data-keyboard] body .ssgl-input input:focus,
+  html[data-keyboard] body .ssgl-input textarea:focus {
+    outline: none;
+    box-shadow: none;
+  }
+`;
 
 // "html body .x" is stronger than the single class of any normal component style
 const CyberpunkStyle = createGlobalStyle`
@@ -405,6 +502,17 @@ const CyberpunkStyle = createGlobalStyle`
     color: ${({ theme }) => secondOf(theme)};
   }
 
+  /* ---------- mouse pointer and keyboard frame ---------- */
+  ${({ theme }) =>
+    cursorRules(cyberCursors(theme.color.active, secondOf(theme)))}
+
+  ${({ theme }) =>
+    focusRules(
+      `2px solid ${theme.color.active}`,
+      `0 0 0 5px ${rgba(secondOf(theme), 0.4)}, 0 0 16px ${rgba(theme.color.active, 0.6)}`,
+      2
+    )}
+
   /* ---------- scrollbars ---------- */
   ::-webkit-scrollbar-thumb {
     border-radius: 0 !important;
@@ -417,14 +525,6 @@ const CyberpunkStyle = createGlobalStyle`
 // (the same rules as for Cyberpunk: nothing that holds a dropdown is clipped,
 //  windows keep their position, no sizes or places are changed)
 // ===========================================================================
-
-// A picture written into CSS as data. It must not contain ; ' ( ) or // : the tool that
-// builds the style sheet would cut it there and garble everything behind it.
-const dataUrl = svg =>
-  `url("data:image/svg+xml,${encodeURIComponent(svg)
-    .replace(/'/g, '%27')
-    .replace(/\(/g, '%28')
-    .replace(/\)/g, '%29')}")`;
 
 // a corner ornament as a picture: [flip left-right, flip up-down]
 const cornerSvg = (color, flipX, flipY) => {
@@ -693,17 +793,48 @@ const GothicStyle = createGlobalStyle`
     vertical-align: middle;
   }
 
+  /* ---------- mouse pointer and keyboard frame ---------- */
+  ${({ theme }) =>
+    cursorRules(gothicCursors(theme.color.active, secondOf(theme)))}
+
+  ${({ theme }) =>
+    focusRules(
+      `1px solid ${theme.color.active}`,
+      `0 0 0 5px ${rgba(theme.color.active, 0.2)}, 0 0 14px ${rgba(secondOf(theme), 0.5)}`,
+      3
+    )}
+
   /* ---------- scrollbars ---------- */
   ::-webkit-scrollbar-thumb {
     border-radius: 0 !important;
   }
 `;
 
-export const StyleLayer = ({ style }) =>
-  style === 'cyberpunk' ? (
-    <CyberpunkStyle />
-  ) : style === 'gothic' ? (
-    <GothicStyle />
-  ) : null;
+// html gets the mark "data-keyboard" when Tab or an arrow key was used last, and loses it
+// when the mouse is used. The keyboard frame of the styles only shows while it is there.
+const useKeyboardMark = active => {
+  useEffect(() => {
+    if (!active) return undefined;
+    const root = document.documentElement;
+    const onKey = e => {
+      if (e.key === 'Tab' || /^Arrow/.test(e.key)) root.setAttribute('data-keyboard', '1');
+    };
+    const onMouse = () => root.removeAttribute('data-keyboard');
+    window.addEventListener('keydown', onKey, true);
+    window.addEventListener('mousedown', onMouse, true);
+    return () => {
+      window.removeEventListener('keydown', onKey, true);
+      window.removeEventListener('mousedown', onMouse, true);
+      root.removeAttribute('data-keyboard');
+    };
+  }, [active]);
+};
+
+export const StyleLayer = ({ style }) => {
+  useKeyboardMark(style === 'cyberpunk' || style === 'gothic');
+  if (style === 'cyberpunk') return <CyberpunkStyle />;
+  if (style === 'gothic') return <GothicStyle />;
+  return null;
+};
 
 StyleLayer.propTypes = { style: PropTypes.string };

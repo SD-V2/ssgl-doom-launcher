@@ -267,6 +267,8 @@ export default {
     toastDeleted: 'تم حذف Sourceport'
   },
   settings: {
+    volume: 'مستوى الصوت',
+    styleSounds: 'الأصوات تناسب نمط الواجهة',
     titleSound: 'الأصوات',
     soundStart: 'استبدال صوت تشغيل Sourceport',
     soundDrawer: 'استبدال صوت فتح درج IWAD',
@@ -291,6 +293,12 @@ export default {
     marker: 'علامة المود النشط',
     markerAuto: 'تلقائي',
     markerHell: 'نجمة خماسية',
+    markerTarget: 'هدف',
+    markerChip: 'شريحة',
+    markerBolt: 'صاعقة',
+    markerCross: 'صليب',
+    markerRose: 'نافذة وردية',
+    markerArch: 'قوس',
     markerUac: 'UAC',
     markerBfg: 'BFG',
     markerPinkie: 'Pinkie',

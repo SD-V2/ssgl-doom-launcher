@@ -2,6 +2,7 @@ import React, { useContext, useEffect, useRef, useState } from 'react';
 
 import { Box, Flex } from '../components';
 import { useDialog } from '../components/Dialog';
+import { markerOf } from '../components/Mods/Checkmarks';
 import MarkerPicker from '../components/MarkerPicker';
 import {
   Button,
@@ -21,6 +22,7 @@ import {
   setTitle,
   useHashLocation,
   useIpc,
+  useSound,
   useToast,
   useTranslation
 } from '../utils';
@@ -41,6 +43,9 @@ const Settings = () => {
     blur: settings.wallpaperBlur,
     fit: settings.wallpaperFit,
     marker: settings.marker,
+    sound: settings.soundActive,
+    volume: settings.volume,
+    styleSounds: settings.styleSounds,
     style: settings.style
   });
   useEffect(() => {
@@ -51,6 +56,9 @@ const Settings = () => {
         wallpaperBlur: form.wallpaperBlur,
         wallpaperFit: form.wallpaperFit,
         marker: form.marker,
+        soundActive: form.soundActive,
+        volume: form.volume,
+        styleSounds: form.styleSounds,
         style: form.style
       }
     });
@@ -59,6 +67,9 @@ const Settings = () => {
     form.wallpaperBlur,
     form.wallpaperFit,
     form.marker,
+    form.soundActive,
+    form.volume,
+    form.styleSounds,
     form.style
   ]);
   useEffect(
@@ -70,6 +81,9 @@ const Settings = () => {
           wallpaperBlur: savedLook.current.blur,
           wallpaperFit: savedLook.current.fit,
           marker: savedLook.current.marker,
+          soundActive: savedLook.current.sound,
+          volume: savedLook.current.volume,
+          styleSounds: savedLook.current.styleSounds,
           style: savedLook.current.style
         }
       }),
@@ -158,6 +172,21 @@ const Settings = () => {
     });
   };
 
+  // choosing another style (or "match the style") gives a short sample of its sound -
+  // after the new style is shown, so it already is the new sound
+  const [play] = useSound();
+  const playRef = useRef(play);
+  playRef.current = play;
+  const sampleFirst = useRef(true);
+  useEffect(() => {
+    if (sampleFirst.current) {
+      sampleFirst.current = false;
+      return undefined;
+    }
+    const id = setTimeout(() => playRef.current('soundModSelect'), 150);
+    return () => clearTimeout(id);
+  }, [form.style, form.styleSounds]);
+
   // sections back to how SSGL comes: names, explanations, words, your own and the
   // removed sections, the order, and the sections you picked by hand
   const onResetSections = async () => {
@@ -221,6 +250,9 @@ const Settings = () => {
         blur: form.wallpaperBlur,
         fit: form.wallpaperFit,
         marker: form.marker,
+        sound: form.soundActive,
+        volume: form.volume,
+        styleSounds: form.styleSounds,
         style: form.style
       };
       dispatch({ type: 'settings/save', data: newSettings });
@@ -413,13 +445,28 @@ const Settings = () => {
                   value={form.marker || 'auto'}
                   onChange={onComponent}
                   colorTheme={form.theme}
+                  autoMarker={markerOf({
+                    theme: form.theme,
+                    style: form.style
+                  })}
                   autoLabel={t('settings:markerAuto')}
+                  groupNames={{
+                    classic: t('settings:styleClassic'),
+                    cyberpunk: t('settings:styleCyberpunk'),
+                    gothic: t('settings:styleGothic')
+                  }}
                   names={{
                     hell: t('settings:markerHell'),
                     uac: t('settings:markerUac'),
                     bfg: t('settings:markerBfg'),
                     pinkie: t('settings:markerPinkie'),
-                    slayer: t('settings:markerSlayer')
+                    slayer: t('settings:markerSlayer'),
+                    target: t('settings:markerTarget'),
+                    chip: t('settings:markerChip'),
+                    bolt: t('settings:markerBolt'),
+                    cross: t('settings:markerCross'),
+                    rose: t('settings:markerRose'),
+                    arch: t('settings:markerArch')
                   }}
                 />
                 {gstate.sourceports.length > 0 ? (
@@ -479,7 +526,7 @@ const Settings = () => {
               </Flex.Grid>
             ) : null}
           </FormCollection>
-          {/* <FormCollection title={t('settings:titleSound')}>
+          <FormCollection title={t('settings:titleSound')}>
             <Checkbox
               value={form.soundActive}
               label={t('settings:soundActive')}
@@ -487,59 +534,26 @@ const Settings = () => {
               onChange={onComponent}
             />
             {form.soundActive ? (
-              <Flex.Grid>
-                <Flex.Col width="50%">
-                  <Range
-                    value={form.volume}
-                    min="0"
-                    max="1"
-                    step="0.1"
-                    name="volume"
-                    label={'volume'}
-                    onChange={onInput}
-                    fluid
-                  />
-                  <SelectFile
-                    name="soundModSelect"
-                    onFile={onComponent}
-                    label={t('settings:soundModSelect')}
-                    value={form.soundModSelect}
-                    fluid
-                  />
-                  <SelectFile
-                    name="soundToastSuccess"
-                    onFile={onComponent}
-                    label={t('settings:soundToastSuccess')}
-                    value={form.soundToastSuccess}
-                    fluid
-                  />
-                </Flex.Col>
-                <Flex.Col width="50%">
-                  <SelectFile
-                    name="soundDrawer"
-                    onFile={onComponent}
-                    label={t('settings:soundDrawer')}
-                    value={form.soundDrawer}
-                    fluid
-                  />
-                  <SelectFile
-                    name="soundToastError"
-                    onFile={onComponent}
-                    label={t('settings:soundToastError')}
-                    value={form.soundToastError}
-                    fluid
-                  />
-                  <SelectFile
-                    name="soundStart"
-                    onFile={onComponent}
-                    label={t('settings:soundStart')}
-                    value={form.soundStart}
-                    fluid
-                  />
-                </Flex.Col>
-              </Flex.Grid>
+              <>
+                <Range
+                  value={form.volume === undefined ? 0.5 : form.volume}
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  name="volume"
+                  label={t('settings:volume')}
+                  onChange={onInput}
+                  fluid
+                />
+                <Checkbox
+                  value={form.styleSounds === undefined ? true : form.styleSounds}
+                  label={t('settings:styleSounds')}
+                  name="styleSounds"
+                  onChange={onComponent}
+                />
+              </>
             ) : null}
-          </FormCollection> */}
+          </FormCollection>
           <SubmitArea>
             <Button type="submit" load={loadInit} width="200px">
               {t('settings:save')}

@@ -65,12 +65,98 @@ const Pinkie = () => (
   </>
 );
 
+// ---- Cyberpunk: target, chip, bolt ----
+
+// a ring with a cross-hair
+const Target = () => (
+  <>
+    <path
+      fillRule="evenodd"
+      d="M82 174a92 92 0 1 0 184 0a92 92 0 1 0 -184 0ZM98 174a76 76 0 1 1 152 0a76 76 0 1 1 -152 0Z"
+    />
+    <rect x="168" y="66" width="12" height="46" />
+    <rect x="168" y="236" width="12" height="46" />
+    <rect x="66" y="168" width="46" height="12" />
+    <rect x="236" y="168" width="46" height="12" />
+    <circle cx="174" cy="174" r="14" />
+  </>
+);
+
+// a hexagon chip with pins
+const Chip = () => (
+  <>
+    <path
+      fillRule="evenodd"
+      d="M174 82L253.7 128V220L174 266L94.3 220V128ZM174 102L236.4 138V210L174 246L111.6 210V138Z"
+    />
+    <path d="M174 140L203.4 157V191L174 208L144.6 191V157Z" />
+    <rect x="62" y="146" width="30" height="9" />
+    <rect x="62" y="192" width="30" height="9" />
+    <rect x="256" y="146" width="30" height="9" />
+    <rect x="256" y="192" width="30" height="9" />
+  </>
+);
+
+// a bolt of lightning
+const Bolt = () => (
+  <>
+    <path d="M205 78L124 190H172L150 270L234 150H184Z" />
+  </>
+);
+
+// ---- Gothic: cross, rose window, arch ----
+
+// a cross with flared arms (cross pattee)
+const Cross = () => (
+  <>
+    <path d="M154 154H194V194H154Z" />
+    <path d="M154 154L136 86H212L194 154Z" />
+    <path d="M154 194L136 262H212L194 194Z" />
+    <path d="M154 154L86 136V212L154 194Z" />
+    <path d="M194 154L262 136V212L194 194Z" />
+  </>
+);
+
+// a round church window with eight petals
+const Rose = () => (
+  <>
+    <path
+      fillRule="evenodd"
+      d="M74 174a100 100 0 1 0 200 0a100 100 0 1 0 -200 0ZM86 174a88 88 0 1 1 176 0a88 88 0 1 1 -176 0Z"
+    />
+    <ellipse cx="174" cy="174" rx="13" ry="66" />
+    <ellipse cx="174" cy="174" rx="13" ry="66" transform="rotate(45 174 174)" />
+    <ellipse cx="174" cy="174" rx="13" ry="66" transform="rotate(90 174 174)" />
+    <ellipse cx="174" cy="174" rx="13" ry="66" transform="rotate(135 174 174)" />
+    <circle cx="174" cy="174" r="18" />
+  </>
+);
+
+// a pointed arch window
+const Arch = () => (
+  <>
+    <path
+      fillRule="evenodd"
+      d="M108 264V158C108 116 146 94 174 74C202 94 240 116 240 158V264ZM134 264V164C134 136 156 118 174 104C192 118 214 136 214 164V264Z"
+    />
+    <rect x="170" y="166" width="8" height="98" />
+    <circle cx="174" cy="146" r="11" />
+  </>
+);
+
+
 const collection = {
   hell: Hell,
   uac: Uac,
   bfg: Bfg,
   pinkie: Pinkie,
-  slayer: Slayer
+  slayer: Slayer,
+  target: Target,
+  chip: Chip,
+  bolt: Bolt,
+  cross: Cross,
+  rose: Rose,
+  arch: Arch
 };
 
 export default collection;
