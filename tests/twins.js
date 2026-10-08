@@ -1,0 +1,18 @@
+require('@babel/register')({ presets: [[(require('./paths').APP + '/node_modules/@babel/preset-env'), { targets: { node: 'current' } }]], babelrc:false, configFile:false, extensions:['.js'], cache:false, only:[/app\/client\/utils/] });
+const { findTwins, versionBase, twinKey } = require((require('./paths').APP + '/client/utils/twins.js'));
+const t = (label, ok) => console.log((ok ? 'OK  ' : 'MISS') + ' ' + label);
+const m = (id, name, kind = 'PK3', created = 1) => ({ id, name, kind, created });
+t('versionBase: "brutal pack v21" / "Brutal Pack v2.2" / "brutal pack 3.0" -> same base', new Set(['brutal pack v21', 'Brutal Pack v2.2', 'brutal pack 3.0', 'brutal pack ver 4', 'brutal pack_r12']).size === 5 && ['brutal pack v21', 'Brutal Pack v2.2', 'brutal pack 3.0', 'brutal pack ver 4', 'brutal pack_r12'].every(n => versionBase(n) === 'brutal pack'));
+t('versionBase keeps "episode 2", "part 1", "e1m1 pack 2" (plain numbers are not versions)', ['episode 2', 'part 1', 'maps pack 2'].every(n => versionBase(n) === n));
+t('short names are left alone ("v2", "ab")', versionBase('v2') === 'v2' && versionBase('ab') === 'ab');
+let g = findTwins([m('1', 'brutal v21'), m('2', 'brutal v22'), m('3', 'other')]);
+t('two versions of one mod -> one group of 2 (tier 2)', g.length === 1 && g[0].mods.length === 2 && g[0].tier === 2);
+g = findTwins([m('1', 'weapons', 'PK3'), m('2', 'weapons', 'PK3')]);
+t('same name, different size -> tier 1', g.length === 1 && g[0].tier === 1);
+t('same name but a pk3 and a wad -> NOT twins', findTwins([m('1', 'weapons', 'PK3'), m('2', 'weapons', 'WAD')]).length === 0);
+t('episode 1 / episode 2 -> NOT twins', findTwins([m('1', 'episode 1'), m('2', 'episode 2')]).length === 0);
+t('part 1 / part 2 -> NOT twins', findTwins([m('1', 'btsx part 1'), m('2', 'btsx part 2')]).length === 0);
+t('three versions -> one group of 3', findTwins([m('1', 'x pack v1'), m('2', 'x pack v2'), m('3', 'x pack v3')])[0].mods.length === 3);
+t('different mods that only start alike -> NOT twins', findTwins([m('1', 'doom weapons'), m('2', 'doom weapons addon')]).length === 0);
+t('the same mod listed once -> nothing', findTwins([m('1', 'a mod v1')]).length === 0);
+t('twinKey does not depend on the order', twinKey({ mods: [m('b', 'x'), m('a', 'x')] }) === twinKey({ mods: [m('a', 'x'), m('b', 'x')] }) && twinKey({ mods: [m('b', 'x'), m('a', 'x')] }) === 'twin:a|b');

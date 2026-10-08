@@ -1,0 +1,40 @@
+require('@babel/register')({ presets: [[(require('./paths').APP + '/node_modules/@babel/preset-env'), { targets: { node: 'current' } }]], babelrc:false, configFile:false, extensions:['.js'], cache:false, only:[/app\/client\/(state|utils)/] });
+const A = (require('./paths').APP + '/client/');
+const { reducer, initState, mapsLast, isMapId } = require(A + 'state/reducer.js');
+const { findFixes, rememberUpdates } = require(A + 'utils/fixes.js');
+const t = (label, ok) => console.log((ok ? 'OK  ' : 'MISS') + ' ' + label);
+const mod = (id, extra = {}) => ({ id, name: id, kind: 'PK3', active: false, ...extra });
+const base = ids => ({ ...initState, mods: [mod('a'), mod('b'), mod('c'), mod('map:m1', { isMap: true, name: 'm1' }), mod('map:m2', { isMap: true, name: 'm2' })], package: { ...initState.package, selected: ids } });
+const sel = s => s.package.selected.join(',');
+
+t('isMapId / mapsLast keep the order inside each group', mapsLast(['map:m1', 'a', 'map:m2', 'b']).join() === 'a,b,map:m1,map:m2' && isMapId('map:x') && !isMapId('xmap:'));
+let s = reducer(base(['a']), { type: 'mod/select', id: 'map:m1' });
+t('picking a map in the list puts it at the end', sel(s) === 'a,map:m1');
+s = reducer(s, { type: 'mod/select', id: 'b' });
+t('picking a mod AFTER a map: the mod goes before the map', sel(s) === 'a,b,map:m1');
+s = reducer(s, { type: 'mod/select', id: 'map:m2' }); s = reducer(s, { type: 'mod/select', id: 'c' });
+t('several maps and mods mixed: mods first, maps last (order kept)', sel(s) === 'a,b,c,map:m1,map:m2');
+t('arrow "down" on the last mod cannot push it behind a map', sel(reducer(s, { type: 'mod/move', index: 2, direction: 'down' })) === 'a,b,c,map:m1,map:m2');
+t('arrow "up" on the first map cannot pull it before a mod', sel(reducer(s, { type: 'mod/move', index: 3, direction: 'up' })) === 'a,b,c,map:m1,map:m2');
+t('arrows inside the maps work (m2 up)', sel(reducer(s, { type: 'mod/move', index: 4, direction: 'up' })) === 'a,b,c,map:m2,map:m1');
+t('arrows inside the mods work (b up)', sel(reducer(s, { type: 'mod/move', index: 1, direction: 'up' })) === 'b,a,c,map:m1,map:m2');
+t('drag to reorder a map in front of mods snaps back', sel(reducer(s, { type: 'mod/reorder', from: 3, to: 0 })) === 'a,b,c,map:m1,map:m2');
+t('dropping a mod onto the position of a map: it lands in front of all maps', sel(reducer(base(['a', 'map:m1']), { type: 'mod/insert', id: 'c', index: 1 })) === 'a,c,map:m1');
+t('dragging a map in at the top: it goes to the end', sel(reducer(base(['a', 'b']), { type: 'mod/insert', id: 'map:m1', index: 0 })) === 'a,b,map:m1');
+t('"add all" of a folder mixing both -> maps behind', sel(reducer(base(['a']), { type: 'mods/drop', mods: [], ids: ['map:m2', 'b'] })) === 'a,b,map:m2');
+t('sort by folder result is corrected too', sel(reducer(base(['a']), { type: 'mods/setOrder', ids: ['map:m1', 'c', 'a'] })) === 'c,a,map:m1');
+t('update of a mod (replaceIds) keeps maps last', sel(reducer(base(['a', 'map:m1']), { type: 'mods/replaceIds', replacements: [{ from: 'a', to: 'c' }] })) === 'c,map:m1');
+const st = { ...base(['map:m1', 'a']), packages: [{ id: 'p', name: 'P', selected: ['map:m1', 'a'], cover: { isFile: false, use: 'doom2' } }] };
+t('...package selected as saved, even if an old package has the map first', sel(reducer(st, { type: 'packages/select', id: 'p' })) === 'map:m1,a');
+t('removing things never reorders', sel(reducer(base(['a', 'b', 'map:m1']), { type: 'mods/remove', ids: ['b'] })) === 'a,map:m1');
+t('actions that do not touch the order return the same state object', (() => { const b = base(['a']); return reducer(b, { type: 'recovered/clear' }).package.selected === undefined ? false : true; })());
+t('initState has mapFolders and a (empty) maps directory setting', Array.isArray(initState.mapFolders) && initState.settings.mappath === '');
+
+// fixes: maps are only matched with maps
+const mods = [mod('map:castle100PK3', { name: 'castle', isMap: true, created: 1 }), mod('castle80PK3', { name: 'castle', created: 2 })];
+const packs = [{ id: 'p', name: 'P', selected: ['map:castle90PK3'], modNames: { 'map:castle90PK3': { name: 'castle', kind: 'PK3', isMap: true } } }];
+const f = findFixes(packs, mods);
+t('a missing MAP is only replaced by a map of that name, not by a mod with the same name', f[0].candidate.mod.id === 'map:castle100PK3');
+const f2 = findFixes([{ id: 'p', name: 'P', selected: ['map:castle90PK3'] }], mods);
+t('without stored names: map id is parsed correctly ("map:castle" + size + type)', f2[0].candidate && f2[0].candidate.mod.id === 'map:castle100PK3');
+t('names stored for packages also remember whether it is a map', rememberUpdates([{ id: 'p', selected: ['map:castle100PK3'] }], mods)[0].modNames['map:castle100PK3'].isMap === true);
