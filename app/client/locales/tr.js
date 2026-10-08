@@ -273,6 +273,8 @@ export default {
     markerHalloween: 'Cadılar Bayramı',
     markerRamadan: 'Ramazan',
     markerEid: 'Bayram',
+    markerSkull: 'Kafatası',
+    markerDemonSkull: 'İblis kafatası',
     markerUac: 'UAC',
     markerBfg: 'BFG',
     markerPinkie: 'Pinkie',

@@ -274,6 +274,8 @@ export default {
     markerHalloween: 'Halloween',
     markerRamadan: 'Ramadan',
     markerEid: 'Eid',
+    markerSkull: 'Skull',
+    markerDemonSkull: 'Demon skull',
     markerUac: 'UAC',
     markerBfg: 'BFG',
     markerPinkie: 'Pinkie',

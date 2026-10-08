@@ -282,6 +282,8 @@ export default {
     markerHalloween: 'Хэллоуин',
     markerRamadan: 'Рамадан',
     markerEid: 'Курбан-байрам',
+    markerSkull: 'Череп',
+    markerDemonSkull: 'Череп демона',
     markerUac: 'UAC',
     markerBfg: 'BFG',
     markerPinkie: 'Pinkie',
