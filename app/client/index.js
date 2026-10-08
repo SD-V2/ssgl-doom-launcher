@@ -175,6 +175,7 @@ const App = () => {
                 background={gstate.settings.background}
                 dim={gstate.settings.wallpaperDim}
                 blur={gstate.settings.wallpaperBlur}
+                fit={gstate.settings.wallpaperFit}
               >
                 {openNotifier(gstate) ? <Update /> : null}
                 <Head />

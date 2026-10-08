@@ -38,6 +38,7 @@ const Settings = () => {
   const savedLook = useRef({
     dim: settings.wallpaperDim,
     blur: settings.wallpaperBlur,
+    fit: settings.wallpaperFit,
     style: settings.style
   });
   useEffect(() => {
@@ -46,10 +47,11 @@ const Settings = () => {
       data: {
         wallpaperDim: form.wallpaperDim,
         wallpaperBlur: form.wallpaperBlur,
+        wallpaperFit: form.wallpaperFit,
         style: form.style
       }
     });
-  }, [form.wallpaperDim, form.wallpaperBlur, form.style]);
+  }, [form.wallpaperDim, form.wallpaperBlur, form.wallpaperFit, form.style]);
   useEffect(
     () => () =>
       dispatch({
@@ -57,6 +59,7 @@ const Settings = () => {
         data: {
           wallpaperDim: savedLook.current.dim,
           wallpaperBlur: savedLook.current.blur,
+          wallpaperFit: savedLook.current.fit,
           style: savedLook.current.style
         }
       }),
@@ -76,6 +79,13 @@ const Settings = () => {
   ];
 
   // how the menus look and feel (the color theme only decides the colors)
+  // how the wallpaper is laid on the window
+  const fitOptions = [
+    { label: t('settings:wallpaperFitCover'), value: 'cover' },
+    { label: t('settings:wallpaperFitContain'), value: 'contain' },
+    { label: t('settings:wallpaperFitStretch'), value: 'stretch' }
+  ];
+
   const styleOptions = [
     { label: t('settings:styleClassic'), value: 'classic' },
     { label: t('settings:styleCyberpunk'), value: 'cyberpunk' }
@@ -197,6 +207,7 @@ const Settings = () => {
       savedLook.current = {
         dim: form.wallpaperDim,
         blur: form.wallpaperBlur,
+        fit: form.wallpaperFit,
         style: form.style
       };
       dispatch({ type: 'settings/save', data: newSettings });
@@ -277,6 +288,13 @@ const Settings = () => {
                   label={t('settings:wallpaper')}
                   value={form.background}
                   fluid
+                />
+                <Dropdown
+                  name="wallpaperFit"
+                  options={fitOptions}
+                  label={t('settings:wallpaperFit')}
+                  value={form.wallpaperFit || 'cover'}
+                  onChange={onComponent}
                 />
                 <Range
                   value={form.wallpaperDim || 0}

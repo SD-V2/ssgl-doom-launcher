@@ -71,6 +71,7 @@ export const initState = {
     mappath: '',
     wallpaperDim: 0,
     wallpaperBlur: 0,
+    wallpaperFit: 'cover',
     hideWhilePlaying: false,
     volume: 0.5
   }
