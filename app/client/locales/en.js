@@ -319,6 +319,9 @@ export default {
     startView: 'Open View when SSGL starts'
   },
   common: {
+    startScanning: 'Scanning {{n}} mods...',
+    startReading: 'Reading your mods...',
+    startChecking: 'Checking your mod folders...',
     iwad: 'iWad',
     sourceport: 'Sourceport',
     close: 'Close',
@@ -425,6 +428,8 @@ export default {
     codeLicense: 'Code Licensed under',
     copyright: 'Copyright (c) 2015 Thomas Petrovic',
     trademark: 'DOOM is a registered Trademark of id Software LLC, a Zenimax Media company in the US and/or other Countries, and is used without permission. All other Trademarks are the property of their respective holders. SSGL is in no way affiliated with nor endorsed by id Software.',
+    startTime: 'Start: window after {{window}} s, usable after {{usable}} s.',
+    startLog: 'Show the log file',
     forkBuild: 'Fork build: {{date}}',
     crafted: 'Handcrafted in Vienna, Austria'
   }

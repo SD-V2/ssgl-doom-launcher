@@ -43,8 +43,10 @@ For anything visual also run the screenshot tool and **look at the pictures** (a
 ```
 electron/main.js, menu.js, constants.js      start, menu, DEFAULT_UPDATE_REPO = SD-V2/ssgl-doom-launcher
 electron/handlers/*.js                       one file per feature area (mods, folders, packages, transfer, conflicts, health, fixes, main)
-electron/utils/*.js                          json.js (safe saving: temp file + .bak), mods.js (scanLibrary), play.js, watcher.js,
+electron/utils/*.js                          startup.js (start timer + startup-log.txt), libraryCache.js (scan cache), wallpaper.js (screen-sized copy),
+                                             json.js (safe saving: temp file + .bak), mods.js (scanLibrary), play.js, watcher.js,
                                              archive.js, closeGuard.js, versions.js (update compare), health.js, safepath.js
+client/components/Startup.jsx, utils/useStartup.js   loading screen, start from the cache, background check (see docs/PERFORMANCE.md)
 client/index.js                              App: theme + style layer, DialogProvider, persists section rules and view mode
 client/state/reducer.js                      ALL state changes (initState has every setting and its default)
 client/views/Wads.jsx                        the mod / maps screen (lists, load order, sections view, drag and drop, menus)

@@ -327,6 +327,9 @@ export default {
     startView: 'Какой экран открывать при запуске SSGL'
   },
   common: {
+    startScanning: 'Сканирование модов: {{n}}...',
+    startReading: 'Читаем ваши моды...',
+    startChecking: 'Проверяем папки модов...',
     iwad: 'IWAD',
     sourceport: 'Порт',
     close: 'Закрыть',
@@ -435,6 +438,8 @@ export default {
     codeLicense: 'Код распространяется по лицензии',
     copyright: 'Авторские права (c) 2015 Thomas Petrovic',
     trademark: 'DOOM — зарегистрированный товарный знак id Software LLC, компании Zenimax Media, в США и/или других странах, и используется без разрешения. Все остальные товарные знаки принадлежат их владельцам. SSGL никак не связана с id Software и не одобрена ею.',
+    startTime: 'Запуск: окно через {{window}} с, можно работать через {{usable}} с.',
+    startLog: 'Показать файл журнала',
     forkBuild: 'Сборка форка: {{date}}',
     crafted: 'Сделано вручную в Вене, Австрия'
   }

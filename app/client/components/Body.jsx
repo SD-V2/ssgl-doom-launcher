@@ -55,6 +55,9 @@ export default styled.div`
     background-repeat: no-repeat;
     background-size: ${p => SIZES[fitOf(p.fit)]};
     background-position: center center;
+    /* fades in once the picture is decoded (the window never waits for it) */
+    opacity: ${p => (p.ready === false ? 0 : 1)};
+    transition: opacity 0.35s ease-out;
     ${p => {
       const dim = clamp(p.dim, 0, 80);
       const blur = clamp(p.blur, 0, 12);
