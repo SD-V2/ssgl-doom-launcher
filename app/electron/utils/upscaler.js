@@ -30,6 +30,7 @@ import {
   shrinkTo,
   smoothAlpha
 } from './png';
+import { scan as scanDoom } from './doom/library';
 import ZipWriter from './zipwrite';
 
 // The Upscaler (Tools > Upscaler): makes the pictures of a mod bigger with the
@@ -96,11 +97,38 @@ const imageOf = (inner, head, bytes, readPng) => {
   };
 };
 
+// the pictures in Doom's own formats (and wall textures made of patches) that can be upscaled
+const DOOM_KINDS = ['texture', 'flat', 'sprite', 'graphic'];
+const doomImages = (found, types) =>
+  found.entries
+    .filter(e => DOOM_KINDS.indexOf(e.kind) > -1 && types.indexOf(e.type) > -1)
+    .map(e => ({
+      kind: e.kind,
+      name: e.name,
+      path: e.path,
+      width: e.width,
+      height: e.height,
+      format: 'png',
+      alpha: e.alpha,
+      bytes: e.bytes,
+      doom: e.type,
+      readPng: () => found.readPng(e.id)
+    }));
+// what the screen is told about the Doom pictures of a mod
+const doomInfo = (found, images) => ({
+  palette: found.palette,
+  needsPalette: !found.palette && images.some(i => i.doom && i.doom !== 'png'),
+  unsupported: found.unsupported.slice(0, 50),
+  unsupportedCount: found.unsupported.length,
+  bad: found.bad
+});
+
 const zipReader = {
   id: 'zip',
   canRead: (source, type) => type === 'zip',
-  async listImages(source) {
+  async listImages(source, options = {}) {
     const fd = fs.openSync(source, 'r');
+    let listed;
     try {
       const entries = listZipEntries(fd, fs.fstatSync(fd).size);
       const images = [];
@@ -130,10 +158,22 @@ const zipReader = {
           } else doom.push(e.name);
         }
       });
-      return { images, doomFormat: doom };
+      const defs = entries.some(e => /^(texture1|texture2|textures)(\.[^/]*)?$/i.test(e.name));
+      listed = { images, doom, defs };
     } finally {
       fs.closeSync(fd);
     }
+    if (!listed.doom.length && !listed.defs) return { images: listed.images, doomFormat: [] };
+    // Doom pictures without .png and wall textures made of patches (step 2); the PNG and JPG
+    // files above are read as before
+    const found = await scanDoom(source, { palette: options.palette, skip: l => /\.(png|jpe?g)$/i.test(l.path) });
+    const extra = doomImages(found, ['picture', 'flat', 'composed']);
+    const known = new Set(found.entries.map(e => e.path));
+    return {
+      images: listed.images.concat(extra),
+      doomFormat: listed.doom.filter(n => !known.has(n)),
+      ...doomInfo(found, extra)
+    };
   }
 };
 
@@ -173,13 +213,14 @@ const folderReader = {
   }
 };
 
-// WAD files keep their pictures in Doom's own format: step 2
+// WAD files: Doom's own formats (and PNG lumps), read by doom/library.js
 const wadReader = {
   id: 'wad',
   canRead: (source, type) => type === 'wad',
-  supported: false,
-  async listImages() {
-    return { images: [], doomFormat: [] };
+  async listImages(source, options = {}) {
+    const found = await scanDoom(source, { palette: options.palette });
+    const images = doomImages(found, ['picture', 'flat', 'composed', 'png']);
+    return { images, doomFormat: [], ...doomInfo(found, images) };
   }
 };
 
@@ -197,7 +238,8 @@ const typeOf = source => {
 };
 
 // -> { type, supported, reason, images, doomFormat, kinds: { kind: { count, pixels } } }
-export const collect = async source => {
+// options: { palette: the IWAD whose PLAYPAL is used when the mod has none }
+export const collect = async (source, options = {}) => {
   let type;
   try {
     type = typeOf(source);
@@ -208,10 +250,7 @@ export const collect = async source => {
   if (!reader) {
     return { type, supported: false, reason: 'format', images: [], doomFormat: [], kinds: summarize([]) };
   }
-  if (reader.supported === false) {
-    return { type, supported: false, reason: 'wad', images: [], doomFormat: [], kinds: summarize([]) };
-  }
-  const { images, doomFormat } = await reader.listImages(source);
+  const { images, doomFormat, ...doom } = await reader.listImages(source, options);
   images.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
   return {
     type,
@@ -219,7 +258,13 @@ export const collect = async source => {
     reason: images.length ? '' : doomFormat.length ? 'doomOnly' : 'none',
     images,
     doomFormat,
-    kinds: summarize(images)
+    kinds: summarize(images),
+    palette: doom.palette || '',
+    needsPalette: !!doom.needsPalette,
+    doomCount: images.filter(i => i.doom && i.doom !== 'png').length,
+    unsupported: doom.unsupported || [],
+    unsupportedCount: doom.unsupportedCount || 0,
+    bad: doom.bad || 0
   };
 };
 
@@ -490,7 +535,8 @@ export const runEngine = (cmd, onLine = () => {}, onStart = () => {}) =>
 // ---------------------------------------------------------------------------
 const DEF = { texture: 'WallTexture', flat: 'Flat' };
 
-export const toPng = inner => String(inner).replace(/\.(png|jpe?g)$/i, '') + '.png';
+// (a Doom lump in a PK3 may have .lmp or another extension: GZDoom's name stops at the dot)
+export const toPng = inner => String(inner).replace(/\.(png|jpe?g|lmp|raw|bmp|pcx|tga|dds)$/i, '') + '.png';
 
 export const plan = (all, chosen) => {
   // the same name with different kinds anywhere in the mod = a clash

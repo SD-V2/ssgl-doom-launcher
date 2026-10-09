@@ -74,7 +74,8 @@ const status = async () => {
       scale: own.scale || 2,
       // monsters, weapons and items are off until they are proven in the game
       kinds: own.kinds || ['texture', 'flat', 'graphic'],
-      small: own.small !== false
+      small: own.small !== false,
+      palette: own.palette || ''
     },
     defaults: { engineFolder: defaultEngineFolder(settings), destFolder: DEFAULT_FOLDER },
     modpath: settings.modpath || '',
@@ -97,7 +98,7 @@ ipcMain.handle('upscaler/status', async () => {
 ipcMain.handle('upscaler/saveSettings', async (e, changes) => {
   try {
     const own = await readSettings();
-    const allowed = ['engineFolder', 'destFolder', 'model', 'scale', 'kinds', 'small', 'look', 'models'];
+    const allowed = ['engineFolder', 'destFolder', 'model', 'scale', 'kinds', 'small', 'look', 'models', 'palette'];
     const next = { ...own };
     allowed.forEach(k => {
       if (changes && changes[k] !== undefined) next[k] = changes[k];
@@ -114,11 +115,17 @@ ipcMain.handle('upscaler/saveSettings', async (e, changes) => {
 
 // ---- the source mod --------------------------------------------------------
 const cache = new Map();
+// the game (IWAD) chosen for the palette of mods that have none: in upscaler.json
+const paletteFile = async () => {
+  const own = await readSettings();
+  return own.palette && fs.existsSync(own.palette) ? own.palette : '';
+};
 const collectCached = async source => {
   const st = fs.statSync(source);
-  const key = source + '|' + st.mtimeMs + '|' + st.size;
+  const palette = await paletteFile();
+  const key = source + '|' + st.mtimeMs + '|' + st.size + '|' + palette;
   if (cache.has(key)) return cache.get(key);
-  const res = await collect(source);
+  const res = await collect(source, { palette });
   cache.clear();
   cache.set(key, res);
   return res;
@@ -130,8 +137,23 @@ const outside = found => ({
   reason: found.reason,
   kinds: found.kinds,
   doomFormat: found.doomFormat.length,
-  total: found.images.length
+  total: found.images.length,
+  // Doom pictures (step 2): where the palette comes from, wall textures not supported yet
+  palette: found.palette,
+  needsPalette: found.needsPalette,
+  doomCount: found.doomCount,
+  unsupported: found.unsupported,
+  unsupportedCount: found.unsupportedCount,
+  bad: found.bad
 });
+
+// Doom pictures without a palette cannot be made: the game must be chosen first
+const needPalette = found => {
+  if (!found.needsPalette) return;
+  const err = new Error('noPalette');
+  err.code = 'noPalette';
+  throw err;
+};
 
 ipcMain.handle('upscaler/collect', async (e, source) => {
   try {
@@ -253,6 +275,7 @@ let previewHold = null;
 ipcMain.handle('upscaler/preview', async (e, { source, kinds, scale, model, models: chosen, look: wanted, small }) => {
   try {
     const found = await collectCached(source);
+    needPalette(found);
     const { engine, model: m, models, look } = await engineAndModel(model, { models: chosen, look: wanted });
     previewHold = {};
     const started = Date.now();
@@ -269,6 +292,7 @@ ipcMain.handle('upscaler/preview', async (e, { source, kinds, scale, model, mode
 ipcMain.handle('upscaler/compare', async (e, { source, kinds, scale, look: wanted, models: ids, small }) => {
   try {
     const found = await collectCached(source);
+    needPalette(found);
     const { engine, look } = await engineAndModel('', { look: wanted });
     const asked = (ids || []).map(id => engine.list.find(m => m.id === id)).filter(Boolean);
     const list = (asked.length ? asked : engine.list).slice(0, COMPARE_MAX);
@@ -311,6 +335,7 @@ ipcMain.handle('upscaler/start', async (e, options) => {
     if (!settings.modpath) return fail({ code: 'noModpath' });
     const destDir = path.join(settings.modpath, ...String(destFolder || DEFAULT_FOLDER).split(/[\\/]+/).filter(Boolean));
     const found = await collectCached(source);
+    needPalette(found);
     const { engine, model: m, models, look } = await engineAndModel(model, { models: chosen, look: wanted });
     job = createJob(
       { source, modName, images: found.images, kinds, scale, model: m, models, look, engine, destDir, small: small !== false },

@@ -81,6 +81,8 @@ const Upscaler = ({ onBack }) => {
   const [compared, setCompared] = useState(null);
   const [comparing, setComparing] = useState(null);
   const [bg, setBg] = useState('checker');
+  // the game (IWAD) whose palette is used when a mod has none of its own
+  const [palette, setPalette] = useState('');
   const [dest, setDest] = useState('');
   const [estimate, setEstimate] = useState(null);
   const [samples, setSamples] = useState(null);
@@ -122,6 +124,7 @@ const Upscaler = ({ onBack }) => {
         setModelId(st.settings.model);
         setLook(LOOKS.indexOf(st.settings.look) > -1 ? st.settings.look : 'smooth');
         setChosen(st.settings.models || {});
+        setPalette(st.settings.palette || '');
         setGroups(kindsToGroups(st.settings.kinds));
         setSmall(st.settings.small !== false);
         setDest(pickDestFolder(st.settings.destFolder, gstate.folders));
@@ -242,6 +245,13 @@ const Upscaler = ({ onBack }) => {
     if (alive.current) setReading(false);
   };
 
+  // a game for the colours: saved, then the mod is read again with it
+  const choosePalette = async file => {
+    setPalette(file);
+    await saveSettings({ palette: file });
+    readSource(source);
+  };
+
   const onPickFolder = async () => {
     const res = await showOpenDialog({ properties: ['openDirectory'] });
     if (res && !res.canceled && res.filePaths && res.filePaths[0]) readSource(res.filePaths[0]);
@@ -338,7 +348,7 @@ const Upscaler = ({ onBack }) => {
   // ---- what the screen shows -------------------------------------------------------
   const state = screenState({ engine, downloading, job, previewing, samples, error });
   const busy = isBusy(job);
-  const canWork = !!(engine && engine.ok && found && found.supported && chosenCount && how && !busy);
+  const canWork = !!(engine && engine.ok && found && found.supported && !found.needsPalette && chosenCount && how && !busy);
   const labels = { before: t('tools:before'), after: t('tools:after') };
   const friendly = m => t('tools:models.' + (m.known || 'unknown')) + ' (' + m.id + ')';
   const nameOf = id => {
@@ -368,6 +378,31 @@ const Upscaler = ({ onBack }) => {
     );
   };
 
+  // Doom pictures need a palette: the mod's own, or the one of the game chosen here
+  const palettePart = () => {
+    if (!found || (!found.doomCount && !found.needsPalette)) return null;
+    const iwads = (gstate.iwads || []).filter(i => i.path);
+    return (
+      <div data-palette={found.needsPalette ? 'need' : found.palette}>
+        <Note dir="ltr">{t('tools:doomCount', { n: found.doomCount })}</Note>
+        {found.needsPalette ? <Note bad>{t('tools:paletteNeed')}</Note> : null}
+        {found.palette === 'mod' ? <Note>{t('tools:paletteMod')}</Note> : null}
+        {found.palette === 'iwad' ? <Note>{t('tools:paletteIwad')}</Note> : null}
+        {found.palette !== 'mod' && iwads.length ? (
+          <Dropdown
+            name="upscalePalette"
+            label={t('tools:paletteGame')}
+            fluid
+            value={palette}
+            options={iwads.map(i => ({ label: i.name + ' (' + i.kind + ')', value: i.path }))}
+            onChange={({ value }) => choosePalette(value)}
+          />
+        ) : null}
+        {found.palette !== 'mod' && !iwads.length ? <Note bad>{t('tools:paletteNone')}</Note> : null}
+      </div>
+    );
+  };
+
   const sourcePart = () => {
     if (reading) return <Note>{t('tools:reading')}</Note>;
     if (!found) return null;
@@ -375,7 +410,7 @@ const Upscaler = ({ onBack }) => {
       return (
         <Greyed data-unsupported={found.reason}>
           <strong>{t('tools:wadOnly')}</strong>
-          {found.reason === 'wad' ? t('tools:wadOnlyText') : t('tools:nothingFound')}
+          {t('tools:nothingFound')}
         </Greyed>
       );
     }
@@ -431,6 +466,16 @@ const Upscaler = ({ onBack }) => {
           />
         ) : null}
         {counts.sprites.count ? <Note>{t('tools:smallNote')}</Note> : null}
+        {palettePart()}
+        {found.unsupportedCount ? (
+          <Note data-unsupported-textures>
+            {t('tools:unsupportedTextures', {
+              n: found.unsupportedCount,
+              names: (found.unsupported || []).slice(0, 6).map(u => u.name).join(', ')
+            })}
+          </Note>
+        ) : null}
+        {found.bad ? <Note data-bad-pictures>{t('tools:badPictures', { n: found.bad })}</Note> : null}
         {found.doomFormat ? (
           <Greyed data-unsupported="doomInside">
             <strong>{t('tools:wadOnly')}</strong>
