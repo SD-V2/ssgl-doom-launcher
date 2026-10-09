@@ -72,6 +72,8 @@ export const initState = {
     background: '',
     autoRefresh: true,
     compactList: false,
+    // the Tools page (Upscaler) in the menu: off until the owner turns it on in Settings
+    showTools: false,
     importFolder: '',
     mappath: '',
     wallpaperDim: 0,

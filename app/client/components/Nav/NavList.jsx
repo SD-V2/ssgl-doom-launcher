@@ -48,6 +48,11 @@ const Nav = () => {
       return false;
     }
 
+    // Tools only when it is turned on in Settings (off by default; '' = unticked)
+    if (label === 'tools' && !settings.showTools) {
+      return false;
+    }
+
     return true;
   });
 

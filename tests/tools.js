@@ -101,7 +101,7 @@ const MODS = [mk('bp', 'Test Mod', ['1_BP']), mk('w', 'old maps', ['2_X'], { kin
   // ---- the menu ------------------------------------------------------------------
   const labels = routes.filter(r => !r.hide).map(r => r.label);
   check('menu: Tools is between Sourceports and Settings', labels.indexOf('tools') === labels.indexOf('sourceports') + 1 && labels.indexOf('settings') === labels.indexOf('tools') + 1);
-  const st = { ...initState, mods: MODS, sourceports: [{ id: 's' }], packages: [{ id: 'p' }], folders: [['1_BP'], ['2_X']], settings: { ...initState.settings, modpath: 'C:\\Doom', savepath: 'C:\\SSGL' } };
+  const st = { ...initState, mods: MODS, sourceports: [{ id: 's' }], packages: [{ id: 'p' }], folders: [['1_BP'], ['2_X']], settings: { ...initState.settings, showTools: true, modpath: 'C:\\Doom', savepath: 'C:\\SSGL' } };
   const host = document.createElement('div'); document.body.appendChild(host);
   let latest = null;
   const App = ({ init, children }) => { const [g, d] = React.useReducer(reducer, init); latest = g; return React.createElement(ThemeProvider, { theme: themes.hell }, React.createElement(StoreContext.Provider, { value: { gstate: g, dispatch: d } }, React.createElement(AudioProvider, null, React.createElement(ToastContext.Provider, { value: { addToast: (...a) => (global.__toasts = global.__toasts || []).push(a), toasts: [] } }, React.createElement(DialogProvider, null, children))))); };
@@ -116,6 +116,12 @@ const MODS = [mk('bp', 'Test Mod', ['1_BP']), mk('w', 'old maps', ['2_X'], { kin
     mount(React.createElement(NavList)); await wait(50);
     const items = q('li').map(li => li.textContent.trim());
     check(`menu (${lng}): "${name}" sits between the Sourceports and Settings items`, items.indexOf(name) > 0 && items.indexOf(name) === items.length - 2);
+  }
+  // the Tools item is hidden until "Show the Tools page" is ticked in Settings
+  check('new setting "showTools": off by default', initState.settings.showTools === false);
+  for (const off of [false, '', undefined]) {
+    ReactDOM.unmountComponentAtNode(host); ReactDOM.render(React.createElement(App, { init: { ...st, settings: { ...st.settings, showTools: off } } }, React.createElement(NavList)), host); await wait(30);
+    check(`menu: no Tools while the setting is ${JSON.stringify(off)} (the other items are there)`, !q('li').some(li => /tools/i.test(li.textContent)) && q('li').length === 4);
   }
   const noSave = { ...st, settings: { ...st.settings, savepath: '' } };
   ReactDOM.unmountComponentAtNode(host); ReactDOM.render(React.createElement(App, { init: noSave }, React.createElement(NavList)), host); await wait(30);
