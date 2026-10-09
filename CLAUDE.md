@@ -58,6 +58,8 @@ client/components/Dialog/index.jsx           SSGL-style question windows (never 
 client/components/Audio/index.jsx            sound sets per style
 client/components/Mods/*                     ModItem, ModBox, SectionFrame, SectionsEditor, TabSwitch, Checkmarks/ (the active-mod markers)
 client/components/MarkerPicker.jsx           marker picture picker (Settings)
+client/views/Tools/, components/Upscaler/     Tools page + the Upscaler screen (see docs/UPSCALER.md)
+electron/utils/upscaler.js, png.js, zipwrite.js, engineDownload.js   the Upscaler's work (readers, engine, PK3 writer)
 client/locales/{en,tr,ar,ru}.js              all texts; en.js is the master
 client/assets/fonts, sounds                  fonts (+ FONTS-LICENSE.txt) and sound files (original, made for this fork)
 ```

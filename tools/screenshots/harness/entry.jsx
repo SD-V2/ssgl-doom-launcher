@@ -12,6 +12,9 @@ import ToastContext from '../client/components/Toast/ToastContext';
 import Wads from '../client/views/Wads';
 import Check, { MARKERS } from '../client/components/Mods/Checkmarks';
 import Settings from '../client/views/Settings';
+import Tools from '../client/views/Tools';
+import Head from '../client/components/Head';
+import UpscaleWatcher from '../client/components/Upscaler/Watcher';
 import { reducer } from '../client/state/reducer';
 import { BrokenFilesModal, ConflictsModal, FixPackagesModal, FolderNameModal, TwinsModal } from '../client/components';
 import i18n from '../client/i18n';
@@ -176,9 +179,176 @@ const MarkersScene = () => (
   </StoreContext.Provider>
 );
 
+
+// ---------------------------------------------------------------------------
+// Tools page and Tools > Upscaler: "tools" (the cards and the menu) and one scene per
+// state of the Upscaler: up-none, up-dlg (download question), up-download, up-ready,
+// up-wad, up-preview, up-running, up-paused, up-done, up-error. The main part is faked.
+// The preview pictures are drawn here (a smooth enlargement, not the AI): they show
+// the screen, not the quality of a model.
+// ---------------------------------------------------------------------------
+const UP_MODS = [
+  mk('u1', 'project brutality 3', ['1_BP'], 320),
+  mk('u2', 'doom neural upscale', ['8_UPSCALE'], 410),
+  mk('u3', 'extra monsters', ['3_MONSTERS'], 60),
+  { ...mk('u4', 'old school maps', ['2_X'], 8), kind: 'WAD', path: 'C:\\Doom\\old school maps.wad' },
+  mk('map:u5', 'castle of horrors', ['Episode 1'], 12, { isMap: true })
+];
+const UP_MODELS = [
+  { id: 'realesrgan-x4plus-anime', scales: [4], family: false, known: 'drawn' },
+  { id: 'realesrgan-x4plus', scales: [4], family: false, known: 'general' },
+  { id: 'realesr-animevideov3', scales: [2, 3, 4], family: true, known: 'fast' }
+];
+const ENGINE_DIR = 'C:\\SSGL_DOOM LAUNCHER\\DATA\\tools\\realesrgan';
+
+// a small picture drawn with a few rectangles, and its smooth 2x enlargement
+const drawSample = (w, h, paint) => {
+  const c = document.createElement('canvas');
+  c.width = w;
+  c.height = h;
+  const g = c.getContext('2d');
+  paint(g, w, h);
+  const big = document.createElement('canvas');
+  big.width = w * 2;
+  big.height = h * 2;
+  const b = big.getContext('2d');
+  b.imageSmoothingEnabled = true;
+  b.imageSmoothingQuality = 'high';
+  b.drawImage(c, 0, 0, w * 2, h * 2);
+  return { before: c.toDataURL(), after: big.toDataURL() };
+};
+const bricks = (g, w, h) => {
+  g.fillStyle = '#4a3a30';
+  g.fillRect(0, 0, w, h);
+  for (let y = 0; y < h; y += 8)
+    for (let x = (y / 8) % 2 ? -8 : 0; x < w; x += 16) {
+      g.fillStyle = ['#8a5a40', '#7a4e38', '#96654a'][(x + y) % 3 < 0 ? 0 : ((x + y) / 8) % 3];
+      g.fillRect(x + 1, y + 1, 14, 6);
+    }
+};
+const imp = (g, w, h) => {
+  g.fillStyle = '#7a5230';
+  g.fillRect(12, 10, 16, 26);
+  g.fillRect(8, 16, 4, 14);
+  g.fillRect(28, 16, 4, 14);
+  g.fillStyle = '#a06a3a';
+  g.fillRect(15, 3, 10, 9);
+  g.fillStyle = '#ff3010';
+  g.fillRect(17, 6, 2, 2);
+  g.fillRect(21, 6, 2, 2);
+  g.fillStyle = '#5a3a20';
+  g.fillRect(13, 36, 5, 12);
+  g.fillRect(22, 36, 5, 12);
+};
+const title = (g, w, h) => {
+  const grd = g.createLinearGradient(0, 0, 0, h);
+  grd.addColorStop(0, '#200000');
+  grd.addColorStop(1, '#a01000');
+  g.fillStyle = grd;
+  g.fillRect(0, 0, w, h);
+  g.fillStyle = '#f0c040';
+  g.font = 'bold 22px serif';
+  g.fillText('DOOM', 20, 48);
+};
+
+const upAnswer = st => {
+  const engineOk = { ok: true, folder: ENGINE_DIR, exe: ENGINE_DIR + '\\realesrgan-ncnn-vulkan.exe', models: ENGINE_DIR + '\\models', list: UP_MODELS, problem: '', tested: { ok: true } };
+  const engineNone = { ok: false, folder: ENGINE_DIR, exe: '', models: '', list: [], problem: 'noFolder', tested: null };
+  const noEngine = ['up-none', 'up-dlg', 'up-download'].indexOf(scene) > -1;
+  const status = { settings: { engineFolder: ENGINE_DIR, destFolder: '', model: 'realesrgan-x4plus-anime', scale: 2, kinds: ['texture', 'flat', 'sprite', 'graphic'] }, modpath: 'C:\\Doom', engine: noEngine ? engineNone : engineOk, job: null, project: 'https://github.com/xinntao/Real-ESRGAN' };
+  const kinds = { texture: { count: 1240, pixels: 1240 * 64 * 128 }, flat: { count: 310, pixels: 310 * 64 * 64 }, sprite: { count: 2960, pixels: 2960 * 48 * 64 }, graphic: { count: 140, pixels: 140 * 160 * 100 }, other: { count: 22, pixels: 22 * 256 * 256 } };
+  return async (ch, d) => {
+    switch (ch) {
+      case 'upscaler/status': return { error: null, data: status };
+      case 'upscaler/release': return { error: null, data: { tag: 'v0.2.5.0', size: 45 * 1024 * 1024, name: 'realesrgan-ncnn-vulkan-20220424-windows.zip', url: 'https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/realesrgan-ncnn-vulkan-20220424-windows.zip' } };
+      case 'upscaler/download': return new Promise(() => {});
+      case 'upscaler/collect':
+        if (/\.wad$/i.test(d)) return { error: null, data: { type: 'wad', supported: false, reason: 'wad', kinds: {}, doomFormat: 0, total: 0 } };
+        return { error: null, data: { type: 'zip', supported: true, reason: '', kinds, doomFormat: 36, total: 4672 } };
+      case 'upscaler/estimate': return { error: null, data: { bytes: 1.8 * 1024 * 1024 * 1024, big: true, free: 400 * 1024 * 1024 * 1024 } };
+      case 'upscaler/preview':
+        return { error: null, data: { model: d.model, ms: 2400, samples: [
+          { path: 'textures/walls/BRICK7.png', kind: 'texture', width: 64, height: 32, ...drawSample(64, 32, bricks) },
+          { path: 'sprites/monsters/TROOA1.png', kind: 'sprite', width: 40, height: 50, ...drawSample(40, 50, imp) },
+          { path: 'graphics/TITLEPIC.png', kind: 'graphic', width: 160, height: 100, ...drawSample(160, 100, title) }
+        ] } };
+      case 'upscaler/state': return { error: null, data: null };
+      default: return { error: null, data: st || true };
+    }
+  };
+};
+
+const ToolsScene = () => {
+  const isUp = scene.indexOf('up-') === 0;
+  const init = { ...initState, mods: UP_MODS, sourceports: [{ id: 's' }], packages: [{ id: 'p' }], folders: [['1_BP'], ['3_MONSTERS'], ['8_UPSCALE'], ['2_X']],
+    settings: { ...initState.settings, language: lng, theme: themeName, style: styleName, modpath: 'C:\\Doom', savepath: 'C:\\SSGL_DOOM LAUNCHER\\DATA' } };
+  const [gstate, dispatch] = useReducer(reducer, init);
+  useEffect(() => {
+    if (!isUp) return;
+    const t = i18n.t.bind(i18n);
+    const wait = ms => new Promise(r => setTimeout(r, ms));
+    const button = label => Array.from(document.querySelectorAll('button')).find(b => b.textContent.trim() === label);
+    const pick = async (name, label) => {
+      const hidden = Array.from(document.querySelectorAll('input')).find(i => i.name === name);
+      hidden.parentElement.querySelector('input[type=text]').focus();
+      await wait(80);
+      const li = Array.from(document.querySelectorAll('li')).find(x => x.textContent.trim() === label);
+      if (li) li.click();
+      if (document.activeElement) document.activeElement.blur();
+      await wait(350);
+    };
+    const emit = (ch, data) => ipcRenderer.emit(ch, {}, data);
+    (async () => {
+      await wait(150);
+      button(t('tools:open')).click();
+      await wait(250);
+      if (scene === 'up-dlg' || scene === 'up-download') {
+        button(t('tools:download')).click();
+        await wait(250);
+        if (scene === 'up-download') {
+          button(t('tools:dlYes')).click();
+          await wait(100);
+          emit('upscaler/download-progress', { done: 19 * 1024 * 1024, total: 45 * 1024 * 1024 });
+        }
+        return;
+      }
+      if (scene === 'up-none') return;
+      await pick('upscaleSource', scene === 'up-wad' ? 'old school maps (WAD)' : 'project brutality 3 (PK3)');
+      if (scene === 'up-preview') {
+        button(t('tools:makePreview')).click();
+        await wait(300);
+      }
+      const job = { phase: 'running', done: 1214, total: 4650, eta: 1130, current: 'sprites/monsters/TROOA1.png', startedAt: 1 };
+      if (scene === 'up-running') emit('upscaler/progress', job);
+      if (scene === 'up-paused') emit('upscaler/progress', { ...job, phase: 'paused', pausedReason: 'game' });
+      if (scene === 'up-done') emit('upscaler/progress', { phase: 'done', done: 4650, total: 4650, startedAt: 1, result: { file: 'C:\\Doom\\8_UPSCALE\\project brutality 3 upscale 2x.pk3', bytes: 1.7 * 1024 * 1024 * 1024, images: 4648, skipped: [{ path: 'a' }, { path: 'b' }] } });
+      if (scene === 'up-error') emit('upscaler/progress', { phase: 'error', startedAt: 3, error: { code: 'noVulkan', detail: 'vkCreateInstance failed -9\ninvalid gpu device' } });
+    })();
+  }, []);
+  return (
+    <StoreContext.Provider value={{ gstate, dispatch }}>
+      <ThemeProvider theme={applyStyle(themed, styleName)}><>
+        <StyleLayer style={styleName} />
+        <AudioProvider>
+          <ToastContext.Provider value={{ addToast() {}, toasts: [] }}>
+            <DialogProvider>
+              <Body background={bgPath} fit={fitName} dim={0} blur={0}>
+                <Head />
+                <div style={{ margin: 15 }}><Tools /></div>
+                <UpscaleWatcher />
+              </Body>
+            </DialogProvider>
+          </ToastContext.Provider>
+        </AudioProvider>
+      </></ThemeProvider>
+    </StoreContext.Provider>
+  );
+};
+
 const App = () => {
   if (scene === 'markers') return <MarkersScene />;
   if (scene === 'settings') return <SettingsScene />;
+  if (scene === 'tools' || scene.indexOf('up-') === 0) return <ToolsScene />;
   if (scene.indexOf('dlg-') === 0) {
     return (
       <StoreContext.Provider value={{ gstate: { ...initState, settings: { ...initState.settings, language: lng } }, dispatch() {} }}>
@@ -201,7 +371,9 @@ const App = () => {
   );
 };
 
-ipcRenderer.invoke = async ch => (ch === 'mods/conflicts' ? { error: null, data: { checked: 3, skipped: [], conflicts: [] } } : { error: null, data: null });
+ipcRenderer.invoke = scene === 'tools' || scene.indexOf('up-') === 0
+  ? upAnswer()
+  : async ch => (ch === 'mods/conflicts' ? { error: null, data: { checked: 3, skipped: [], conflicts: [] } } : { error: null, data: null });
 // window.__remount() draws the scene again from the start (for "node run.js tab": the
 // screen comes in again, as after a tab switch)
 const Remountable = () => {

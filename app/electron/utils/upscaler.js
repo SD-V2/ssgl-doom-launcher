@@ -50,11 +50,11 @@ export const kindOf = inner => {
   return FOLDER_KIND[parts[0].toLowerCase()] || 'other';
 };
 
-// the name GZDoom knows a picture by: the file name without extension, at most
-// 8 letters, upper case
+// the name GZDoom knows a picture by: the file name up to its last dot, at most
+// 8 letters, upper case (filesystem.cpp in GZDoom)
 export const shortName = inner => {
   const base = path.posix.basename(String(inner).replace(/\\/g, '/'));
-  const dot = base.indexOf('.');
+  const dot = base.lastIndexOf('.');
   return (dot > 0 ? base.slice(0, dot) : base).slice(0, 8).toUpperCase();
 };
 
@@ -448,6 +448,12 @@ export const plan = (all, chosen) => {
       return;
     }
     const clash = kindsByName.get(i.name).size > 1;
+    // GZDoom applies hires/ after TEXTURES: an "other" picture with the name of a
+    // sprite or texture would cover it, so it stays out
+    if (clash && !DEF[i.kind]) {
+      skipped.push({ path: i.path, reason: 'sameName' });
+      return;
+    }
     const viaTextures = i.kind === 'sprite' || i.kind === 'graphic' || (clash && DEF[i.kind]);
     entries.push({
       image: i,

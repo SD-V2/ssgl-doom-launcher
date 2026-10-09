@@ -26,6 +26,8 @@ What they cover (a short map):
 | `order`, `maps`, `twins`, `hide`, `closeguard`, `unsaved`, `json` | load order moves, maps folder, twin mods, minimize while playing, closing, unsaved changes, safe saving |
 | `upd`, `notice` | the update notice (GitHub answers are faked) |
 | `native` | the requests the screens send to the main part (links, show in folder, Recycle Bin, file picker, right-click menus) - they replaced Electron's old `remote` module |
+| `upscaler` | Tools > Upscaler, main part: pictures of a mod, engine command line and messages, PNG offsets (grAb), the new PK3 (hires + TEXTURES), names, never overwrite, cancel / pause, out of memory, temp folders. The engine is faked: `fixtures/fake-esrgan.js` |
+| `tools` | the Tools page and every state of the Upscaler screen, the menu item, four languages |
 | `i18ncheck` | every text exists in all four languages |
 
 When you add a feature: add checks for it in the file that fits (or a new file, and add its name to

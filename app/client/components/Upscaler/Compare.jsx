@@ -72,11 +72,11 @@ const Frame = styled.div`
   }
 `;
 
-const Compare = ({ sample, scale, labels, maxWidth = 360 }) => {
+const Compare = ({ sample, scale, labels, maxWidth = 420 }) => {
   const [pos, setPos] = useState(50);
   const w = sample.width * scale;
   const h = sample.height * scale;
-  const shown = Math.min(maxWidth, Math.max(w, 160));
+  const shown = Math.min(maxWidth, Math.max(w, 240));
   const height = Math.round((shown / w) * h);
 
   return (

@@ -38,6 +38,13 @@ Base: Electron 44 (Chromium 152), runs on Windows 10 and 11 (64-bit). Upgraded f
 - Languages: English, Turkish, Arabic, Russian (Settings > Language). Arabic keeps the English layout (nothing is
   mirrored); only the text reads right to left (utils/textDirection.js + global.css).
 
+## Tools (menu item between Sourceports and Settings)
+- **Upscaler** (step 1): makes the PNG/JPG pictures of a mod (PK3, ZIP, folder) 2x or 4x bigger with the AI program
+  realesrgan-ncnn-vulkan (downloaded on click from the official Real-ESRGAN page, or a folder you choose) and saves a new
+  mod `<mod> upscale 2x.pk3` in `8_UPSCALE` (section "Textures and upscales"). Preview with a before/after slider,
+  runs in the background (progress, time left, cancel, pauses while a game runs). WAD pictures = step 2.
+  Details and the plan: `docs/UPSCALER.md`.
+
 ## Updates
 - Update notice for newer releases and for **new uploads to the fork** (compares the commit the program was built from with the
   newest commit). Settings > Update notifier: Beta and Stable / Stable only / Off. Checks at start and when the window gets focus

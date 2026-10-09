@@ -37,6 +37,7 @@ export const Path = styled.p`
   border: 1px solid ${({ theme }) => theme.border.idle};
   border-radius: ${({ theme }) => theme.border.radius};
   overflow-wrap: anywhere;
+  white-space: pre-wrap;
 `;
 
 export const Buttons = styled.div`
