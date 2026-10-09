@@ -112,6 +112,13 @@ const ReactDOM2 = require(APP + '/node_modules/react-dom');
   later.textContent = 'Edit sections'; await wait3(20);
   check('...and follows when its words change', later.getAttribute('data-auto-dir') === 'ltr');
 
+  // ---- no English words left where Arabic exists
+  const ar = require(APP + '/client/locales/ar.js').default || require(APP + '/client/locales/ar.js');
+  const flat = (o, pre = '') => Object.keys(o).reduce((a, k) => (typeof o[k] === 'object' ? a.concat(flat(o[k], pre + k + '.')) : a.concat([[pre + k, o[k]]])), []);
+  const english = flat(ar).filter(([k, v]) => /sourceport|glory kill/i.test(String(v).replace(/\{\{[^}]*\}\}/g, '')));
+  check('Arabic: "Sourceport" and "Glory Kills" are translated everywhere (' + (english.map(e => e[0]).join(', ') || 'none left') + ')', english.length === 0);
+  check('...the tab is "المحركات", the favourite one "المحرك المفضل", the section "الإجهاز المجيد"', JSON.stringify(ar).includes('"sourceports":"المحركات"') && JSON.stringify(ar).includes('المحرك المفضل') && JSON.stringify(ar).includes('الإجهاز المجيد'));
+
   // ---- back to English: every mark is taken away
   await i18n.changeLanguage('en'); await wait3(20);
   check('back to English: all marks are gone (the page is exactly as before)', document.querySelectorAll('[data-auto-dir]').length === 0 && !$('p1').hasAttribute('dir') && $('own').getAttribute('dir') === 'ltr');
@@ -120,6 +127,7 @@ const ReactDOM2 = require(APP + '/node_modules/react-dom');
   // ---- the style sheet
   const css = fs.readFileSync(path.join(APP, 'client/global.css'), 'utf8');
   check('global.css: in Arabic text finds its own direction (plaintext), marked blocks keep their English side', /data-text-dir='rtl'\] body \*[\s\S]*unicode-bidi: plaintext/.test(css) && /data-keep-align='left'\]\s*\{\s*text-align: left/.test(css));
+  check('global.css: a block of Arabic text keeps its box left to right (the space next to "Reset" stays on its right, no gap after the red bar), only its words read right to left', /\[data-auto-dir='rtl'\] \{\s*direction: ltr;\s*unicode-bidi: plaintext;/.test(css) && /\[data-auto-dir='rtl'\] \* \{\s*direction: rtl;/.test(css));
   check('global.css: text boxes and dropdowns keep their text on the left as in English', /data-text-dir='rtl'\] input,\s*html\[data-text-dir='rtl'\] textarea \{\s*text-align: left/.test(css));
   const modbox = fs.readFileSync(path.join(APP, 'client/components/Mods/ModBox.jsx'), 'utf8');
   check('ModBox: folder indent follows the window layout (always left to right), not the language', !/i18n\.dir\(\)/.test(modbox));

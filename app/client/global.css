@@ -34,6 +34,18 @@ html[data-text-dir='rtl'] body [data-auto-dir] {
   unicode-bidi: isolate;
 }
 
+/* ...but the box itself stays left to right as in English: its spacing (a
+   margin-inline-end, like the space between "Reset" and the path bar) must not
+   jump to the other side. The words still read in the direction of their first letter. */
+html[data-text-dir='rtl'] body [data-auto-dir='rtl'] {
+  direction: ltr;
+  unicode-bidi: plaintext;
+}
+/* the small pieces inside (a count, a word in a tag) still follow the Arabic text */
+html[data-text-dir='rtl'] body [data-auto-dir='rtl'] * {
+  direction: rtl;
+}
+
 @font-face {
   font-family: 'Michroma';
   src: url('./assets/fonts/Michroma.woff') format('woff');
