@@ -405,6 +405,12 @@ const Settings = () => {
                   name="compactList"
                   onChange={onComponent}
                 />
+                <Checkbox
+                  value={form.showTools}
+                  label={t('settings:showTools')}
+                  name="showTools"
+                  onChange={onComponent}
+                />
                 <Dropdown
                   name="language"
                   options={AVAILABLE_LOCALES}

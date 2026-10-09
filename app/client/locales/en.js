@@ -306,6 +306,7 @@ export default {
     styleCyberpunk: 'Cyberpunk',
     autoRefresh: 'Refresh mod list automatically when files change',
     compactList: 'Compact mod list (more mods on screen)',
+    showTools: 'Show the Tools page in the menu',
     importFolder: 'Folder for new mods (inside the WAD directory, e.g. 1_BP/new)',
     favouriteSourceport: 'Favourite Sourceport',
     obligeConfigPath: 'Oblige Build Configs',

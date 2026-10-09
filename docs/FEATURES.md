@@ -39,6 +39,7 @@ Base: Electron 44 (Chromium 152), runs on Windows 10 and 11 (64-bit). Upgraded f
   mirrored); only the text reads right to left (utils/textDirection.js + global.css).
 
 ## Tools (menu item between Sourceports and Settings)
+- The Tools item is **hidden by default**: Settings > "Show the Tools page in the menu" turns it on (`showTools`).
 - **Upscaler** (step 1): makes the PNG/JPG pictures of a mod (PK3, ZIP, folder) 2x or 4x bigger with the AI program
   realesrgan-ncnn-vulkan (downloaded on click from the official Real-ESRGAN page, or a folder you choose) and saves a new
   mod `<mod> upscale 2x.pk3` in `8_UPSCALE` (section "Textures and upscales"). Preview with a before/after slider,
