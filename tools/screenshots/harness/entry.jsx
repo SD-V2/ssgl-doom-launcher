@@ -142,7 +142,7 @@ const SettingsScene = () => {
     }, 600);
     return () => clearTimeout(timer);
   }, []);
-  const init = { ...initState, packages: [{ id: 'p1', name: 'x', selected: [], cover: { isFile: false, use: 'doom2' } }], settings: { ...initState.settings, language: lng, marker: markerName, theme: themeName, theme: themeName, style: styleName, modpath: 'C:\\SSGL\\WADS', mappath: 'C:\\SSGL\\Maps' } };
+  const init = { ...initState, packages: [{ id: 'p1', name: 'x', selected: [], cover: { isFile: false, use: 'doom2' } }], settings: { ...initState.settings, language: lng, marker: markerName, theme: themeName, theme: themeName, style: styleName, modpath: 'C:\\SSGL\\WADS', mappath: 'C:\\SSGL\\Maps', savepath: 'C:\\SSGL_DOOM LAUNCHER\\DATA', wallpaperFit: fitName, background: bgPath ? 'C:\\Users\\GH\\Downloads\\wallpaper.jpg' : '' } };
   const [gstate, dispatch] = useReducer(reducer, init);
   return (
     <StoreContext.Provider value={{ gstate, dispatch }}>

@@ -39,6 +39,7 @@ if (!electron || !fs.existsSync(electron)) {
 const args = ['--no-sandbox', '--disable-gpu', script, ...rest];
 const needsScreen = !process.env.DISPLAY && process.platform === 'linux';
 const cmd = needsScreen ? 'xvfb-run' : electron;
-const full = needsScreen ? ['-a', electron, ...args] : args;
+// a big virtual screen, so pictures can be as wide as the owner's 2560 px screen (SIZE=2560x1400)
+const full = needsScreen ? ['-a', '-s', '-screen 0 2600x1600x24', electron, ...args] : args;
 const r = spawnSync(cmd, full, { stdio: 'inherit', env: { ...process.env } });
 process.exit(r.status || 0);
