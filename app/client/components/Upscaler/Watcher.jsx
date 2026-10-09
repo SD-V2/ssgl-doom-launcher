@@ -58,6 +58,9 @@ const Watcher = () => {
           t('tools:doneSize', { size: formatBytes(state.result.bytes) }),
           t('tools:doneWhere', { file: state.result.file })
         ];
+        if (state.result.rejected && state.result.rejected.length) {
+          lines.push(t('tools:rejected', { n: state.result.rejected.length }));
+        }
         if (state.result.skipped && state.result.skipped.length) {
           lines.push(t('tools:doneSkipped', { n: state.result.skipped.length }));
         }

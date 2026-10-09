@@ -6,18 +6,23 @@
 // Pretend problems (chosen by the model name):
 //   oom-...       "out of memory" unless the tile size (-t) is 64 or smaller
 //   novulkan-...  the Vulkan start fails (old driver / no graphics card)
+//   alphabug-...  pictures WITH an alpha channel come out as noise (the bug some
+//                 graphics cards showed); pictures without alpha are fine
+//   noisy-...     every picture comes out as noise
 // Env: FAKE_ESRGAN_SLOW=ms   wait per picture (to test Cancel)
 //      FAKE_ESRGAN_PIDFILE   write the process id there
-//      FAKE_ESRGAN_LOG       append the command line there
+//      FAKE_ESRGAN_LOG       append the command line (and every input's colour type) there
+//      FAKE_ESRGAN_NOISE_FOR noise only for inputs whose file name starts with this
 const fs = require('fs');
 const path = require('path');
 const APP = path.resolve(__dirname, '..', '..', 'app');
-require(path.resolve(__dirname, '..', 'node_modules', '@babel/register'))({
-  presets: [[APP + '/node_modules/@babel/preset-env', { targets: { node: 'current' } }]],
-  babelrc: false, configFile: false, cache: false, extensions: ['.js'],
-  only: [/app[\\/]electron[\\/]utils[\\/]png/]
-});
-const png = require(APP + '/electron/utils/png.js');
+const { PNG } = require(APP + '/node_modules/pngjs');
+const png = {
+  isJpg: b => b[0] === 0xff && b[1] === 0xd8,
+  jpgInfo: b => { let p = 2; while (p + 9 < b.length) { if (b[p] !== 0xff) { p++; continue; } const m = b[p + 1]; if (m >= 0xc0 && m <= 0xcf && m !== 0xc4 && m !== 0xc8 && m !== 0xcc) return { width: b.readUInt16BE(p + 7), height: b.readUInt16BE(p + 5) }; p += 2 + b.readUInt16BE(p + 2); } return null; },
+  decode: b => { const r = PNG.sync.read(b); return { width: r.width, height: r.height, data: r.data, colorType: b[25] }; },
+  encode: (img, rgb) => { const p = new PNG({ width: img.width, height: img.height }); img.data.copy(p.data); if (rgb) for (let i = 3; i < p.data.length; i += 4) p.data[i] = 255; return PNG.sync.write(p, { colorType: rgb ? 2 : 6 }); }
+};
 
 const args = process.argv.slice(2);
 const opt = {};
@@ -62,11 +67,16 @@ const one = async (input, output) => {
     const info = png.jpgInfo(buf);
     img = { width: info.width, height: info.height, data: Buffer.alloc(info.width * info.height * 4, 128) };
     for (let i = 3; i < img.data.length; i += 4) img.data[i] = 255;
-  } else img = await png.decode(buf);
+  } else img = png.decode(buf);
+  if (process.env.FAKE_ESRGAN_LOG) fs.appendFileSync(process.env.FAKE_ESRGAN_LOG, JSON.stringify({ input: path.basename(input), colorType: img.colorType }) + '\n');
+  const noise = /^noisy/.test(model) || (/^alphabug/.test(model) && (img.colorType === 4 || img.colorType === 6)) ||
+    (!!process.env.FAKE_ESRGAN_NOISE_FOR && path.basename(input).indexOf(process.env.FAKE_ESRGAN_NOISE_FOR) === 0);
   if (process.env.FAKE_ESRGAN_SLOW) await sleep(Number(process.env.FAKE_ESRGAN_SLOW));
   say('0.00%');
-  // like the real engine: the hidden colours and the alpha are kept, no extra chunks
-  fs.writeFileSync(output, await png.encode(bigger(img, scale), [], { rgb: png.isOpaque(img) }));
+  const big = bigger(img, scale);
+  if (noise) for (let i = 0; i < big.data.length; i++) big.data[i] = Math.random() * 256;
+  // like the real engine: an alpha channel stays an alpha channel, no extra chunks
+  fs.writeFileSync(output, png.encode(big, img.colorType !== 4 && img.colorType !== 6));
   say('100.00%');
   if (opt.v) say(`${input} -> ${output} done`);
 };

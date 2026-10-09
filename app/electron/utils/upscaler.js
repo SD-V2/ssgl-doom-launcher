@@ -12,17 +12,19 @@ import {
 } from './archive';
 import {
   alphaKind,
-  bleed,
+  applyAlpha,
   decode,
   encode,
-  grabChunk,
+  encodePalette,
+  fillHidden,
   halve,
-  hardenAlpha,
   isJpg,
   isPng,
   jpgInfo,
+  meanColor,
   pngInfo,
-  readChunks
+  scaleAlpha,
+  shrinkTo
 } from './png';
 import ZipWriter from './zipwrite';
 
@@ -422,11 +424,13 @@ export const runEngine = (cmd, onLine = () => {}, onStart = () => {}) =>
 
 // ---------------------------------------------------------------------------
 // the new PK3: where every picture goes (see docs/UPSCALER.md)
-//   textures, flats, other  -> hires/<path>        (GZDoom scales them back itself)
-//   sprites, graphics       -> upscaled/<path> + a TEXTURES entry (size, scale, offset)
-//   a name used by two different pictures (flat + texture) -> TEXTURES for both
+//   every picture -> hires/<same folders>/<same name>.png: GZDoom finds it by its
+//   name and shows it at the size and with the offsets of the original (no TEXTURES,
+//   no grAb needed). This is also how working upscale packs are made.
+//   a flat AND a texture with the same name -> TEXTURES for both (hires/ would put
+//   one picture on both); any other name used twice -> the original is kept
 // ---------------------------------------------------------------------------
-const DEF = { texture: 'WallTexture', flat: 'Flat', sprite: 'Sprite', graphic: 'Graphic' };
+const DEF = { texture: 'WallTexture', flat: 'Flat' };
 
 export const toPng = inner => String(inner).replace(/\.(png|jpe?g)$/i, '') + '.png';
 
@@ -447,20 +451,19 @@ export const plan = (all, chosen) => {
       skipped.push({ path: i.path, reason: 'sameName' });
       return;
     }
-    const clash = kindsByName.get(i.name).size > 1;
-    // GZDoom applies hires/ after TEXTURES: an "other" picture with the name of a
-    // sprite or texture would cover it, so it stays out
-    if (clash && !DEF[i.kind]) {
+    const kinds = Array.from(kindsByName.get(i.name));
+    const clash = kinds.length > 1;
+    const wallsOnly = kinds.every(k => k === 'texture' || k === 'flat');
+    if (clash && !wallsOnly) {
       skipped.push({ path: i.path, reason: 'sameName' });
       return;
     }
-    const viaTextures = i.kind === 'sprite' || i.kind === 'graphic' || (clash && DEF[i.kind]);
     entries.push({
       image: i,
-      viaTextures: !!viaTextures,
+      viaTextures: clash,
       clash,
-      def: viaTextures ? DEF[i.kind] : '',
-      dest: (viaTextures ? 'upscaled/' : 'hires/') + toPng(i.path)
+      def: clash ? DEF[i.kind] : '',
+      dest: (clash ? 'upscaled/' : 'hires/') + toPng(i.path)
     });
   });
   return { entries, skipped };
@@ -479,7 +482,6 @@ export const texturesText = (defs, scale) => {
     const lines = [`${d.def} "${d.name}", ${d.width * scale}, ${d.height * scale}`, '{'];
     lines.push(`\tXScale ${num(scale)}`, `\tYScale ${num(scale)}`);
     if (d.def === 'WallTexture' || d.def === 'Flat') lines.push('\tWorldPanning');
-    if (d.grab && (d.grab.x || d.grab.y)) lines.push(`\tOffset ${d.grab.x * scale}, ${d.grab.y * scale}`);
     lines.push(`\tPatch "${d.dest}", 0, 0`, '}', '');
     return lines.join('\n');
   });
@@ -507,10 +509,15 @@ export const resultName = (dir, modName, scale) => {
 };
 
 // a rough size of the result: big pictures made by the AI pack about half as well
-// as the original pixel art
-export const estimateBytes = (images, scale) =>
+// as the original pixel art; palette PNGs ("smaller files") about a third of a byte
+// per pixel (measured on a working sprite pack: 37 KB for 440 x 300 on average)
+export const estimateBytes = (images, scale, small = true) =>
   Math.round(
-    images.reduce((sum, i) => sum + i.width * i.height * scale * scale * (i.alpha ? 4 : 3) * 0.55 + 120, 0) + 4096
+    images.reduce((sum, i) => {
+      const px = i.width * i.height * scale * scale;
+      const pal = small && (i.kind === 'sprite' || i.kind === 'graphic');
+      return sum + (pal ? px * 0.35 : px * (i.alpha ? 4 : 3) * 0.55) + 120;
+    }, 0) + 4096
   );
 
 export const BIG_RESULT = 500 * 1024 * 1024;
@@ -568,38 +575,88 @@ export const cleanPartials = dir => {
 // one picture: before and after the engine
 // ---------------------------------------------------------------------------
 
-// writes the input for the engine; -> what is needed to finish it later
+// Writes the input for the engine: COLOURS ONLY. The engine never gets an alpha
+// channel - its alpha path gave noise and empty pictures on some graphics cards
+// (walls, which have no alpha, were fine). The see-through part is made again from
+// the original later. -> what is needed to finish the picture
 export const prepare = async (image, inFile) => {
   const buf = await image.readPng();
   if (isJpg(buf)) {
     const info = jpgInfo(buf);
     fs.writeFileSync(inFile + '.jpg', buf);
-    return { file: inFile + '.jpg', width: info.width, height: info.height, grab: null, alpha: 'opaque', extra: [] };
+    return { file: inFile + '.jpg', width: info.width, height: info.height, alpha: 'opaque', orig: null };
   }
-  const chunks = readChunks(buf);
-  const grabC = chunks.find(c => c.type === 'grAb');
-  const grab = grabC && grabC.data.length >= 8 ? { x: grabC.data.readInt32BE(0), y: grabC.data.readInt32BE(4) } : null;
-  // ZDoom's "alPh" mark (an alpha texture) goes with the picture
-  const extra = chunks.filter(c => c.type === 'alPh');
-  const img = await decode(buf);
+  const img = decode(buf);
+  const orig = { width: img.width, height: img.height, data: Buffer.from(img.data) };
   const alpha = alphaKind(img);
-  if (alpha !== 'opaque') bleed(img);
-  fs.writeFileSync(inFile + '.png', await encode(img, [], { rgb: alpha === 'opaque', level: 1 }));
-  return { file: inFile + '.png', width: img.width, height: img.height, grab, alpha, extra };
+  if (alpha !== 'opaque') fillHidden(img);
+  fs.writeFileSync(inFile + '.png', encode(img, { rgb: true, level: 1 }));
+  return { file: inFile + '.png', width: img.width, height: img.height, alpha, orig };
 };
 
-// the engine's result -> the final PNG at the wanted size, with the offsets
-export const finish = async (meta, outBuf, scale) => {
-  let img = await decode(outBuf);
-  while (img.width >= meta.width * scale * 2 && img.height >= meta.height * scale * 2) img = halve(img);
-  if (img.width !== meta.width * scale || img.height !== meta.height * scale) {
-    throw new Error(`wrong size ${img.width}x${img.height}`);
+// ---- the safety net: a result that looks wrong never goes into the PK3 --------
+export const NOISE_LIMIT = 32; // average colour difference (0..255) of the small copy
+export const ROUGH_LIMIT = 20; // how much rougher than the original a result may be
+
+// roughness: the average colour jump between visible neighbours (noise: about 85;
+// a real upscale is smoother than its original, as edges spread over more pixels)
+export const roughness = img => {
+  const { width: w, height: h, data } = img;
+  let sum = 0;
+  let n = 0;
+  for (let y = 0; y < h; y++)
+    for (let x = 0; x + 1 < w; x++) {
+      const p = (y * w + x) * 4;
+      if (data[p + 3] < 128 || data[p + 7] < 128) continue;
+      sum += (Math.abs(data[p] - data[p + 4]) + Math.abs(data[p + 1] - data[p + 5]) + Math.abs(data[p + 2] - data[p + 6])) / 3;
+      n++;
+    }
+  return n ? sum / n : 0;
+};
+
+export const checkResult = (meta, img, scale) => {
+  if (img.width !== meta.width * scale || img.height !== meta.height * scale) return 'size';
+  let visible = 0;
+  for (let i = 3; i < img.data.length; i += 4) if (img.data[i]) visible++;
+  if (meta.alpha !== 'opaque' && !visible && meta.orig && !isFullyClear(meta.orig)) return 'empty';
+  if (meta.alpha !== 'opaque' && visible === img.width * img.height) return 'noAlpha';
+  if (meta.orig) {
+    // the result made small again must look like the original (not noise)
+    const small = shrinkTo(img, meta.width, meta.height);
+    let diff = 0;
+    let n = 0;
+    for (let i = 0; i < small.data.length; i += 4) {
+      if (meta.orig.data[i + 3] < 128) continue;
+      for (let c = 0; c < 3; c++) diff += Math.abs(small.data[i + c] - meta.orig.data[i + c]);
+      n += 3;
+    }
+    if (n && diff / n > NOISE_LIMIT) return 'noise';
+    if (roughness(img) > roughness(meta.orig) + ROUGH_LIMIT) return 'noise';
   }
-  if (meta.alpha === 'binary') hardenAlpha(img);
-  if (meta.alpha === 'opaque') for (let i = 3; i < img.data.length; i += 4) img.data[i] = 255;
-  const extra = [...meta.extra];
-  if (meta.grab) extra.unshift(grabChunk({ x: meta.grab.x * scale, y: meta.grab.y * scale }));
-  return encode(img, extra, { rgb: meta.alpha === 'opaque' });
+  return '';
+};
+
+const isFullyClear = img => {
+  for (let i = 3; i < img.data.length; i += 4) if (img.data[i]) return false;
+  return true;
+};
+
+// the engine's result -> the final picture at the wanted size (or a reason it is not
+// used). small: a palette PNG with at most 256 colours ("smaller files")
+export const finish = (meta, outBuf, scale, small = false) => {
+  let img = decode(outBuf);
+  while (img.width >= meta.width * scale * 2 && img.height >= meta.height * scale * 2) img = halve(img);
+  if (img.width !== meta.width * scale || img.height !== meta.height * scale) return { problem: 'size' };
+  if (meta.alpha === 'opaque') {
+    for (let i = 3; i < img.data.length; i += 4) img.data[i] = 255;
+  } else {
+    const alpha = scaleAlpha(meta.orig, scale, meta.alpha === 'binary');
+    applyAlpha(img, alpha, meanColor(meta.orig));
+  }
+  const problem = checkResult(meta, img, scale);
+  if (problem) return { problem };
+  const png = small ? encodePalette(img) : encode(img, { rgb: meta.alpha === 'opaque' });
+  return { png, img };
 };
 
 // ---------------------------------------------------------------------------
@@ -766,7 +823,10 @@ export const createJob = (options, hooks = {}) => {
     job.temp = makeTemp();
     const defs = [];
     const failed = [];
+    const rejected = [];
     let added = 0;
+    // "smaller files": palette PNGs for monsters, weapons, items and graphics
+    const smallFor = image => options.small !== false && (image.kind === 'sprite' || image.kind === 'graphic');
     const started = Date.now();
     // one more picture is finished (made or failed): progress and time left
     const step = e => {
@@ -822,11 +882,16 @@ export const createJob = (options, hooks = {}) => {
             if (job.stopped) break;
             const out = done.get(meta.file);
             try {
-              const png = await finish(meta, fs.readFileSync(out), scale);
-              await zip.add(e.dest, png);
-              added++;
-              if (e.viaTextures) {
-                defs.push({ def: e.def, name: e.image.name, width: meta.width, height: meta.height, grab: meta.grab, dest: e.dest });
+              const made = out ? finish(meta, fs.readFileSync(out), scale, smallFor(e.image)) : { problem: 'missing' };
+              if (made.problem) {
+                // looks wrong: nothing is added, GZDoom keeps the original picture
+                rejected.push({ path: e.image.path, reason: made.problem });
+              } else {
+                await zip.add(e.dest, made.png);
+                added++;
+                if (e.viaTextures) {
+                  defs.push({ def: e.def, name: e.image.name, width: meta.width, height: meta.height, dest: e.dest });
+                }
               }
             } catch (err) {
               failed.push({ path: e.image.path, reason: 'engineOutput' });
@@ -845,7 +910,7 @@ export const createJob = (options, hooks = {}) => {
         update({ phase: 'cancelled' });
         return job.state;
       }
-      if (!added) throw new EngineError('nothingMade', failed.length ? failed[0].path : '');
+      if (!added) throw new EngineError('nothingMade', (failed[0] || rejected[0] || {}).path || '');
       if (defs.length) await zip.add('TEXTURES.txt', Buffer.from(texturesText(defs, scale)), { compress: true });
       const info = [
         'Made by SSGL - Tools > Upscaler',
@@ -863,7 +928,7 @@ export const createJob = (options, hooks = {}) => {
       update({
         phase: 'done',
         eta: 0,
-        result: { file: target, bytes, images: added, skipped: skipped.concat(failed) }
+        result: { file: target, bytes, images: added, skipped: skipped.concat(failed), rejected }
       });
       return job.state;
     } catch (err) {
@@ -912,7 +977,7 @@ export const pickSamples = images => {
 
 const dataUrl = buf => `data:image/${isJpg(buf) ? 'jpeg' : 'png'};base64,${buf.toString('base64')}`;
 
-export const preview = async ({ images, kinds, scale, model, engine }, hold = {}) => {
+export const preview = async ({ images, kinds, scale, model, engine, small = true }, hold = {}) => {
   const samples = pickSamples(pickImages(images, kinds));
   const how = engineScaleFor(model, scale);
   if (!samples.length) return [];
@@ -935,14 +1000,22 @@ export const preview = async ({ images, kinds, scale, model, engine }, hold = {}
     const out = [];
     for (let i = 0; i < samples.length; i++) {
       const before = await samples[i].readPng();
-      const after = await finish(metas[i], fs.readFileSync(done.get(metas[i].file)), scale);
+      const file = done.get(metas[i].file);
+      const made = file ? finish(metas[i], fs.readFileSync(file), scale) : { problem: 'missing' };
+      const useSmall = small && (samples[i].kind === 'sprite' || samples[i].kind === 'graphic');
+      // the size of the picture with all colours and with fewer colours
+      const smallPng = made.img ? encodePalette(made.img) : null;
       out.push({
         path: samples[i].path,
         kind: samples[i].kind,
         width: samples[i].width,
         height: samples[i].height,
         before: dataUrl(before),
-        after: dataUrl(after)
+        after: made.png ? dataUrl(useSmall ? smallPng : made.png) : '',
+        problem: made.problem || '',
+        bytesFull: made.png ? made.png.length : 0,
+        bytesSmall: smallPng ? smallPng.length : 0,
+        small: useSmall
       });
     }
     return out;
@@ -958,7 +1031,7 @@ export const testEngine = async (engine, model) => {
   try {
     const img = { width: 16, height: 16, data: Buffer.alloc(16 * 16 * 4, 200) };
     const file = path.join(temp, 'test.png');
-    fs.writeFileSync(file, await encode(img, [], { rgb: true }));
+    fs.writeFileSync(file, encode(img, { rgb: true }));
     const how = engineScaleFor(model, model.scales[0]) || { engineScale: model.scales[0] };
     const out = path.join(temp, 'out.png');
     const res = await runEngine(

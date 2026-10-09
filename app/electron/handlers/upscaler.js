@@ -59,7 +59,9 @@ const status = async () => {
       destFolder: own.destFolder || '',
       model: own.model || DEFAULT_MODEL,
       scale: own.scale || 2,
-      kinds: own.kinds || ['texture', 'flat', 'sprite', 'graphic']
+      // monsters, weapons and items are off until they are proven in the game
+      kinds: own.kinds || ['texture', 'flat', 'graphic'],
+      small: own.small !== false
     },
     defaults: { engineFolder: defaultEngineFolder(settings), destFolder: DEFAULT_FOLDER },
     modpath: settings.modpath || '',
@@ -82,7 +84,7 @@ ipcMain.handle('upscaler/status', async () => {
 ipcMain.handle('upscaler/saveSettings', async (e, changes) => {
   try {
     const own = await readSettings();
-    const allowed = ['engineFolder', 'destFolder', 'model', 'scale', 'kinds'];
+    const allowed = ['engineFolder', 'destFolder', 'model', 'scale', 'kinds', 'small'];
     const next = { ...own };
     allowed.forEach(k => {
       if (changes && changes[k] !== undefined) next[k] = changes[k];
@@ -124,10 +126,10 @@ ipcMain.handle('upscaler/collect', async (e, source) => {
 });
 
 // size of the result and free space on the disk
-ipcMain.handle('upscaler/estimate', async (e, { source, kinds, scale, destDir }) => {
+ipcMain.handle('upscaler/estimate', async (e, { source, kinds, scale, destDir, small }) => {
   try {
     const found = await collectCached(source);
-    const bytes = estimateBytes(pickImages(found.images, kinds), scale);
+    const bytes = estimateBytes(pickImages(found.images, kinds), scale, small !== false);
     let free = null;
     try {
       const where = destDir && fs.existsSync(destDir) ? destDir : path.dirname(source);
@@ -229,13 +231,13 @@ ipcMain.handle('upscaler/cancelDownload', async () => {
 
 // ---- preview ---------------------------------------------------------------
 let previewHold = null;
-ipcMain.handle('upscaler/preview', async (e, { source, kinds, scale, model }) => {
+ipcMain.handle('upscaler/preview', async (e, { source, kinds, scale, model, small }) => {
   try {
     const found = await collectCached(source);
     const { engine, model: m } = await engineAndModel(model);
     previewHold = {};
     const started = Date.now();
-    const samples = await preview({ images: found.images, kinds, scale, model: m, engine }, previewHold);
+    const samples = await preview({ images: found.images, kinds, scale, model: m, engine, small: small !== false }, previewHold);
     previewHold = null;
     return ok({ samples, model: m.id, ms: Date.now() - started });
   } catch (err) {
@@ -266,14 +268,14 @@ const report = state => {
 ipcMain.handle('upscaler/start', async (e, options) => {
   if (job && ['running', 'paused', 'starting'].indexOf(job.state.phase) > -1) return fail({ code: 'busy' });
   try {
-    const { source, modName, kinds, scale, model, destFolder } = options;
+    const { source, modName, kinds, scale, model, destFolder, small } = options;
     const settings = await getJSON('settings');
     if (!settings.modpath) return fail({ code: 'noModpath' });
     const destDir = path.join(settings.modpath, ...String(destFolder || DEFAULT_FOLDER).split(/[\\/]+/).filter(Boolean));
     const found = await collectCached(source);
     const { engine, model: m } = await engineAndModel(model);
     job = createJob(
-      { source, modName, images: found.images, kinds, scale, model: m, engine, destDir },
+      { source, modName, images: found.images, kinds, scale, model: m, engine, destDir, small: small !== false },
       { onUpdate: report }
     );
     if (gamesRunning()) job.pause('game');

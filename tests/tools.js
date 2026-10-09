@@ -78,7 +78,7 @@ answer = async (ch, d) => {
       if (/\.wad$/i.test(d)) return { data: { type: 'wad', supported: false, reason: 'wad', kinds: {}, doomFormat: 0, total: 0 }, error: null };
       return { data: { type: 'zip', supported: true, reason: '', kinds, doomFormat: 7, total: 466 }, error: null };
     case 'upscaler/estimate': return { data: estimate, error: null };
-    case 'upscaler/preview': return { data: { model: d.model, ms: 2300, samples: [{ path: 'textures/STARTAN3.png', kind: 'texture', width: 64, height: 64, before: PNG1, after: PNG1 }, { path: 'sprites/TROOA1.png', kind: 'sprite', width: 40, height: 60, before: PNG1, after: PNG1 }, { path: 'graphics/TITLEPIC.png', kind: 'graphic', width: 320, height: 200, before: PNG1, after: PNG1 }] }, error: null };
+    case 'upscaler/preview': return { data: { model: d.model, ms: 2300, samples: [{ path: 'textures/STARTAN3.png', kind: 'texture', width: 64, height: 64, before: PNG1, after: PNG1, bytesFull: 300 * 1024, bytesSmall: 90 * 1024, small: false }, { path: 'sprites/TROOA1.png', kind: 'sprite', width: 40, height: 60, before: PNG1, after: PNG1, bytesFull: 120 * 1024, bytesSmall: 40 * 1024, small: true }, { path: 'graphics/TITLEPIC.png', kind: 'graphic', width: 320, height: 200, before: PNG1, after: PNG1 }] }, error: null };
     case 'upscaler/start': return { data: { phase: 'running', done: 0, total: 462, startedAt: 1 }, error: null };
     case 'main/init': return { data: { mods: [...MODS, { ...mk('newup', 'Test Mod upscale 2x', ['8_UPSCALE']), path: 'C:\\Doom\\8_UPSCALE\\Test Mod upscale 2x.pk3' }], iwads: [] }, error: null };
     default: return { data: true, error: null };
@@ -90,7 +90,7 @@ const MODS = [mk('bp', 'Test Mod', ['1_BP']), mk('w', 'old maps', ['2_X'], { kin
 
 (async () => {
   // ---- helpers ----------------------------------------------------------------
-  check('helpers: textures + floors are one checkbox, sprites, graphics, other', JSON.stringify(U.groupsToKinds(U.DEFAULT_GROUPS)) === '["texture","flat","sprite","graphic"]' && U.kindsToGroups(['sprite']).sprites === true && U.kindsToGroups(['sprite']).textures === false);
+  check('helpers: textures + floors are one checkbox; monsters/weapons/items are OFF by default (experimental)', JSON.stringify(U.groupsToKinds(U.DEFAULT_GROUPS)) === '["texture","flat","graphic"]' && U.kindsToGroups(['sprite']).sprites === true && U.kindsToGroups(['sprite']).textures === false);
   check('helpers: time left as m:ss / h:mm:ss', U.formatTime(65) === '1:05' && U.formatTime(3725) === '1:02:05' && U.formatTime(0) === '0:00');
   check('helpers: sizes', U.formatBytes(300 * 1024 * 1024) === '300 MB' && U.formatBytes(1.5 * 1024 * 1024 * 1024) === '1.5 GB');
   check('helpers: an existing folder with "upscale" in its name is offered first, else 8_UPSCALE', U.pickDestFolder('', [['1_BP'], ['HD', 'Upscales']]) === 'HD/Upscales' && U.pickDestFolder('', [['1_BP']]) === '8_UPSCALE' && U.pickDestFolder('Mine', [['HD_upscale']]) === 'Mine');
@@ -157,6 +157,8 @@ const MODS = [mk('bp', 'Test Mod', ['1_BP']), mk('w', 'old maps', ['2_X'], { kin
   await pick('upscaleSource', 'Test Mod (PK3)');
   const rows = q('tr[data-group]');
   check('PK3: pictures per kind with checkboxes (textures+floors 150, sprites 300, graphics 12, other 4)', rows.length === 4 && /150 pictures/.test(rows[0].textContent) && /300 pictures/.test(rows[1].textContent) && /12 pictures/.test(rows[2].textContent) && /4 pictures/.test(rows[3].textContent));
+  check('sprites are called "Monsters, weapons and items (experimental) - look at the preview first"', /Monsters, weapons and items \(experimental\) - look at the preview first/.test(rows[1].textContent));
+  check('"Smaller files (fewer colors)" is there and ON, with a short explanation', (() => { const b = q('button').find(x => x.parentElement && /Smaller files \(fewer colors\)/.test(x.parentElement.textContent) && x.parentElement.textContent.length < 60); return !!b && !!b.querySelector('svg'); })() && /at most 256 colors/.test(text()));
   check('...total pixels shown, "other" is not chosen at first', /Chosen: 462 pictures/.test(text()) && /megapixels/.test(text()));
   check('...the pictures in Doom\'s own format are named as "coming next"', /skipped for now \(coming next\): 7/.test(text()));
   check('...the new name and the 2x note of a 4x-only model', /New mod: Test Mod upscale 2x\.pk3/.test(text()) && /only makes 4x/.test(text()));
@@ -169,6 +171,8 @@ const MODS = [mk('bp', 'Test Mod', ['1_BP']), mk('w', 'old maps', ['2_X'], { kin
 
   // ---- preview -----------------------------------------------------------------------------
   Simulate.click(btn('Make a preview')); await wait(150);
+  check('preview: the size with fewer colours is shown for the sprite, with the full size for comparison', /Size: 40 kB with fewer colors \(all colors: 120 kB\)/.test(text()) && /Size: 300 kB \(with fewer colors it would be 90 kB\)/.test(text()));
+  check('preview: the start sends "smaller files" along', calls.filter(c => c[0] === 'upscaler/preview')[0][1].small === true);
   check('preview: three pictures before/after with a slider -> state "preview"', state() === 'preview' && q('figure[data-sample]').length === 3 && q('figure input[type=range]').length === 3 && /Before/.test(text()) && /After/.test(text()));
   const pv = calls.filter(c => c[0] === 'upscaler/preview');
   check('...made with the chosen model and size', pv[0][1].model === 'realesrgan-x4plus-anime' && pv[0][1].scale === 2 && pv[0][1].kinds.join() === 'texture,flat,sprite,graphic');
@@ -184,7 +188,7 @@ const MODS = [mk('bp', 'Test Mod', ['1_BP']), mk('w', 'old maps', ['2_X'], { kin
   check('over 500 MB: an SSGL question first ("about 900 MB")', /A big new mod/.test(document.body.textContent) && /900 MB/.test(document.body.textContent) && !calls.some(c => c[0] === 'upscaler/start'));
   Simulate.click(Array.from(document.body.querySelectorAll('button')).find(b => b.textContent.trim() === 'Go on')); await wait(150);
   const started = calls.find(c => c[0] === 'upscaler/start');
-  check('..."Go on" starts it with the mod, the size, the model and the folder', started && started[1].modName === 'Test Mod' && started[1].scale === 2 && started[1].destFolder === '8_UPSCALE' && /Test Mod\.pk3$/.test(started[1].source));
+  check('..."Go on" starts it with the mod, the size, the model and the folder', started && started[1].modName === 'Test Mod' && started[1].scale === 2 && started[1].destFolder === '8_UPSCALE' && started[1].small === true && /Test Mod\.pk3$/.test(started[1].source));
   emit('upscaler/progress', { phase: 'running', done: 12, total: 340, eta: 125, current: 'sprites/TROOA1.png', startedAt: 1 }); await wait(30);
   check('running: "Picture 12 of 340", a bar, the time left, Cancel -> state "running"', state() === 'running' && /Picture 12 of 340/.test(text()) && /Time left: about 2:05/.test(text()) && !!btn('Cancel'));
   check('...it says it goes on in the background', /goes on in the background/.test(text()));
@@ -200,9 +204,10 @@ const MODS = [mk('bp', 'Test Mod', ['1_BP']), mk('w', 'old maps', ['2_X'], { kin
 
   // ---- done -----------------------------------------------------------------------------------------
   const file = 'C:\\Doom\\8_UPSCALE\\Test Mod upscale 2x.pk3';
-  emit('upscaler/progress', { phase: 'done', done: 340, total: 340, startedAt: 1, result: { file, bytes: 310 * 1024 * 1024, images: 338, skipped: [{ path: 'a' }, { path: 'b' }] } }); await wait(100);
+  emit('upscaler/progress', { phase: 'done', done: 340, total: 340, startedAt: 1, result: { file, bytes: 310 * 1024 * 1024, images: 338, skipped: [{ path: 'a' }, { path: 'b' }], rejected: [{ path: 'sprites/X.png', reason: 'noise' }, { path: 'sprites/Y.png', reason: 'noise' }, { path: 'sprites/Z.png', reason: 'size' }] } }); await wait(100);
   check('done: state "done", what was made, where, "Show in mod list"', state() === 'done' && /The new mod is ready: Test Mod upscale 2x/.test(text()) && /Pictures: 338/.test(text()) && !!btn('Show in mod list'));
   const body = document.body.textContent;
+  check('done: "3 pictures were not upscaled because the result looked wrong" (screen and window)', !!host.querySelector('[data-rejected="3"]') && (document.body.textContent.match(/3 pictures were not upscaled because the result looked wrong/g) || []).length >= 2);
   check('done: an SSGL info window (pictures, size, where) and a toast', /The upscale is finished/.test(body) && /Size: 310 MB/.test(body) && /Saved in: C:\\Doom\\8_UPSCALE\\Test Mod upscale 2x\.pk3/.test(body) && /Skipped \(could not be read\): 2/.test(body) && (global.__toasts || []).some(t => /New mod: Test Mod upscale 2x/.test(t[2])));
   const show = Array.from(document.body.querySelectorAll('.ssgl-modal button, button')).filter(b => b.textContent.trim() === 'Show in mod list');
   Simulate.click(show[show.length - 1]); await wait(200);

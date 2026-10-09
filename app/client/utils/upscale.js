@@ -9,7 +9,8 @@ export const GROUPS = {
   graphics: ['graphic'],
   other: ['other']
 };
-export const DEFAULT_GROUPS = { textures: true, sprites: true, graphics: true, other: false };
+// monsters, weapons and items stay off until they are proven in the game
+export const DEFAULT_GROUPS = { textures: true, sprites: false, graphics: true, other: false };
 
 export const groupsToKinds = groups =>
   Object.keys(GROUPS).reduce((all, g) => (groups[g] ? all.concat(GROUPS[g]) : all), []);

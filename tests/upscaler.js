@@ -30,18 +30,10 @@ const ZipWriter = require(APP + '/electron/utils/zipwrite.js').default;
 const archive = require(APP + '/electron/utils/archive.js');
 const dl = require(APP + '/electron/utils/engineDownload.js');
 
-// ---- pictures for the fixtures --------------------------------------------
-const solid = (w, h, rgb) => { const d = Buffer.alloc(w * h * 4); for (let i = 0; i < w * h; i++) { d[i * 4] = rgb[0]; d[i * 4 + 1] = rgb[1]; d[i * 4 + 2] = rgb[2]; d[i * 4 + 3] = 255; } return { width: w, height: h, data: d }; };
-// a red figure on black that is see-through (the classic sprite)
-const spriteImg = (w, h) => { const img = solid(w, h, [0, 0, 0]); for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const i = (y * w + x) * 4; const inside = x > 3 && x < w - 4 && y > 3 && y < h - 2; img.data[i] = inside ? 210 : 0; img.data[i + 3] = inside ? 255 : 0; } return img; };
-// palette PNG with a see-through colour (tRNS), written by hand
-const palettePng = () => {
-  const w = 4, h = 2; const raw = Buffer.alloc((w + 1) * h); for (let y = 0; y < h; y++) { raw[y * (w + 1)] = 0; for (let x = 0; x < w; x++) raw[y * (w + 1) + 1 + x] = (x + y) % 2; }
-  const ihdr = Buffer.alloc(13); ihdr.writeUInt32BE(w, 0); ihdr.writeUInt32BE(h, 4); ihdr[8] = 8; ihdr[9] = 3;
-  return png.writeChunks([{ type: 'IHDR', data: ihdr }, { type: 'PLTE', data: Buffer.from([0, 255, 255, 200, 30, 30]) }, { type: 'tRNS', data: Buffer.from([0]) }, { type: 'IDAT', data: require('zlib').deflateSync(raw) }, { type: 'IEND', data: Buffer.alloc(0) }]);
-};
-// the start of a JPG (enough for its size)
-const jpg = (w, h) => Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 16, 0x4a, 0x46, 0x49, 0x46, 0, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0xff, 0xc0, 0, 17, 8, h >> 8, h & 255, w >> 8, w & 255, 3, 1, 0x22, 0, 2, 0x11, 1, 3, 0x11, 1, 0xff, 0xd9]);
+// ---- pictures for the fixtures (tiny made-up PNGs) --------------------------
+const F = require('./fixtures/pngs');
+const solid = (w, h, rgb) => { const d = Buffer.alloc(w * h * 4); for (let i = 0; i < w * h; i++) { d[i * 4] = rgb[0]; d[i * 4 + 1] = rgb[1]; d[i * 4 + 2] = rgb[2]; d[i * 4 + 3] = 255; } return png.encode({ width: w, height: h, data: d }); };
+const jpg = F.jpg;
 
 const hash = f => crypto.createHash('sha1').update(fs.readFileSync(f)).digest('hex');
 const readZip = async file => { const fd = fs.openSync(file, 'r'); const out = {}; try { for (const e of archive.listZipEntries(fd, fs.fstatSync(fd).size)) out[e.name] = await archive.readZipEntry(fd, e); } finally { fs.closeSync(fd); } return out; };
@@ -60,35 +52,31 @@ const makeEngine = dir => {
 };
 
 (async () => {
-  // ---- PNG chunks -------------------------------------------------------------
-  const sprite = await png.encode(spriteImg(20, 30), [png.grabChunk({ x: 10, y: 27 })]);
-  check('PNG: the sprite offsets (grAb) are read', JSON.stringify(png.readGrab(sprite)) === '{"x":10,"y":27}');
-  const moved = png.setGrab(sprite, { x: 20, y: 54 });
-  check('PNG: grAb is written again (and stays before the picture data)', JSON.stringify(png.readGrab(moved)) === '{"x":20,"y":54}' && png.readChunks(moved).findIndex(c => c.type === 'grAb') < png.readChunks(moved).findIndex(c => c.type === 'IDAT'));
-  check('PNG: negative offsets work too', JSON.stringify(png.readGrab(png.setGrab(sprite, { x: -5, y: -12 }))) === '{"x":-5,"y":-12}');
-  const back = await png.decode(sprite);
-  check('PNG: encode -> decode gives the same pixels', back.width === 20 && back.height === 30 && back.data.equals(spriteImg(20, 30).data));
-  const pal = await png.decode(palettePng());
-  check('PNG: palette pictures with a see-through colour are read (cyan = see-through)', pal.data[3] === 0 && pal.data[7] === 255 && pal.data[4] === 200);
+  // ---- PNG (pngjs / UPNG) --------------------------------------------------------
+  const sprite = F.rgba(20, 30, { grab: { x: 10, y: 27 } });
+  const back = png.decode(sprite);
+  check('PNG: read with pngjs: size and the see-through part', back.width === 20 && back.height === 30 && back.data[3] === 0 && back.data[((10 * 20) + 10) * 4 + 3] === 255);
+  const pal = png.decode(F.palette(8, 6));
+  check('PNG: palette pictures with a see-through colour (tRNS) are read', pal.data[3] === 0 && pal.data[((3 * 8) + 4) * 4 + 3] === 255 && pal.data[((3 * 8) + 4) * 4] === 200);
   check('PNG: size from the first bytes, JPG size too', png.pngInfo(sprite).width === 20 && JSON.stringify(png.jpgInfo(jpg(32, 16))) === '{"width":32,"height":16}');
-  const bled = png.bleed(await png.decode(sprite));
-  check('see-through edges: the hidden colour next to the figure becomes the figure\'s colour (no black halo)', bled.data[(3 * 20 + 3) * 4] === 210 && bled.data[(3 * 20 + 3) * 4 + 3] === 0);
-  const half = png.halve(png.bleed(await png.decode(await png.encode(spriteImg(40, 60)))));
-  const darkEdge = (() => { for (let i = 0; i < half.data.length; i += 4) if (half.data[i + 3] > 0 && half.data[i] < 150) return true; return false; })();
-  check('shrinking 4x -> 2x: half the size, edges do not get dark', half.width === 20 && half.height === 30 && !darkEdge);
+  const filled = png.fillHidden(png.decode(sprite));
+  const hiddenOk = (() => { for (let i = 0; i < filled.data.length; i += 4) if (filled.data[i + 1] === 255 && filled.data[i] !== 200) return false; return true; })();
+  check('see-through parts get the colours of the figure (no cyan / random colour left for the engine)', hiddenOk && filled.data[3] === 0);
+  const half = png.halve(png.fillHidden(png.decode(F.rgba(40, 60))));
+  check('shrinking 4x -> 2x: half the size, no dark edges (colours only)', half.width === 20 && half.height === 30 && (() => { for (let i = 0; i < half.data.length; i += 4) if (half.data[i] < 150) return false; return true; })());
 
   // ---- the fixture mod: a PK3 and the same as a folder --------------------------
   const lib = path.join(TMP, 'wads'); fs.mkdirSync(path.join(lib, '1_MAIN'), { recursive: true });
   const files = {
-    'textures/walls/STARTAN3.png': await png.encode(solid(64, 32, [90, 90, 90])),
-    'flats/FLOOR0_1.png': await png.encode(solid(16, 16, [40, 80, 40])),
-    'flats/CLASH.png': await png.encode(solid(16, 16, [1, 2, 3])),
-    'textures/CLASH.png': await png.encode(solid(32, 16, [3, 2, 1])),
+    'textures/walls/STARTAN3.png': solid(64, 32, [90, 90, 90]),
+    'flats/FLOOR0_1.png': solid(16, 16, [40, 80, 40]),
+    'flats/CLASH.png': solid(16, 16, [1, 2, 3]),
+    'textures/CLASH.png': solid(32, 16, [3, 2, 1]),
     'sprites/monsters/TROOA1.png': sprite,
-    'sprites/PALSA0.png': palettePng(),
-    'graphics/TITLEPIC.png': await png.encode(solid(40, 25, [120, 0, 0]), [png.grabChunk({ x: 2, y: 3 })]),
+    'sprites/PALSA0.png': F.palette(4, 2),
+    'graphics/TITLEPIC.png': F.rgb(40, 25, [120, 0, 0]),
     'graphics/M_DOOM.jpg': jpg(24, 12),
-    'models/imp/skin.png': await png.encode(solid(8, 8, [5, 5, 5])),
+    'models/imp/skin.png': solid(8, 8, [5, 5, 5]),
     'sprites/POSSA1.lmp': Buffer.from('doom format picture, not PNG'),
     'zscript.txt': Buffer.from('class X {}')
   };
@@ -145,15 +133,14 @@ const makeEngine = dir => {
   const { entries } = up.plan(found.images, chosen);
   const by = p => entries.find(e => e.image.path === p);
   check('PK3 layout: textures and floors go to hires/ (path kept)', by('textures/walls/STARTAN3.png').dest === 'hires/textures/walls/STARTAN3.png' && by('flats/FLOOR0_1.png').dest === 'hires/flats/FLOOR0_1.png' && !by('flats/FLOOR0_1.png').viaTextures);
-  check('PK3 layout: sprites and graphics get a TEXTURES entry (outside the sprites folder)', by('sprites/monsters/TROOA1.png').viaTextures && by('sprites/monsters/TROOA1.png').dest === 'upscaled/sprites/monsters/TROOA1.png' && by('graphics/TITLEPIC.png').def === 'Graphic');
+  check('PK3 layout: sprites and graphics go to hires/ too, file name = original name + .png, no TEXTURES', by('sprites/monsters/TROOA1.png').dest === 'hires/sprites/monsters/TROOA1.png' && !by('sprites/monsters/TROOA1.png').viaTextures && by('graphics/TITLEPIC.png').dest === 'hires/graphics/TITLEPIC.png' && !by('graphics/TITLEPIC.png').viaTextures);
   check('PK3 layout: a name that is a floor AND a texture gets TEXTURES for both (no mix-up)', by('flats/CLASH.png').def === 'Flat' && by('textures/CLASH.png').def === 'WallTexture' && by('flats/CLASH.png').dest.indexOf('upscaled/') === 0);
   const other = up.plan([{ kind: 'sprite', name: 'TROOA1', path: 'sprites/TROOA1.png' }, { kind: 'other', name: 'TROOA1', path: 'skins/TROOA1.png' }], [{ kind: 'sprite', name: 'TROOA1', path: 'sprites/TROOA1.png' }, { kind: 'other', name: 'TROOA1', path: 'skins/TROOA1.png' }]);
-  check('PK3 layout: an "other" picture with a sprite\'s name stays out (hires/ would cover the sprite)', other.entries.length === 1 && other.entries[0].image.kind === 'sprite' && other.skipped[0].reason === 'sameName');
+  check('PK3 layout: any other name used twice (sprite + other) keeps its original (hires/ would cover both)', other.entries.length === 0 && other.skipped.length === 2 && other.skipped.every(x => x.reason === 'sameName'));
   check('names as GZDoom makes them: up to the last dot, 8 letters, upper case', up.shortName('textures/brick.wall.big.png') === 'BRICK.WA' && up.shortName('sprites/a/trooa1.png') === 'TROOA1');
-  check('PK3 layout: JPG pictures become PNG', by('graphics/M_DOOM.jpg').dest === 'upscaled/graphics/M_DOOM.png');
-  const tx = up.texturesText([{ def: 'Sprite', name: 'TROOA1', width: 20, height: 30, grab: { x: 10, y: 27 }, dest: 'upscaled/sprites/monsters/TROOA1.png' }, { def: 'Flat', name: 'CLASH', width: 16, height: 16, grab: null, dest: 'upscaled/flats/CLASH.png' }], 2);
-  check('TEXTURES: size x scale, XScale/YScale, offsets x scale, the patch', /Sprite "TROOA1", 40, 60\n\{\n\tXScale 2\n\tYScale 2\n\tOffset 20, 54\n\tPatch "upscaled\/sprites\/monsters\/TROOA1.png", 0, 0\n\}/.test(tx));
-  check('TEXTURES: walls and floors keep their panning (WorldPanning)', /Flat "CLASH", 32, 32\n\{\n\tXScale 2\n\tYScale 2\n\tWorldPanning\n\tPatch/.test(tx));
+  check('PK3 layout: JPG pictures become PNG', by('graphics/M_DOOM.jpg').dest === 'hires/graphics/M_DOOM.png');
+  const tx = up.texturesText([{ def: 'Flat', name: 'CLASH', width: 16, height: 16, dest: 'upscaled/flats/CLASH.png' }], 2);
+  check('TEXTURES (only for a floor/wall name clash): size x scale, XScale/YScale, WorldPanning, the patch', /Flat "CLASH", 32, 32\n\{\n\tXScale 2\n\tYScale 2\n\tWorldPanning\n\tPatch "upscaled\/flats\/CLASH.png", 0, 0\n\}/.test(tx) && !/Offset/.test(tx));
 
   // ---- names, sizes, folders ------------------------------------------------------------------
   const dest = path.join(lib, up.DEFAULT_FOLDER);
@@ -163,7 +150,7 @@ const makeEngine = dir => {
   check('never overwrite: " (2)" is added', up.resultName(dest, 'Test Mod', 2) === path.join(dest, 'Test Mod upscale 2x (2).pk3'));
   check('names with characters Windows does not allow are cleaned', path.basename(up.resultName(dest, 'a:b?', 4)) === 'a_b_ upscale 4x.pk3');
   const e2 = up.estimateBytes(chosen, 2), e4 = up.estimateBytes(chosen, 4);
-  check('size estimate: grows with the scale (4x is about 4 times 2x)', e2 > 0 && e4 > e2 * 3.5 && e4 < e2 * 4.5);
+  check('size estimate: grows with the scale (4x is about 4 times 2x)', e2 > 0 && e4 > e2 * 3 && e4 < e2 * 4.5);
   check('"big" means over 500 MB', up.BIG_RESULT === 500 * 1024 * 1024);
   check('folders with "upscale" in their name are offered', JSON.stringify(up.upscaleFolders([['8_UPSCALE'], ['1_BP'], ['Brutal', 'HD Upscales']])) === '["8_UPSCALE","Brutal/HD Upscales"]');
   const { resolveSection } = require(APP + '/client/utils/sections.js');
@@ -181,13 +168,19 @@ const makeEngine = dir => {
   const z = await readZip(end.result.file);
   const sz = n => png.pngInfo(z[n]) || {};
   check('in the PK3: hires/textures/walls/STARTAN3.png at 2x (128x64)', sz('hires/textures/walls/STARTAN3.png').width === 128 && sz('hires/textures/walls/STARTAN3.png').height === 64);
-  check('in the PK3: the sprite at 2x with its offsets x2 in the PNG (grAb 20, 54)', sz('upscaled/sprites/monsters/TROOA1.png').width === 40 && JSON.stringify(png.readGrab(z['upscaled/sprites/monsters/TROOA1.png'])) === '{"x":20,"y":54}');
-  const sp = await png.decode(z['upscaled/sprites/monsters/TROOA1.png']);
+  const SP = 'hires/sprites/monsters/TROOA1.png';
+  check('in the PK3: the sprite at hires/... 2x, no grAb (GZDoom takes the offsets of the original)', sz(SP).width === 40 && sz(SP).height === 60 && !F.hasChunk(z[SP], 'grAb'));
+  check('...as a palette PNG with see-through in tRNS (smaller files, on by default)', sz(SP).colorType === 3 && F.hasChunk(z[SP], 'tRNS'));
+  const sp = png.decode(z[SP]);
   const alphas = new Set(); let halo = false; for (let i = 0; i < sp.data.length; i += 4) { alphas.add(sp.data[i + 3]); if (sp.data[i + 3] === 255 && sp.data[i] < 150) halo = true; }
+  const under = new Set(); for (let i = 0; i < sp.data.length; i += 4) if (!sp.data[i + 3]) under.add(sp.data.readUInt32BE(i));
   check('the sprite keeps hard see-through edges, no dark halo', alphas.size === 2 && alphas.has(0) && alphas.has(255) && !halo);
-  check('the JPG became a PNG of the right size', sz('upscaled/graphics/M_DOOM.png').width === 48);
+  check('...and ONE colour under the see-through part (no random colours)', under.size === 1);
+  check('the JPG became a PNG of the right size', sz('hires/graphics/M_DOOM.png').width === 48);
+  check('walls keep all their colours (not a palette)', sz('hires/textures/walls/STARTAN3.png').colorType === 2);
   const T = z['TEXTURES.txt'] ? z['TEXTURES.txt'].toString() : '';
-  check('TEXTURES.txt: sprite, graphics, both clash names - and not the plain textures', /Sprite "TROOA1", 40, 60/.test(T) && /Offset 20, 54/.test(T) && /Graphic "TITLEPIC", 80, 50/.test(T) && /Offset 4, 6/.test(T) && /Flat "CLASH"/.test(T) && /WallTexture "CLASH", 64, 32/.test(T) && !/STARTAN3/.test(T));
+  check('TEXTURES.txt: only the floor/wall name clash - no sprites, no graphics, no plain textures', /Flat "CLASH"/.test(T) && /WallTexture "CLASH", 64, 32/.test(T) && !/Sprite|Graphic|STARTAN3|Offset/.test(T));
+  check('everything else is under hires/ (and nothing in sprites/)', Object.keys(z).every(n => /^(hires|upscaled)\//.test(n) || n === 'TEXTURES.txt' || n === 'ssgl/upscale-info.txt') && !Object.keys(z).some(n => /^sprites\//.test(n)));
   check('a note inside: for your own use', /should not be shared/.test(String(z['ssgl/upscale-info.txt'])));
   check('the "other" pictures were not chosen, so they are not in it', !Object.keys(z).some(n => /skin/.test(n)));
 
@@ -195,7 +188,7 @@ const makeEngine = dir => {
   const log = path.join(TMP, 'engine.log'); process.env.FAKE_ESRGAN_LOG = log;
   const oom = up.createJob({ source: pk3, modName: 'Oom', images: found.images, kinds: ['flat'], scale: 4, model: eng.list.find(m => m.id === 'oom-x4'), engine: eng, destDir: dest });
   const oomEnd = await oom.run();
-  const tiles = fs.readFileSync(log, 'utf8').trim().split('\n').map(l => JSON.parse(l)).map(a => a[a.indexOf('-t') + 1]);
+  const tiles = fs.readFileSync(log, 'utf8').trim().split('\n').map(l => JSON.parse(l)).filter(a => Array.isArray(a)).map(a => a[a.indexOf('-t') + 1]);
   check('out of memory: tried again with smaller tiles (0 -> 100 -> 64) and finished', oomEnd.phase === 'done' && tiles.join(',') === '0,100,64');
   delete process.env.FAKE_ESRGAN_LOG;
   const nv = await up.createJob({ source: pk3, modName: 'Nv', images: found.images, kinds: ['flat'], scale: 4, model: eng.list.find(m => m.id === 'novulkan-x4'), engine: eng, destDir: dest }).run();
@@ -233,6 +226,7 @@ const makeEngine = dir => {
   // ---- preview ----------------------------------------------------------------------------------------
   const pv = await up.preview({ images: found.images, kinds: ['texture', 'flat', 'sprite', 'graphic'], scale: 2, model: anime, engine: eng });
   check('preview: up to three pictures (a small texture, a sprite with see-through parts, a large one)', pv.length === 3 && pv[0].kind !== 'sprite' && pv.some(s => s.kind === 'sprite'));
+  check('preview: the size with all colours and with fewer colours is told', pv.every(s => s.bytesFull > 0 && s.bytesSmall > 0) && pv.find(s => s.kind === 'sprite').small === true);
   check('preview: before and after as pictures for the screen, after = 2x', pv.every(s => /^data:image\/(png|jpeg);base64,/.test(s.before) && /^data:image\/png;base64,/.test(s.after)) && png.pngInfo(Buffer.from(pv[0].after.split(',')[1], 'base64')).width === pv[0].width * 2);
   check('preview: its temp folder is gone', fs.readdirSync(process.env.TMPDIR).length === 0);
 

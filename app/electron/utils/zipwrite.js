@@ -1,13 +1,29 @@
 import fs from 'fs';
 import zlib from 'zlib';
 
-import { crc32 } from './png';
 
 // Writes a zip (PK3) file entry by entry, so a big result never has to be held in
 // memory. Pictures are stored as they are (PNG is already packed), text is packed.
 // Big results (over 4 GB or 65535 files) get the zip64 records GZDoom can read.
 
 const LIMIT = 0xffffffff;
+
+// CRC32 (zlib.crc32 is there since Node 22.2; the table is the fallback)
+let TABLE = null;
+const crc32 = buf => {
+  if (typeof zlib.crc32 === 'function') return zlib.crc32(buf) >>> 0;
+  if (!TABLE) {
+    TABLE = new Int32Array(256);
+    for (let n = 0; n < 256; n++) {
+      let c = n;
+      for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+      TABLE[n] = c;
+    }
+  }
+  let c = -1;
+  for (let i = 0; i < buf.length; i++) c = TABLE[(c ^ buf[i]) & 0xff] ^ (c >>> 8);
+  return (c ^ -1) >>> 0;
+};
 
 const dosTime = date => {
   const d = date || new Date();

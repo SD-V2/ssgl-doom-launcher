@@ -14,11 +14,11 @@ Mods that keep their pictures in Doom's own picture format inside a WAD are list
 | the screen | `client/views/Tools/index.jsx` (cards), `client/components/Upscaler/` (`index.jsx` screen, `Compare.jsx` before/after slider, `Watcher.jsx` end-of-job message on every screen, `parts.jsx` looks), `client/utils/upscale.js` (helpers) |
 | messages screen <-> main part | `electron/handlers/upscaler.js` (channels `upscaler/...`) |
 | the work | `electron/utils/upscaler.js`: source readers, collect, models, command line, progress parser, PK3 plan + TEXTURES, job (batches, pause, cancel, out of memory), preview, test run |
-| PNG | `electron/utils/png.js`: chunks, `grAb` read/write, decode (all PNG kinds) / encode, edge clean-up (`bleed`), `halve`, `hardenAlpha` |
+| PNG | `electron/utils/png.js`: reading / writing with the libraries **pngjs** (every PNG kind) and **UPNG.js** (palette PNGs, "smaller files"); around them: hidden colours (`fillHidden`), `halve`, the see-through part (`scaleAlpha`, `applyAlpha`), `shrinkTo` for the safety net |
 | zip | `electron/utils/archive.js` (reading, also used by the conflict and broken-file checkers), `electron/utils/zipwrite.js` (writing, with zip64) |
 | download | `electron/utils/engineDownload.js` |
 | "a game started" | `electron/utils/games.js` (called from `utils/play.js`) |
-| checks | `tests/upscaler.js` (the whole pipeline with `tests/fixtures/fake-esrgan.js`), `tests/tools.js` (screens) |
+| checks | `tests/upscaler.js` (the whole pipeline with `tests/fixtures/fake-esrgan.js`), `tests/sprites.js` (the sprite bug: every PNG kind, the engine never gets alpha, layout, smaller files, safety net; tiny made-up PNGs from `tests/fixtures/pngs.js`), `tests/tools.js` (screens) |
 | pictures | `tools/screenshots`: scenes `tools`, `up-none`, `up-dlg`, `up-download`, `up-ready`, `up-wad`, `up-preview`, `up-running`, `up-paused`, `up-done`, `up-error` |
 
 All pure JavaScript (Node's own `zlib`), no native modules. The heavy parts run outside the screen: the engine is its
@@ -124,52 +124,78 @@ How GZDoom replaces pictures (checked in its source: `src/common/textures/textur
   type**. Its size is in the new pixels; `XScale` / `YScale` bring it back to the original size; `Offset` is in the new
   pixels too.
 
-So SSGL writes:
+So SSGL writes - **like a working neural upscale pack of Brutal Doom weapons** (2790 pictures, all under `hires/`,
+file name = sprite name + `.png`, no TEXTURES, no `grAb`, mostly palette PNGs with tRNS):
 
 | picture | goes to | why |
 |---|---|---|
-| textures (`textures/`, `patches/`), flats, other | `hires/<same path>.png` | GZDoom scales them back to the original size by itself; folder path and file name kept |
-| sprites, graphics | `upscaled/<same path>.png` + a TEXTURES entry | type-specific, the offsets are written explicitly (and `upscaled/` is no special folder, so the big picture is not loaded as a sprite itself) |
-| a name used by a flat **and** a texture in the mod | `upscaled/...` + TEXTURES for **both** (`Flat` and `WallTexture`) | `hires/` would put one picture on both (the known mix-up) |
+| every picture (textures, `patches/`, flats, sprites, graphics, other) | `hires/<same folders>/<same name>.png` | GZDoom finds it by name and shows it at the original size, with the original's offsets (scaled by itself) - no TEXTURES, no `grAb` needed |
+| a name used by a flat **and** a texture in the mod | `upscaled/...` + TEXTURES for **both** (`Flat` and `WallTexture`, with `WorldPanning`) | `hires/` would put one picture on both (the known mix-up of the ZDoom wiki) |
+| any other name used by two kinds (sprite + texture, sprite + other ...) | left out, the original is used | `hires/` would cover both, and GZDoom applies it after TEXTURES |
 | the same name and kind twice | only the last one (in path order) | that is the one GZDoom uses |
-| an "other" picture with the name of a sprite / texture | left out | GZDoom applies `hires/` **after** TEXTURES of the same file (`texturemanager.cpp`), it would cover the sprite |
 
-Example TEXTURES entry (2x, a sprite 41 x 57 with offsets 20, 54):
+The first version wrote sprites and graphics to `upscaled/` with a TEXTURES `Sprite` / `Graphic` entry and `grAb` x scale.
+That worked in GZDoom here (Freedoom sprites as PNG, see below), but it is not needed and it is not what the working
+pack does, so it was dropped for sprites.
 
-```
-Sprite "DEMOA1", 82, 114
-{
-	XScale 2
-	YScale 2
-	Offset 40, 108
-	Patch "upscaled/sprites/DEMOA1.png", 0, 0
-}
-```
+`ssgl/upscale-info.txt` says where the mod came from (source, model, scale, date) and repeats the "own use" note.
 
-Walls and flats from TEXTURES also get `WorldPanning`, so scrolling and offsets in maps stay as in the original.
-The file is `TEXTURES.txt`; `ssgl/upscale-info.txt` says where it came from (source, model, scale, date) and repeats the
-"own use" note.
+## The sprite bug: noise rectangles and missing monsters (fixed)
 
-PNG details:
-- **Offsets**: the `grAb` chunk of the original PNG is read and written into the new PNG multiplied by the scale (the
-  engine drops all such chunks). ZDoom's `alPh` chunk is kept.
-- **Transparency**: the colour hidden under see-through pixels (often black or cyan) would be smeared into the edges by
-  the AI. Before the engine, SSGL spreads the edge colours into the see-through area (`bleed`); the alpha is not
-  changed. After the engine, pictures that had only fully solid / fully see-through pixels (classic sprites) get hard
-  edges again (`hardenAlpha`, at 50 %). Measured with the real engine on a test sprite on cyan: 34 cyan-tinted edge
-  pixels without the clean-up, 0 with it.
-- Fully solid pictures are sent as RGB (faster); JPG pictures become PNG.
-- All output is PNG. Pictures are stored in the PK3 without extra packing (PNG is packed already).
+What the owner saw with a Brutal Doom v21 upscale: some weapons were a rectangle of coloured noise, some weapons and
+monsters were gone. Walls and floors were fine.
+
+What was checked:
+- SSGL's old PNG reader and writer were correct: same pixels as pngjs on all 158 PngSuite test pictures, and 36
+  written pictures read back the same with pngjs and UPNG. GZDoom's PNG loader (`pngtexture.cpp`, `m_png.cpp`) accepts
+  them. In real GZDoom 4.14.2 (here, software Vulkan) the old output showed correctly.
+- The difference between walls (fine) and sprites (broken): walls have no transparency, sprites do. The engine has a
+  separate path for pictures with an alpha channel (`realesrgan.cpp`: 4 channels, alpha enlarged on the graphics card
+  with a bicubic shader). Its own README lists "some PCs will output black images" as an open bug, and the RTX 5060 is
+  much newer than the 2022 program. Noise in that path gives exactly "noise rectangles" and "invisible monsters".
+
+The fix (all in `utils/upscaler.js` `prepare` / `finish`):
+1. **The engine never gets an alpha channel.** The see-through pixels get the colours of their visible neighbours
+   (`fillHidden`, spread step by step) and the picture goes to the engine as plain RGB - the path that works for walls.
+2. **The see-through part comes from the original**: its alpha is enlarged by SSGL (`scaleAlpha`, smooth; classic
+   sprites with only solid / see-through pixels keep hard edges).
+3. **One colour under the see-through part** (the average colour of the visible pixels), no random colours, no halos.
+4. Found on the way: pngjs blends see-through pixels with **white** when it writes a picture without alpha - the
+   hidden colours would have become white edges. SSGL makes them solid first (checked in `tests/sprites.js`).
+5. **Safety net** before anything goes into the PK3 (`checkResult`): the size must be exactly scale x original; not fully
+   see-through unless the original was; see-through parts present when the original had them; not noise (the result
+   made small again must be close to the original: average colour difference at most 32 of 255, and not much rougher
+   than the original). A picture that fails is **not added** - GZDoom then uses the original - and it is counted: the end
+   window says "5 pictures were not upscaled because the result looked wrong".
+6. Monsters, weapons and items are **off by default** ("experimental - look at the preview first"); when they are ticked,
+   the preview shows one sprite.
+
+Checked with the real engine (anime and fast model) on 21 Freedoom sprites as PNG (palette + tRNS + grAb, like Brutal
+Doom's PNG sprites): 21 of 21 made, 0 rejected by the safety net; in GZDoom 4.14.2 the pistol and the imp stand exactly
+where the originals stand, sharper, no noise (picture: `docs/pictures/upscaler/gzdoom-before-after.png`).
+
+## Smaller files (fewer colours)
+
+Option "Smaller files (fewer colors)", on by default: monsters, weapons, items and graphics are saved as **palette PNGs**
+(at most 256 colours, see-through in a tRNS chunk, 8 bit or less, not interlaced) by UPNG.js (pure JavaScript, its own
+quantizer). That is what the working pack does (2462 of its 2790 pictures, 37 KB on average). Walls and floors keep all
+their colours (gradients would suffer). The preview shows both sizes ("Size: 40 kB with fewer colors (all colors: 120 kB)").
+On the test sprites the result was half the size; the size estimate uses 0.35 bytes per pixel for them.
+
+Other details:
+- Fully solid pictures stay RGB; JPG pictures become PNG.
+- Pictures are stored in the PK3 without extra packing (PNG is packed already).
 
 Size estimate (shown before the start, a question above 500 MB, and a check of the free space):
-`pixels x scale^2 x (3 or 4 bytes) x 0.55` - AI pictures pack about half as well as the original pixel art.
+`pixels x scale^2 x (3 or 4 bytes) x 0.55`, palette pictures `pixels x scale^2 x 0.35`.
 
 ## What was tested here, and what the owner checks in GZDoom
 
-Tested in this container: the whole pipeline with the fake engine (`tests/upscaler.js`), and the **real**
-realesrgan-ncnn-vulkan (official Linux zip, installed with SSGL's own download code) on a software Vulkan driver:
-download + unpack + test run, a real job with the anime and the fast model (sizes, `grAb` x2, hard edges, TEXTURES).
-**Not tested:** GZDoom itself (no game here) and the Windows program on a real graphics card.
+Tested in this container: the whole pipeline with the fake engine (`tests/upscaler.js`, `tests/sprites.js`), the **real**
+realesrgan-ncnn-vulkan (official Linux zip, installed with SSGL's own download code) on a software Vulkan driver, the
+built SSGL program asking its main part for a real preview, and **GZDoom 4.14.2** (official Linux build) with Freedoom:
+the upscaled sprites in game (pictures above). **Not tested:** the Windows engine on a real graphics card, and Brutal Doom
+itself (not here).
 
 Check in GZDoom (a small mod with PNG sprites and textures, for example a weapon or monster pack):
 1. Make a 2x upscale, put the new mod **after** the original in the load order (the "Textures and upscales" section is

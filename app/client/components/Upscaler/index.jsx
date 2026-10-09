@@ -69,6 +69,7 @@ const Upscaler = ({ onBack }) => {
   const [reading, setReading] = useState(false);
   const [groups, setGroups] = useState(DEFAULT_GROUPS);
   const [scale, setScale] = useState(2);
+  const [small, setSmall] = useState(true);
   const [modelId, setModelId] = useState('');
   const [dest, setDest] = useState('');
   const [estimate, setEstimate] = useState(null);
@@ -109,6 +110,7 @@ const Upscaler = ({ onBack }) => {
         setScale(st.settings.scale === 4 ? 4 : 2);
         setModelId(st.settings.model);
         setGroups(kindsToGroups(st.settings.kinds));
+        setSmall(st.settings.small !== false);
         setDest(pickDestFolder(st.settings.destFolder, gstate.folders));
         if (st.job) setJob(st.job);
         if (st.engine.ok && !st.engine.tested) runTest();
@@ -134,13 +136,13 @@ const Upscaler = ({ onBack }) => {
       return;
     }
     let stale = false;
-    call('upscaler/estimate', { source, kinds, scale, destDir: '' })
+    call('upscaler/estimate', { source, kinds, scale, destDir: '', small })
       .then(r => !stale && alive.current && setEstimate(r))
       .catch(() => !stale && setEstimate(null));
     return () => {
       stale = true;
     };
-  }, [source, found, scale, kinds.join(',')]);
+  }, [source, found, scale, small, kinds.join(',')]);
 
   const saveSettings = changes => call('upscaler/saveSettings', changes).catch(() => null);
 
@@ -242,7 +244,7 @@ const Upscaler = ({ onBack }) => {
     setPreviewing(true);
     setError(null);
     try {
-      const r = await call('upscaler/preview', { source, kinds, scale, model: use });
+      const r = await call('upscaler/preview', { source, kinds, scale, model: use, small });
       if (!alive.current) return;
       setSamples(r.samples);
       setPreviewInfo({ model: r.model, sec: (r.ms / 1000).toFixed(1) });
@@ -267,7 +269,7 @@ const Upscaler = ({ onBack }) => {
     setError(null);
     let est = estimate;
     try {
-      est = await call('upscaler/estimate', { source, kinds, scale, destDir: '' });
+      est = await call('upscaler/estimate', { source, kinds, scale, destDir: '', small });
     } catch (e) {
       est = null;
     }
@@ -288,9 +290,9 @@ const Upscaler = ({ onBack }) => {
       });
       if (!sure) return;
     }
-    saveSettings({ model: model.id, scale, kinds, destFolder: dest });
+    saveSettings({ model: model.id, scale, kinds, destFolder: dest, small });
     try {
-      const st = await call('upscaler/start', { source, modName: sourceName, kinds, scale, model: model.id, destFolder: dest });
+      const st = await call('upscaler/start', { source, modName: sourceName, kinds, scale, model: model.id, destFolder: dest, small });
       if (alive.current) setJob(st);
     } catch (e) {
       setError({ code: e.code });
@@ -383,6 +385,20 @@ const Upscaler = ({ onBack }) => {
         </Kinds>
         <Note>{t('tools:total', { n: chosenCount, mp: megapixels(chosenPixels) })}</Note>
         {groups.other && counts.other.count ? <Note>{t('tools:otherNote')}</Note> : null}
+        {counts.sprites.count ? (
+          <Checkbox
+            name="upscaleSmall"
+            value={small}
+            disabled={busy}
+            label={t('tools:smallFiles')}
+            onChange={({ value }) => {
+              setSmall(!!value);
+              setSamples(null);
+              saveSettings({ small: !!value });
+            }}
+          />
+        ) : null}
+        {counts.sprites.count ? <Note>{t('tools:smallNote')}</Note> : null}
         {found.doomFormat ? (
           <Greyed data-unsupported="doomInside">
             <strong>{t('tools:wadOnly')}</strong>
@@ -432,6 +448,9 @@ const Upscaler = ({ onBack }) => {
           <Note good>{t('tools:doneMessage', { name: modNameOf(job.result.file) })}</Note>
           <Note>{t('tools:donePictures', { n: job.result.images })}</Note>
           <Note>{t('tools:doneSize', { size: formatBytes(job.result.bytes) })}</Note>
+          {job.result.rejected && job.result.rejected.length ? (
+            <Note bad data-rejected={job.result.rejected.length}>{t('tools:rejected', { n: job.result.rejected.length })}</Note>
+          ) : null}
           <Path dir="ltr">{job.result.file}</Path>
           <Buttons>
             <Button onClick={() => showNewMod(job.result.file)} width="190px">
@@ -610,7 +629,22 @@ const Upscaler = ({ onBack }) => {
             {previewInfo && samples ? <Note dir="ltr">{t('tools:previewOf', previewInfo)}</Note> : null}
             {samples && !samples.length ? <Note>{t('tools:noSamples')}</Note> : null}
             {(samples || []).map(s => (
-              <Compare key={s.path} sample={s} scale={scale} labels={labels} />
+              <div key={s.path} data-preview={s.kind}>
+                {s.problem ? (
+                  <Note bad>
+                    {s.path}: {t('tools:previewWrong')}
+                  </Note>
+                ) : (
+                  <Compare sample={s} scale={scale} labels={labels} />
+                )}
+                {s.bytesFull ? (
+                  <Note dir="auto">
+                    {s.small
+                      ? t('tools:sizeSmall', { full: formatBytes(s.bytesFull), small: formatBytes(s.bytesSmall) })
+                      : t('tools:sizeFull', { full: formatBytes(s.bytesFull), small: formatBytes(s.bytesSmall) })}
+                  </Note>
+                ) : null}
+              </div>
             ))}
           </Part>
           <Part>

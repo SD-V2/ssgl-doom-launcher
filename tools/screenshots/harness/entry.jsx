@@ -255,7 +255,7 @@ const upAnswer = st => {
   const engineOk = { ok: true, folder: ENGINE_DIR, exe: ENGINE_DIR + '\\realesrgan-ncnn-vulkan.exe', models: ENGINE_DIR + '\\models', list: UP_MODELS, problem: '', tested: { ok: true } };
   const engineNone = { ok: false, folder: ENGINE_DIR, exe: '', models: '', list: [], problem: 'noFolder', tested: null };
   const noEngine = ['up-none', 'up-dlg', 'up-download'].indexOf(scene) > -1;
-  const status = { settings: { engineFolder: ENGINE_DIR, destFolder: '', model: 'realesrgan-x4plus-anime', scale: 2, kinds: ['texture', 'flat', 'sprite', 'graphic'] }, modpath: 'C:\\Doom', engine: noEngine ? engineNone : engineOk, job: null, project: 'https://github.com/xinntao/Real-ESRGAN' };
+  const status = { settings: { engineFolder: ENGINE_DIR, destFolder: '', model: 'realesrgan-x4plus-anime', scale: 2, kinds: ['texture', 'flat', 'sprite', 'graphic'], small: true }, modpath: 'C:\\Doom', engine: noEngine ? engineNone : engineOk, job: null, project: 'https://github.com/xinntao/Real-ESRGAN' };
   const kinds = { texture: { count: 1240, pixels: 1240 * 64 * 128 }, flat: { count: 310, pixels: 310 * 64 * 64 }, sprite: { count: 2960, pixels: 2960 * 48 * 64 }, graphic: { count: 140, pixels: 140 * 160 * 100 }, other: { count: 22, pixels: 22 * 256 * 256 } };
   return async (ch, d) => {
     switch (ch) {
@@ -268,9 +268,9 @@ const upAnswer = st => {
       case 'upscaler/estimate': return { error: null, data: { bytes: 1.8 * 1024 * 1024 * 1024, big: true, free: 400 * 1024 * 1024 * 1024 } };
       case 'upscaler/preview':
         return { error: null, data: { model: d.model, ms: 2400, samples: [
-          { path: 'textures/walls/BRICK7.png', kind: 'texture', width: 64, height: 32, ...drawSample(64, 32, bricks) },
-          { path: 'sprites/monsters/TROOA1.png', kind: 'sprite', width: 40, height: 50, ...drawSample(40, 50, imp) },
-          { path: 'graphics/TITLEPIC.png', kind: 'graphic', width: 160, height: 100, ...drawSample(160, 100, title) }
+          { path: 'textures/walls/BRICK7.png', kind: 'texture', width: 64, height: 32, bytesFull: 21 * 1024, bytesSmall: 7 * 1024, small: false, ...drawSample(64, 32, bricks) },
+          { path: 'sprites/monsters/TROOA1.png', kind: 'sprite', width: 40, height: 50, bytesFull: 18 * 1024, bytesSmall: 6 * 1024, small: true, ...drawSample(40, 50, imp) },
+          { path: 'graphics/TITLEPIC.png', kind: 'graphic', width: 160, height: 100, bytesFull: 74 * 1024, bytesSmall: 26 * 1024, small: true, ...drawSample(160, 100, title) }
         ] } };
       case 'upscaler/state': return { error: null, data: null };
       default: return { error: null, data: st || true };
