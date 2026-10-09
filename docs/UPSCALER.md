@@ -86,13 +86,25 @@ myself" accepts any folder that has the program (also one folder down, as zips u
 
 ### Models and licenses
 
+What the official Windows builds really contain (read from their `README_windows.md` and `models/` folder):
+
+| build | models in it |
+|---|---|
+| **v0.2.5.0, `realesrgan-ncnn-vulkan-20220424-windows.zip`** (the newest; the one SSGL downloads) | `realesrgan-x4plus`, `realesrgan-x4plus-anime`, `realesr-animevideov3` (`-x2`, `-x3`, `-x4`). The README lists exactly these three. |
+| v0.2.3.0, `...-20211212-windows.zip` | `realesrgan-x4plus`, `realesrgan-x4plus-anime`, `realesrnet-x4plus`, `RealESRGANv2-animevideo-xsx2`, `-xsx4` |
+| v0.2.2.4, `...-20210901-windows.zip` | `realesrgan-x4plus`, `realesrgan-x4plus-anime`, `realesrnet-x4plus` |
+
+So `realesrnet-x4plus` is only in the older builds: it shows up when the engine folder is one of those (or the files are
+copied into `models/`). Newer builds may also have `realesr-general-x4v3`. The list on screen is always what is really
+in the folder; no names are made up.
+
 | model (real name) | shown as | scales | license |
 |---|---|---|---|
-| `realesrgan-x4plus-anime` (default) | Drawn / anime - often best for sprites | 4x (2x by shrinking) | BSD-3-Clause (Real-ESRGAN) |
-| `realesrgan-x4plus` | General - photos and detailed textures | 4x (2x by shrinking) | BSD-3-Clause (Real-ESRGAN) |
+| `realesrgan-x4plus` (default) | General - photos and detailed textures | 4x (2x by shrinking) | BSD-3-Clause (Real-ESRGAN) |
+| `realesrgan-x4plus-anime` (default for sprites and HUD in "Smooth") | Drawn / anime - smoothest, cleanest shapes | 4x (2x by shrinking) | BSD-3-Clause (Real-ESRGAN) |
+| `realesrnet-x4plus` (older builds) | Soft - less sharpening | 4x | BSD-3-Clause (Real-ESRGAN) |
 | `realesr-animevideov3` | Fast - 2x, 3x, 4x | 2x, 3x, 4x | BSD-3-Clause (Real-ESRGAN) |
-| `realesrnet-x4plus` (if added by hand) | Smooth - less sharpening | 4x | BSD-3-Clause (Real-ESRGAN) |
-| `realesr-general-x4v3` (if converted by hand) | General, small and fast | 4x | BSD-3-Clause (Real-ESRGAN) |
+| `realesr-general-x4v3` (newer builds) | General, small and fast | 4x | BSD-3-Clause (Real-ESRGAN) |
 
 Any other `.param` + `.bin` pair in the models folder is listed with its real name.
 
@@ -188,6 +200,46 @@ Other details:
 
 Size estimate (shown before the start, a question above 500 MB, and a check of the free space):
 `pixels x scale^2 x (3 or 4 bytes) x 0.55`, palette pictures `pixels x scale^2 x 0.35`.
+
+## Smooth look ("no visible pixels")
+
+The owner wants the look of a neural upscale pack: smooth edges, clean shapes, no pixel stairs. Models that keep hard
+pixels are not the goal. Two parts made the pixels come back before:
+
+1. the model: `realesrgan-x4plus` keeps grain and stripes on small game sprites; `realesrgan-x4plus-anime` gives clean,
+   smooth shapes (tried with the real engine on a made-up weapon sprite, picture below);
+2. the outline of sprites: the engine never gets the see-through part (see "The sprite bug"), so SSGL makes it from the
+   original - and a sharp cut of the original outline brings the one-pixel stairs back, at any size.
+
+**Look** (Upscaler > Look, saved; default Smooth):
+
+| Look | what SSGL does |
+|---|---|
+| Smooth | the model always makes 4x, then SSGL shrinks to the chosen size with a soft [1 3 3 1] filter; the outline of solid / see-through sprites is redrawn smooth: the original alpha made bigger, blurred by about half an original pixel and cut again with a ramp of about 1.5 new pixels (`smoothAlpha` in `png.js`). Thin details (one-pixel lines, single pixels) stay solid. Edge pixels take the colour of the solid pixels next to them (`defringe`): no dark or light halos. Soft alpha (smoke) stays as it is. |
+| Natural | the model as it is (4x-only models: 4x and shrink); the outline is the original one made bigger (hard for classic sprites). |
+| Sharp | as Natural, but the outline is the original pixel by pixel and 35 % of the original pixels are mixed back into the colours. |
+
+**Model of every kind**: textures (with flats and others), sprites (monsters, weapons, items) and graphics (HUD, menus)
+each have their own model. Not chosen yet: in Smooth, sprites and graphics use `realesrgan-x4plus-anime`; everything
+else uses the model in the dropdown. **Compare models** (under Preview) runs the sample pictures through up to 4 models,
+one after the other, and shows them next to the original (made bigger with its pixels kept), on a checkerboard or dark
+background. A click on a picture chooses its model for that kind; the choice is saved (`upscaler.json`, `models`).
+
+**HUD and menu graphics**: pictures in `graphics/` were always "graphics". Many mods keep the status bar (`STBAR`), its
+numbers (`STTNUM0`...), faces (`STF...`), keys, the small font (`STCFN...`), `FONTA`/`FONTB`, menu (`M_...`) and
+intermission (`WI...`) pictures, `TITLEPIC` etc. loose at the top of the PK3 - they were "other" (off) and stayed
+pixelated. Now they are graphics too (`HUD_NAME` in `upscaler.js`; wall names like `STEP1` or `STARTAN3` are not).
+Fonts kept in `fonts/<name>/` folders are not upscaled: their letters have names like `0041` that more fonts share,
+and a hires picture replaces every picture with that name.
+
+![The made-up weapon sprite at 4x with realesrgan-x4plus-anime: original, Natural, Smooth, Sharp](pictures/upscaler-smooth/weapon-looks-4x.png)
+
+![Compare models (screen picture; the pictures in it are drawn by the screenshot scene, not by the AI)](pictures/upscaler-smooth/compare-models.jpg)
+
+Checks: `tests/upscalelook.js` (made-up pictures only): the command line of every Look, the model of every kind and
+the remembered choice, Compare models with the fake engine, HUD names, and the edges: a 45 degree and a 1:2 edge at 2x
+and 4x (Smooth: the edge moves the same amount every row, under 0.35 px off; Natural / Sharp: the stairs stay), an
+orange shape with black and with white behind it (no halo: colour off by 0), a one-pixel line and a single pixel stay.
 
 ## What was tested here, and what the owner checks in GZDoom
 

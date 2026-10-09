@@ -14,7 +14,10 @@ import {
   groupsToKinds,
   isBusy,
   kindsToGroups,
+  LOOKS,
   megapixels,
+  MODEL_KINDS,
+  modelFor,
   modNameOf,
   pickDestFolder,
   resultFileName,
@@ -25,6 +28,7 @@ import { useDialog } from '../Dialog';
 import Flex from '../Flex';
 import { Button, Checkbox, Dropdown } from '../Form';
 import Compare from './Compare';
+import CompareModels from './CompareModels';
 import { Bar, Buttons, Greyed, Heading, Kinds, Note, Notice, Part, Path } from './parts';
 import { useShowNewMod } from './Watcher';
 
@@ -71,6 +75,12 @@ const Upscaler = ({ onBack }) => {
   const [scale, setScale] = useState(2);
   const [small, setSmall] = useState(true);
   const [modelId, setModelId] = useState('');
+  const [look, setLook] = useState('smooth');
+  // the model chosen per kind in "Compare models" ({ texture, sprite, graphic })
+  const [chosen, setChosen] = useState({});
+  const [compared, setCompared] = useState(null);
+  const [comparing, setComparing] = useState(null);
+  const [bg, setBg] = useState('checker');
   const [dest, setDest] = useState('');
   const [estimate, setEstimate] = useState(null);
   const [samples, setSamples] = useState(null);
@@ -84,6 +94,7 @@ const Upscaler = ({ onBack }) => {
   const models = engine && engine.ok ? engine.list : [];
   const model = models.find(m => m.id === modelId) || models[0] || null;
   const how = scaleFor(model, scale);
+  const perKind = MODEL_KINDS.reduce((o, k) => Object.assign(o, { [k]: modelFor(models, { model: model && model.id, models: chosen, look }, k) }), {});
   const kinds = groupsToKinds(groups);
   const counts = groupCounts(found && found.kinds);
   const chosenCount = Object.keys(counts).reduce((s, g) => s + (groups[g] ? counts[g].count : 0), 0);
@@ -109,6 +120,8 @@ const Upscaler = ({ onBack }) => {
         setTest(st.engine.tested);
         setScale(st.settings.scale === 4 ? 4 : 2);
         setModelId(st.settings.model);
+        setLook(LOOKS.indexOf(st.settings.look) > -1 ? st.settings.look : 'smooth');
+        setChosen(st.settings.models || {});
         setGroups(kindsToGroups(st.settings.kinds));
         setSmall(st.settings.small !== false);
         setDest(pickDestFolder(st.settings.destFolder, gstate.folders));
@@ -120,12 +133,15 @@ const Upscaler = ({ onBack }) => {
     })();
     const onProgress = (e, state) => alive.current && setJob(state);
     const onDownload = (e, p) => alive.current && setDownloading(p);
+    const onCompare = (e, p) => alive.current && setComparing(c => (c ? { ...c, ...p } : c));
     ipcRenderer.on('upscaler/progress', onProgress);
     ipcRenderer.on('upscaler/download-progress', onDownload);
+    ipcRenderer.on('upscaler/compare-progress', onCompare);
     return () => {
       alive.current = false;
       ipcRenderer.removeListener('upscaler/progress', onProgress);
       ipcRenderer.removeListener('upscaler/download-progress', onDownload);
+      ipcRenderer.removeListener('upscaler/compare-progress', onCompare);
     };
   }, []);
 
@@ -244,7 +260,7 @@ const Upscaler = ({ onBack }) => {
     setPreviewing(true);
     setError(null);
     try {
-      const r = await call('upscaler/preview', { source, kinds, scale, model: use, small });
+      const r = await call('upscaler/preview', { source, kinds, scale, model: use, models: chosen, look, small });
       if (!alive.current) return;
       setSamples(r.samples);
       setPreviewInfo({ model: r.model, sec: (r.ms / 1000).toFixed(1) });
@@ -254,14 +270,26 @@ const Upscaler = ({ onBack }) => {
     if (alive.current) setPreviewing(false);
   };
 
-  // the next model in the list, and a preview with it
-  const tryAnother = () => {
-    if (models.length < 2) return makePreview();
-    const i = models.findIndex(m => model && m.id === model.id);
-    const next = models[(i + 1) % models.length];
-    setModelId(next.id);
-    saveSettings({ model: next.id });
-    makePreview(next.id);
+  // "Compare models": the samples through up to 4 models, side by side
+  const compareModels = async () => {
+    setComparing({ done: 0, total: Math.min(4, models.length), model: '' });
+    setCompared(null);
+    setError(null);
+    try {
+      const r = await call('upscaler/compare', { source, kinds, scale, look, small });
+      if (alive.current) setCompared(r && r.results && r.results.length ? r : null);
+    } catch (e) {
+      if (alive.current) setError({ code: e.code });
+    }
+    if (alive.current) setComparing(null);
+  };
+  const cancelCompare = () => call('upscaler/cancelPreview').catch(() => null);
+
+  // a click on a picture in "Compare models": that model for that kind, remembered
+  const chooseModel = (kind, id) => {
+    setChosen(c => ({ ...c, [kind]: id }));
+    setSamples(null);
+    saveSettings({ models: { [kind]: id } });
   };
 
   // ---- the job --------------------------------------------------------------------
@@ -290,9 +318,9 @@ const Upscaler = ({ onBack }) => {
       });
       if (!sure) return;
     }
-    saveSettings({ model: model.id, scale, kinds, destFolder: dest, small });
+    saveSettings({ model: model.id, scale, kinds, destFolder: dest, small, look });
     try {
-      const st = await call('upscaler/start', { source, modName: sourceName, kinds, scale, model: model.id, destFolder: dest, small });
+      const st = await call('upscaler/start', { source, modName: sourceName, kinds, scale, model: model.id, models: chosen, look, destFolder: dest, small });
       if (alive.current) setJob(st);
     } catch (e) {
       setError({ code: e.code });
@@ -313,6 +341,10 @@ const Upscaler = ({ onBack }) => {
   const canWork = !!(engine && engine.ok && found && found.supported && chosenCount && how && !busy);
   const labels = { before: t('tools:before'), after: t('tools:after') };
   const friendly = m => t('tools:models.' + (m.known || 'unknown')) + ' (' + m.id + ')';
+  const nameOf = id => {
+    const m = models.find(x => x.id === id);
+    return m ? friendly(m) : id;
+  };
   const errorCode = (job && job.phase === 'error' && job.error && job.error.code) || (error && error.code);
 
   const engineNote = () => {
@@ -587,6 +619,29 @@ const Upscaler = ({ onBack }) => {
               />
             ) : null}
             {model && how && how.shrink ? <Note>{t('tools:shrinkNote')}</Note> : null}
+            {models.length ? (
+              <Note dir="ltr" data-chosen-models>
+                {t('tools:chosenModels', {
+                  texture: perKind.texture ? perKind.texture.id : '-',
+                  sprite: perKind.sprite ? perKind.sprite.id : '-',
+                  graphic: perKind.graphic ? perKind.graphic.id : '-'
+                })}
+              </Note>
+            ) : null}
+            <Dropdown
+              name="upscaleLook"
+              label={t('tools:look')}
+              fluid
+              value={look}
+              options={LOOKS.map(l => ({ label: t('tools:look_' + l), value: l }))}
+              onChange={({ value }) => {
+                setLook(value);
+                setSamples(null);
+                setCompared(null);
+                saveSettings({ look: value });
+              }}
+            />
+            <Note data-look-note={look}>{t('tools:lookNote_' + look)}</Note>
             {model && !how ? <Note bad>{t('tools:cannotScale')}</Note> : null}
             <Dropdown
               name="upscaleDest"
@@ -621,10 +676,46 @@ const Upscaler = ({ onBack }) => {
               <Button onClick={() => makePreview()} disabled={!canWork} load={previewing} width="190px">
                 {t('tools:makePreview')}
               </Button>
-              <Button onClick={tryAnother} disabled={!canWork || previewing || models.length < 2} width="210px">
-                {t('tools:tryAnother')}
+              <Button onClick={compareModels} disabled={!canWork || previewing || !!comparing || models.length < 2} load={!!comparing} width="210px">
+                {t('tools:compareModels')}
               </Button>
             </Buttons>
+            {comparing ? (
+              <Buttons>
+                <Note dir="ltr" data-comparing>
+                  {t('tools:comparing', { n: Math.min(comparing.total, comparing.done + 1), total: comparing.total, model: comparing.model || '...' })}
+                </Note>
+                <Button onClick={cancelCompare} width="120px">
+                  {t('common:cancel')}
+                </Button>
+              </Buttons>
+            ) : null}
+            {compared ? (
+              <>
+                <Note>{t('tools:compareHint')}</Note>
+                <Dropdown
+                  name="compareBg"
+                  label={t('tools:background')}
+                  value={bg}
+                  options={[{ label: t('tools:bgChecker'), value: 'checker' }, { label: t('tools:bgDark'), value: 'dark' }]}
+                  onChange={({ value }) => setBg(value)}
+                />
+                <CompareModels
+                  result={compared}
+                  scale={scale}
+                  bg={bg}
+                  chosen={MODEL_KINDS.reduce((o, k) => Object.assign(o, { [k]: perKind[k] ? perKind[k].id : '' }), {})}
+                  onChoose={chooseModel}
+                  nameOf={nameOf}
+                  labels={{
+                    kind: k => t('tools:kindShort_' + k),
+                    original: t('tools:compareOriginal'),
+                    chosen: t('tools:compareChosen'),
+                    failed: t('tools:compareFailed')
+                  }}
+                />
+              </>
+            ) : null}
             {previewing ? <Note>{t('tools:previewing')}</Note> : null}
             {previewInfo && samples ? <Note dir="ltr">{t('tools:previewOf', previewInfo)}</Note> : null}
             {samples && !samples.length ? <Note>{t('tools:noSamples')}</Note> : null}

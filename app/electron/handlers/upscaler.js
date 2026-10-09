@@ -7,6 +7,12 @@ import { games, gamesRunning } from '../utils/games';
 import { getJSON, setJSON } from '../utils/json';
 import {
   BIG_RESULT,
+  cleanModels,
+  compare,
+  COMPARE_MAX,
+  DEFAULT_LOOK,
+  lookOf,
+  modelsFor,
   cleanOldTemp,
   collect,
   createJob,
@@ -58,6 +64,13 @@ const status = async () => {
       engineFolder,
       destFolder: own.destFolder || '',
       model: own.model || DEFAULT_MODEL,
+      // Smooth / Natural / Sharp, and the model chosen per kind (Compare models)
+      look: lookOf(own.look || DEFAULT_LOOK),
+      models: cleanModels(own.models),
+      chosen: Object.entries(modelsFor(engine.list, { ...own, look: lookOf(own.look) })).reduce(
+        (o, [k, m]) => Object.assign(o, { [k]: m ? m.id : '' }),
+        {}
+      ),
       scale: own.scale || 2,
       // monsters, weapons and items are off until they are proven in the game
       kinds: own.kinds || ['texture', 'flat', 'graphic'],
@@ -84,11 +97,14 @@ ipcMain.handle('upscaler/status', async () => {
 ipcMain.handle('upscaler/saveSettings', async (e, changes) => {
   try {
     const own = await readSettings();
-    const allowed = ['engineFolder', 'destFolder', 'model', 'scale', 'kinds', 'small'];
+    const allowed = ['engineFolder', 'destFolder', 'model', 'scale', 'kinds', 'small', 'look', 'models'];
     const next = { ...own };
     allowed.forEach(k => {
       if (changes && changes[k] !== undefined) next[k] = changes[k];
     });
+    next.look = lookOf(next.look);
+    // a model chosen for one kind is kept with the ones of the other kinds
+    if (changes && changes.models) next.models = cleanModels({ ...cleanModels(own.models), ...changes.models });
     await setJSON('upscaler', next);
     return ok(await status());
   } catch (err) {
@@ -145,7 +161,8 @@ ipcMain.handle('upscaler/estimate', async (e, { source, kinds, scale, destDir, s
 });
 
 // ---- the engine ------------------------------------------------------------
-const engineAndModel = async modelId => {
+// the engine, the model and the model of every kind (what the screen sent, else the settings)
+const engineAndModel = async (modelId, choice = {}) => {
   const st = await status();
   if (!st.engine.ok) {
     const err = new Error('noEngine');
@@ -153,7 +170,9 @@ const engineAndModel = async modelId => {
     throw err;
   }
   const model = st.engine.list.find(m => m.id === modelId) || st.engine.list[0];
-  return { engine: st.engine, model };
+  const look = lookOf(choice.look || st.settings.look);
+  const models = modelsFor(st.engine.list, { model: model.id, look, models: cleanModels(choice.models || st.settings.models) });
+  return { engine: st.engine, model, models, look };
 };
 
 const runTest = async engine => {
@@ -231,15 +250,34 @@ ipcMain.handle('upscaler/cancelDownload', async () => {
 
 // ---- preview ---------------------------------------------------------------
 let previewHold = null;
-ipcMain.handle('upscaler/preview', async (e, { source, kinds, scale, model, small }) => {
+ipcMain.handle('upscaler/preview', async (e, { source, kinds, scale, model, models: chosen, look: wanted, small }) => {
   try {
     const found = await collectCached(source);
-    const { engine, model: m } = await engineAndModel(model);
+    const { engine, model: m, models, look } = await engineAndModel(model, { models: chosen, look: wanted });
     previewHold = {};
     const started = Date.now();
-    const samples = await preview({ images: found.images, kinds, scale, model: m, engine, small: small !== false }, previewHold);
+    const samples = await preview({ images: found.images, kinds, scale, model: m, models, look, engine, small: small !== false }, previewHold);
     previewHold = null;
-    return ok({ samples, model: m.id, ms: Date.now() - started });
+    return ok({ samples, model: m.id, look, ms: Date.now() - started });
+  } catch (err) {
+    previewHold = null;
+    return fail(err);
+  }
+});
+
+// "Compare models": the samples through up to 4 models (the ones asked, else the first ones)
+ipcMain.handle('upscaler/compare', async (e, { source, kinds, scale, look: wanted, models: ids, small }) => {
+  try {
+    const found = await collectCached(source);
+    const { engine, look } = await engineAndModel('', { look: wanted });
+    const asked = (ids || []).map(id => engine.list.find(m => m.id === id)).filter(Boolean);
+    const list = (asked.length ? asked : engine.list).slice(0, COMPARE_MAX);
+    previewHold = {};
+    const res = await compare({ images: found.images, kinds, scale, look, models: list, engine, small: small !== false }, previewHold, p =>
+      send('upscaler/compare-progress', p)
+    );
+    previewHold = null;
+    return ok({ ...res, look });
   } catch (err) {
     previewHold = null;
     return fail(err);
@@ -268,14 +306,14 @@ const report = state => {
 ipcMain.handle('upscaler/start', async (e, options) => {
   if (job && ['running', 'paused', 'starting'].indexOf(job.state.phase) > -1) return fail({ code: 'busy' });
   try {
-    const { source, modName, kinds, scale, model, destFolder, small } = options;
+    const { source, modName, kinds, scale, model, destFolder, small, look: wanted, models: chosen } = options;
     const settings = await getJSON('settings');
     if (!settings.modpath) return fail({ code: 'noModpath' });
     const destDir = path.join(settings.modpath, ...String(destFolder || DEFAULT_FOLDER).split(/[\\/]+/).filter(Boolean));
     const found = await collectCached(source);
-    const { engine, model: m } = await engineAndModel(model);
+    const { engine, model: m, models, look } = await engineAndModel(model, { models: chosen, look: wanted });
     job = createJob(
-      { source, modName, images: found.images, kinds, scale, model: m, engine, destDir, small: small !== false },
+      { source, modName, images: found.images, kinds, scale, model: m, models, look, engine, destDir, small: small !== false },
       { onUpdate: report }
     );
     if (gamesRunning()) job.pause('game');

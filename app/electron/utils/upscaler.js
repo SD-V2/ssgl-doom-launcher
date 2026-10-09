@@ -14,6 +14,7 @@ import {
   alphaKind,
   applyAlpha,
   decode,
+  defringe,
   encode,
   encodePalette,
   fillHidden,
@@ -22,9 +23,12 @@ import {
   isPng,
   jpgInfo,
   meanColor,
+  mixColors,
+  nearest,
   pngInfo,
   scaleAlpha,
-  shrinkTo
+  shrinkTo,
+  smoothAlpha
 } from './png';
 import ZipWriter from './zipwrite';
 
@@ -46,10 +50,16 @@ const FOLDER_KIND = {
   graphics: 'graphic'
 };
 
+// HUD and menu pictures that mods often keep outside "graphics/" (at the top of the
+// PK3): status bar and its numbers, faces, keys, the small and big fonts (STCFN, FONTA,
+// FONTB), menu pictures (M_), intermission (WI), title and help screens
+export const HUD_NAME = /^(stbar|starms|sttnum[0-9]|sttprcnt|sttminus|stysnum[0-9]|stgnum[0-9]|stkeys[0-9]|stf[a-z]+[0-9]*|stcfn[0-9]+|stpb[0-9]|stdisk|stcdrom|m_[a-z0-9_]+|wi[a-z0-9_]+|cwilv[0-9]+|fonta[0-9]+|fontb[0-9]+|amm?num[0-9]+|brdr_[a-z0-9]+|titlepic|interpic|credit|help[0-9]?|bossback|pfub[0-9]|end[0-9]|victory2)$/i;
+
 export const kindOf = inner => {
   const parts = String(inner).replace(/\\/g, '/').split('/');
-  if (parts.length < 2) return 'other';
-  return FOLDER_KIND[parts[0].toLowerCase()] || 'other';
+  const base = parts[parts.length - 1].replace(/\.[^.]*$/, '');
+  if (parts.length < 2) return HUD_NAME.test(base) ? 'graphic' : 'other';
+  return FOLDER_KIND[parts[0].toLowerCase()] || (HUD_NAME.test(base) && parts.length === 2 && /^(hud|menu|statusbar)$/i.test(parts[0]) ? 'graphic' : 'other');
 };
 
 // the name GZDoom knows a picture by: the file name up to its last dot, at most
@@ -236,16 +246,50 @@ export const pickImages = (images, kinds) => {
 // ---------------------------------------------------------------------------
 export const EXE = process.platform === 'win32' ? 'realesrgan-ncnn-vulkan.exe' : 'realesrgan-ncnn-vulkan';
 
-// friendly names (the screen translates them); the real name always stays visible
+// friendly names (the screen translates them); the real name always stays visible.
+// What the official builds really have (README + models folder of the release zips):
+//   v0.2.5.0 / 20220424 (the one SSGL downloads): realesrgan-x4plus, realesrgan-x4plus-anime,
+//     realesr-animevideov3 (-x2, -x3, -x4)
+//   older builds (20211212, 20210901) also have realesrnet-x4plus
+//   newer builds may have realesr-general-x4v3
+// The list on screen is always what is really in the models folder.
 export const KNOWN_MODELS = {
-  'realesrgan-x4plus-anime': 'drawn',
   'realesrgan-x4plus': 'general',
-  'realesr-animevideov3': 'fast',
+  'realesrgan-x4plus-anime': 'drawn',
   'realesrnet-x4plus': 'soft',
-  'realesr-general-x4v3': 'generalSmall',
-  'realesr-general-wdn-x4v3': 'generalSmall'
+  'realesr-animevideov3': 'fast',
+  'realesr-general-x4v3': 'generalSmall'
 };
-export const DEFAULT_MODEL = 'realesrgan-x4plus-anime';
+export const DEFAULT_MODEL = 'realesrgan-x4plus';
+// Look "Smooth": the model with the smoothest, cleanest shapes on game sprites
+export const SMOOTH_MODEL = 'realesrgan-x4plus-anime';
+
+// the "Look" of the result: Smooth (4x, made smaller with a soft filter, smooth edges),
+// Natural (the model as it is), Sharp (keeps more of the original pixels)
+export const LOOKS = ['smooth', 'natural', 'sharp'];
+export const DEFAULT_LOOK = 'smooth';
+export const lookOf = look => (LOOKS.indexOf(look) > -1 ? look : DEFAULT_LOOK);
+export const SHARP_MIX = 0.35; // part of the original pixels in "Sharp"
+
+// each of these kinds has its own model (Compare models); flats and others go with textures
+export const MODEL_KINDS = ['texture', 'sprite', 'graphic'];
+export const modelKind = kind => (kind === 'sprite' || kind === 'graphic' ? kind : 'texture');
+
+// the model for a kind: the one chosen for it (Compare models), else for Smooth sprites and
+// graphics the smooth model, else the model of the settings, else the default
+export const modelFor = (list, settings, kind) => {
+  const has = id => id && (list || []).find(m => m.id === id);
+  const s = settings || {};
+  const mk = modelKind(kind);
+  return (
+    has((s.models || {})[mk]) ||
+    (lookOf(s.look) === 'smooth' && mk !== 'texture' && has(SMOOTH_MODEL)) ||
+    has(s.model) ||
+    has(DEFAULT_MODEL) ||
+    (list || [])[0] ||
+    null
+  );
+};
 
 // pairs of .param / .bin. "realesr-animevideov3-x2/-x3/-x4" form one model that can
 // do several sizes (the engine adds "-x<scale>" to that one name only, see its main.cpp)
@@ -285,9 +329,23 @@ export const listModels = dir => {
     });
 };
 
-// how to reach the wanted size with a model: -s for the engine, then maybe half
-export const engineScaleFor = (model, target) => {
+// the model of every kind with a choice -> { texture, sprite, graphic } (model objects)
+export const modelsFor = (list, settings) =>
+  MODEL_KINDS.reduce((o, k) => Object.assign(o, { [k]: modelFor(list, settings, k) }), {});
+
+// what may be saved as "the model of a kind": only known kinds, only names
+export const cleanModels = models =>
+  MODEL_KINDS.reduce((o, k) => {
+    const id = models && models[k];
+    if (typeof id === 'string' && /^[\w.-]{1,80}$/.test(id)) o[k] = id;
+    return o;
+  }, {});
+
+// how to reach the wanted size with a model: -s for the engine, then maybe half.
+// Smooth: always 4x when the model can, then made smaller with a soft filter
+export const engineScaleFor = (model, target, look) => {
   if (!model) return null;
+  if (look === 'smooth' && target < 4 && 4 % target === 0 && model.scales.indexOf(4) > -1) return { engineScale: 4, shrink: true };
   if (model.scales.indexOf(target) > -1) return { engineScale: target, shrink: false };
   if (model.scales.indexOf(target * 2) > -1) return { engineScale: target * 2, shrink: true };
   return null;
@@ -642,17 +700,28 @@ const isFullyClear = img => {
 };
 
 // the engine's result -> the final picture at the wanted size (or a reason it is not
-// used). small: a palette PNG with at most 256 colours ("smaller files")
-export const finish = (meta, outBuf, scale, small = false) => {
+// used). small: a palette PNG with at most 256 colours ("smaller files"). look: see LOOKS
+export const finish = (meta, outBuf, scale, small = false, look = 'natural') => {
   let img = decode(outBuf);
   while (img.width >= meta.width * scale * 2 && img.height >= meta.height * scale * 2) img = halve(img);
   if (img.width !== meta.width * scale || img.height !== meta.height * scale) return { problem: 'size' };
+  const pixels = look === 'sharp' && meta.orig ? nearest(meta.orig, scale) : null;
   if (meta.alpha === 'opaque') {
     for (let i = 3; i < img.data.length; i += 4) img.data[i] = 255;
-  } else {
-    const alpha = scaleAlpha(meta.orig, scale, meta.alpha === 'binary');
+  } else if (pixels) {
+    // Sharp: the see-through part keeps the pixel steps of the original
+    const alpha = new Uint8Array(img.width * img.height);
+    for (let i = 0; i < alpha.length; i++) alpha[i] = pixels.data[i * 4 + 3];
     applyAlpha(img, alpha, meanColor(meta.orig));
+  } else {
+    // Smooth: clean edges without the one-pixel stairs (only for solid / see-through
+    // sprites; soft alpha like smoke stays soft)
+    const alpha =
+      look === 'smooth' && meta.alpha === 'binary' ? smoothAlpha(meta.orig, scale) : scaleAlpha(meta.orig, scale, meta.alpha === 'binary');
+    applyAlpha(img, alpha, meanColor(meta.orig));
+    if (look === 'smooth') defringe(img);
   }
+  if (pixels) mixColors(img, pixels, SHARP_MIX);
   const problem = checkResult(meta, img, scale);
   if (problem) return { problem };
   const png = small ? encodePalette(img) : encode(img, { rgb: meta.alpha === 'opaque' });
@@ -740,6 +809,7 @@ const upscaleFiles = async (job, inputs, dir, opts) => {
 };
 
 // options: { source, modName, images (all), kinds, scale, model (from listModels),
+//            models ({ texture, sprite, graphic } -> model, optional), look,
 //            engine (from findEngine), destDir }
 // hooks:   onUpdate(state)
 export const createJob = (options, hooks = {}) => {
@@ -801,12 +871,19 @@ export const createJob = (options, hooks = {}) => {
 
   job.run = async () => {
     const { images, kinds, scale, model, engine, destDir, modName } = options;
+    const look = lookOf(options.look);
     const chosen = pickImages(images, kinds);
     const { entries, skipped } = plan(images, chosen);
-    const how = engineScaleFor(model, scale);
+    // a model per kind (options.models: { texture, sprite, graphic }), else options.model
+    const modelOfImage = image => (options.models && options.models[modelKind(image.kind)]) || model;
+    const used = [];
+    entries.forEach(e => {
+      const m = modelOfImage(e.image);
+      if (m && !used.find(u => u.model.id === m.id)) used.push({ model: m, how: engineScaleFor(m, scale, look) });
+    });
     const pixelsTotal = entries.reduce((s, e) => s + e.image.width * e.image.height, 0);
     update({ phase: job.paused ? 'paused' : 'running', total: entries.length, pixelsTotal });
-    if (!how) {
+    if (used.some(u => !u.how) || (entries.length && !used.length)) {
       update({ phase: 'error', error: { code: 'scale', detail: '' } });
       return job.state;
     }
@@ -842,9 +919,14 @@ export const createJob = (options, hooks = {}) => {
     };
 
     try {
-      const list = batches(entries);
+      // the pictures of one model together, in batches
+      const list = [];
+      used.forEach(u =>
+        batches(entries.filter(e => modelOfImage(e.image).id === u.model.id)).forEach(items => list.push({ ...u, items }))
+      );
       for (let b = 0; b < list.length; b++) {
-        const batch = list[b];
+        const batch = list[b].items;
+        const { model: bModel, how } = list[b];
         // one round: prepare -> engine -> finish. A pause (a game was started)
         // stops the engine; the round starts again when the game is closed.
         for (;;) {
@@ -872,7 +954,7 @@ export const createJob = (options, hooks = {}) => {
             ? await upscaleFiles(job, metas.map(m => m.meta.file), dir, {
                 exe: engine.exe,
                 models: engine.models,
-                model: model.id,
+                model: bModel.id,
                 engineScale: how.engineScale
               })
             : new Map();
@@ -882,7 +964,7 @@ export const createJob = (options, hooks = {}) => {
             if (job.stopped) break;
             const out = done.get(meta.file);
             try {
-              const made = out ? finish(meta, fs.readFileSync(out), scale, smallFor(e.image)) : { problem: 'missing' };
+              const made = out ? finish(meta, fs.readFileSync(out), scale, smallFor(e.image), look) : { problem: 'missing' };
               if (made.problem) {
                 // looks wrong: nothing is added, GZDoom keeps the original picture
                 rejected.push({ path: e.image.path, reason: made.problem });
@@ -915,7 +997,7 @@ export const createJob = (options, hooks = {}) => {
       const info = [
         'Made by SSGL - Tools > Upscaler',
         'Source: ' + path.basename(options.source),
-        'Model: ' + model.id + '  Scale: ' + scale + 'x',
+        'Model: ' + used.map(u => u.model.id).join(', ') + '  Scale: ' + scale + 'x  Look: ' + look,
         'Date: ' + new Date().toISOString(),
         '',
         'For your own use. Upscaled copies of other people\'s graphics should not be shared.'
@@ -977,53 +1059,90 @@ export const pickSamples = images => {
 
 const dataUrl = buf => `data:image/${isJpg(buf) ? 'jpeg' : 'png'};base64,${buf.toString('base64')}`;
 
-export const preview = async ({ images, kinds, scale, model, engine, small = true }, hold = {}) => {
-  const samples = pickSamples(pickImages(images, kinds));
-  const how = engineScaleFor(model, scale);
-  if (!samples.length) return [];
+// the samples through one model -> [{ after, problem, bytesFull, bytesSmall, small }]
+const runSamples = async ({ samples, metas, model, scale, look, engine, small, temp, fake }) => {
+  const how = engineScaleFor(model, scale, look);
   if (!how) throw new EngineError('scale');
+  const dir = path.join(temp, model.id);
+  fs.mkdirSync(dir, { recursive: true });
+  const done = await upscaleFiles(fake, metas.map(m => m.file), dir, {
+    exe: engine.exe,
+    models: engine.models,
+    model: model.id,
+    engineScale: how.engineScale
+  });
+  if (fake.stopped) return null;
+  return samples.map((s, i) => {
+    const file = done.get(metas[i].file);
+    const made = file ? finish(metas[i], fs.readFileSync(file), scale, false, look) : { problem: 'missing' };
+    const useSmall = small && (s.kind === 'sprite' || s.kind === 'graphic');
+    // the size of the picture with all colours and with fewer colours
+    const smallPng = made.img ? encodePalette(made.img) : null;
+    return {
+      after: made.png ? dataUrl(useSmall ? smallPng : made.png) : '',
+      problem: made.problem || '',
+      bytesFull: made.png ? made.png.length : 0,
+      bytesSmall: smallPng ? smallPng.length : 0,
+      small: useSmall
+    };
+  });
+};
+
+const withSamples = async ({ images, kinds }, hold, work) => {
+  const samples = pickSamples(pickImages(images, kinds));
+  if (!samples.length) return null;
   const temp = makeTemp();
   const fake = { tileStep: 0, stopped: false, child: null };
   hold.job = fake;
   try {
     const metas = [];
-    for (let i = 0; i < samples.length; i++) {
-      metas.push(await prepare(samples[i], path.join(temp, 'p' + i)));
-    }
-    const done = await upscaleFiles(fake, metas.map(m => m.file), temp, {
-      exe: engine.exe,
-      models: engine.models,
-      model: model.id,
-      engineScale: how.engineScale
-    });
-    if (fake.stopped) return [];
-    const out = [];
-    for (let i = 0; i < samples.length; i++) {
-      const before = await samples[i].readPng();
-      const file = done.get(metas[i].file);
-      const made = file ? finish(metas[i], fs.readFileSync(file), scale) : { problem: 'missing' };
-      const useSmall = small && (samples[i].kind === 'sprite' || samples[i].kind === 'graphic');
-      // the size of the picture with all colours and with fewer colours
-      const smallPng = made.img ? encodePalette(made.img) : null;
-      out.push({
-        path: samples[i].path,
-        kind: samples[i].kind,
-        width: samples[i].width,
-        height: samples[i].height,
-        before: dataUrl(before),
-        after: made.png ? dataUrl(useSmall ? smallPng : made.png) : '',
-        problem: made.problem || '',
-        bytesFull: made.png ? made.png.length : 0,
-        bytesSmall: smallPng ? smallPng.length : 0,
-        small: useSmall
-      });
-    }
-    return out;
+    for (let i = 0; i < samples.length; i++) metas.push(await prepare(samples[i], path.join(temp, 'p' + i)));
+    const before = [];
+    for (let i = 0; i < samples.length; i++) before.push(dataUrl(await samples[i].readPng()));
+    return await work({ samples, metas, before, temp, fake });
   } finally {
     killTree(fake.child);
     removeDir(temp);
   }
 };
+
+const sampleInfo = (s, before) => ({ path: s.path, kind: s.kind, width: s.width, height: s.height, before });
+
+export const preview = async ({ images, kinds, scale, model, models, look = DEFAULT_LOOK, engine, small = true }, hold = {}) =>
+  (await withSamples({ images, kinds }, hold, async ({ samples, metas, before, temp, fake }) => {
+    // each sample with the model of its kind
+    const out = samples.map((s, i) => sampleInfo(s, before[i]));
+    const byModel = new Map();
+    samples.forEach((s, i) => {
+      const m = (models && models[modelKind(s.kind)]) || model;
+      if (!byModel.has(m.id)) byModel.set(m.id, { m, idx: [] });
+      byModel.get(m.id).idx.push(i);
+    });
+    for (const { m, idx } of byModel.values()) {
+      const made = await runSamples({ samples: idx.map(i => samples[i]), metas: idx.map(i => metas[i]), model: m, scale, look, engine, small, temp, fake });
+      if (!made) return [];
+      idx.forEach((i, k) => Object.assign(out[i], made[k], { model: m.id }));
+    }
+    return out;
+  })) || [];
+
+// "Compare models": the same samples through up to 4 models, one after the other.
+// -> { samples: [{ path, kind, width, height, before }], results: [{ model, ms, items: [...] }] }
+export const COMPARE_MAX = 4;
+export const compare = async ({ images, kinds, scale, look = DEFAULT_LOOK, models, engine, small = true }, hold = {}, onModel = () => {}) =>
+  (await withSamples({ images, kinds }, hold, async ({ samples, metas, before, temp, fake }) => {
+    const list = (models || []).slice(0, COMPARE_MAX);
+    const results = [];
+    for (let k = 0; k < list.length; k++) {
+      onModel({ done: k, total: list.length, model: list[k].id });
+      const t = Date.now();
+      const items = await runSamples({ samples, metas, model: list[k], scale, look, engine, small, temp, fake });
+      if (!items) return null;
+      results.push({ model: list[k].id, ms: Date.now() - t, items });
+    }
+    onModel({ done: list.length, total: list.length, model: '' });
+    return { samples: samples.map((s, i) => sampleInfo(s, before[i])), results };
+  })) || { samples: [], results: [] };
 
 // a tiny picture through the engine: does it start at all on this PC?
 export const testEngine = async (engine, model) => {

@@ -80,7 +80,7 @@ const visible = img => { let n = 0; for (let i = 3; i < img.data.length; i += 4)
   // the fake engine with the graphics-card bug: alpha in -> noise out
   const bugModel = eng.list.find(m => m.id === 'alphabug-x4');
   const dest = path.join(lib, '8_UPSCALE');
-  const end = await up.createJob({ source: pk3, modName: 'Sprite Test', images: found.images, kinds: ['texture', 'flat', 'sprite'], scale: 2, model: bugModel, engine: eng, destDir: dest }).run();
+  const end = await up.createJob({ source: pk3, modName: 'Sprite Test', images: found.images, kinds: ['texture', 'flat', 'sprite'], scale: 2, model: bugModel, look: 'natural', engine: eng, destDir: dest }).run();
   const inputs = fs.readFileSync(log, 'utf8').trim().split('\n').map(l => JSON.parse(l)).filter(x => !Array.isArray(x));
   check('the engine never gets an alpha channel (every input is RGB, colour type 2)', inputs.length === 6 && inputs.every(x => x.colorType === 2));
   check('so the "alpha bug" of the graphics card cannot make noise: all 6 made, none rejected', end.phase === 'done' && end.result.images === 6 && end.result.rejected.length === 0);
@@ -102,7 +102,7 @@ const visible = img => { let n = 0; for (let i = 3; i < img.data.length; i += 4)
   const pal = png.decode(z['hires/sprites/pal/PALSA0.png']);
   const orig = png.decode(F.palette(24, 30));
   let shapeOk = true; for (let y = 0; y < 60; y++) for (let x = 0; x < 48; x++) if ((pal.data[(y * 48 + x) * 4 + 3] > 0) !== (orig.data[((y >> 1) * 24 + (x >> 1)) * 4 + 3] > 0)) shapeOk = false;
-  check('the see-through shape is exactly the original\'s, made 2x bigger', shapeOk);
+  check('Look Natural: the see-through shape is exactly the original\'s, made 2x bigger (Smooth: see upscalelook.js)', shapeOk);
   check('the wall keeps all its colours (RGB, no palette)', png.pngInfo(z['hires/textures/WALL1.png']).colorType === 2);
 
   // ---- smaller files ---------------------------------------------------------------------

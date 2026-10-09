@@ -99,3 +99,21 @@ export const modNameOf = file =>
     .replace(/_/g, ' ');
 
 export const isBusy = job => !!job && ['starting', 'running', 'paused'].indexOf(job.phase) > -1;
+
+// ---- Look and the model of every kind (same rules as electron/utils/upscaler.js) ----
+export const LOOKS = ['smooth', 'natural', 'sharp'];
+export const MODEL_KINDS = ['texture', 'sprite', 'graphic'];
+export const SMOOTH_MODEL = 'realesrgan-x4plus-anime';
+export const modelKind = kind => (kind === 'sprite' || kind === 'graphic' ? kind : 'texture');
+export const modelFor = (list, { model, models, look } = {}, kind) => {
+  const has = id => id && (list || []).find(m => m.id === id);
+  const mk = modelKind(kind);
+  return (
+    has((models || {})[mk]) ||
+    ((look || 'smooth') === 'smooth' && mk !== 'texture' && has(SMOOTH_MODEL)) ||
+    has(model) ||
+    has('realesrgan-x4plus') ||
+    (list || [])[0] ||
+    null
+  );
+};

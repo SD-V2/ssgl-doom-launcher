@@ -45,6 +45,9 @@ Base: Electron 44 (Chromium 152), runs on Windows 10 and 11 (64-bit). Upgraded f
   runs in the background (progress, time left, cancel, pauses while a game runs). Everything goes to `hires/`;
   monsters/weapons/items are experimental (off by default), saved as palette PNGs ("Smaller files"); a safety net
   keeps the original for any result that looks wrong. WAD pictures = step 2.
+  **Look**: Smooth (default: no visible pixels, smooth sprite outlines without halos), Natural, Sharp. **Compare models**:
+  the samples through up to 4 models side by side; a click picks the model for textures / sprites / HUD (remembered).
+  HUD and menu pictures at the top of a PK3 (STBAR, numbers, M_..., fonts) count as graphics.
   Details and the plan: `docs/UPSCALER.md`.
 
 ## Faster start (see docs/PERFORMANCE.md)

@@ -108,7 +108,7 @@ const makeEngine = dir => {
   check('engine found: program + models folder', eng.ok && eng.exe.endsWith(up.EXE) && path.basename(eng.models) === 'models');
   const ids = eng.list.map(m => m.id);
   check('models: pairs of .param/.bin; x2/x3/x4 files are one model; half pairs are ignored', ids.indexOf('realesr-animevideov3') > -1 && JSON.stringify(eng.list.find(m => m.id === 'realesr-animevideov3').scales) === '[2,3,4]' && ids.indexOf('lonely') < 0);
-  check('models: the known ones first, with a friendly name', eng.list[0].id === 'realesrgan-x4plus-anime' && eng.list[0].known === 'drawn' && eng.list[1].known === 'general');
+  check('models: the known ones first, with a friendly name (realesrgan-x4plus first)', eng.list[0].id === 'realesrgan-x4plus' && eng.list[0].known === 'general' && eng.list[1].known === 'drawn');
   check('a missing folder / no program: a reason', up.findEngine(path.join(TMP, 'nope')).problem === 'noFolder' && up.findEngine(TMP).problem === 'noExe');
   const anime = eng.list.find(m => m.id === 'realesrgan-x4plus-anime');
   const fast = eng.list.find(m => m.id === 'realesr-animevideov3');
@@ -158,7 +158,7 @@ const makeEngine = dir => {
 
   // ---- a real run (2x with the anime model: engine 4x, then shrink) ---------------------------------
   const states = [];
-  const job = up.createJob({ source: pk3, modName: 'Test Mod', images: found.images, kinds: ['texture', 'flat', 'sprite', 'graphic'], scale: 2, model: anime, engine: eng, destDir: dest }, { onUpdate: s => states.push(s) });
+  const job = up.createJob({ source: pk3, modName: 'Test Mod', images: found.images, kinds: ['texture', 'flat', 'sprite', 'graphic'], scale: 2, model: anime, look: 'natural', engine: eng, destDir: dest }, { onUpdate: s => states.push(s) });
   const end = await job.run();
   check('the job finishes: ' + (end.error ? JSON.stringify(end.error) : end.phase), end.phase === 'done' && end.result.images === entries.length);
   check('progress went "picture 1 of N" ... "N of N" with a time left', states.some(s => s.done === 1 && s.total === entries.length) && states[states.length - 1].done === entries.length && states.some(s => typeof s.eta === 'number'));
@@ -174,7 +174,7 @@ const makeEngine = dir => {
   const sp = png.decode(z[SP]);
   const alphas = new Set(); let halo = false; for (let i = 0; i < sp.data.length; i += 4) { alphas.add(sp.data[i + 3]); if (sp.data[i + 3] === 255 && sp.data[i] < 150) halo = true; }
   const under = new Set(); for (let i = 0; i < sp.data.length; i += 4) if (!sp.data[i + 3]) under.add(sp.data.readUInt32BE(i));
-  check('the sprite keeps hard see-through edges, no dark halo', alphas.size === 2 && alphas.has(0) && alphas.has(255) && !halo);
+  check('Look "Natural": the sprite keeps hard see-through edges, no dark halo', alphas.size === 2 && alphas.has(0) && alphas.has(255) && !halo);
   check('...and ONE colour under the see-through part (no random colours)', under.size === 1);
   check('the JPG became a PNG of the right size', sz('hires/graphics/M_DOOM.png').width === 48);
   check('walls keep all their colours (not a palette)', sz('hires/textures/walls/STARTAN3.png').colorType === 2);

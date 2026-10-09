@@ -449,7 +449,6 @@ export default {
     preview: 'معاينة',
     previewHint: 'جرّب معاينة أولًا: تُكبَّر ثلاث صور كعيّنة في ثوانٍ قليلة.',
     makePreview: 'إنشاء معاينة',
-    tryAnother: 'جرّب نموذجًا آخر',
     previewing: 'جارٍ إنشاء المعاينة...',
     before: 'قبل',
     after: 'بعد',

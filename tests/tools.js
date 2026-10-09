@@ -65,6 +65,7 @@ const status = () => ({ settings: { engineFolder: 'C:\\SSGL\\tools\\realesrgan',
 const kinds = { texture: { count: 120, pixels: 120 * 64 * 64 }, flat: { count: 30, pixels: 30 * 64 * 64 }, sprite: { count: 300, pixels: 300 * 40 * 60 }, graphic: { count: 12, pixels: 12 * 320 * 200 }, other: { count: 4, pixels: 4000 } };
 const PNG1 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
 let downloadDone = null;
+let compareDone = null;
 let estimate = { bytes: 300 * 1024 * 1024, big: false, free: 50 * 1024 * 1024 * 1024 };
 answer = async (ch, d) => {
   switch (ch) {
@@ -79,6 +80,7 @@ answer = async (ch, d) => {
       return { data: { type: 'zip', supported: true, reason: '', kinds, doomFormat: 7, total: 466 }, error: null };
     case 'upscaler/estimate': return { data: estimate, error: null };
     case 'upscaler/preview': return { data: { model: d.model, ms: 2300, samples: [{ path: 'textures/STARTAN3.png', kind: 'texture', width: 64, height: 64, before: PNG1, after: PNG1, bytesFull: 300 * 1024, bytesSmall: 90 * 1024, small: false }, { path: 'sprites/TROOA1.png', kind: 'sprite', width: 40, height: 60, before: PNG1, after: PNG1, bytesFull: 120 * 1024, bytesSmall: 40 * 1024, small: true }, { path: 'graphics/TITLEPIC.png', kind: 'graphic', width: 320, height: 200, before: PNG1, after: PNG1 }] }, error: null };
+    case 'upscaler/compare': return new Promise(r => { compareDone = () => r({ data: { look: d.look, samples: [{ path: 'textures/STARTAN3.png', kind: 'texture', width: 64, height: 64, before: PNG1 }, { path: 'sprites/SHTGA0.png', kind: 'sprite', width: 72, height: 44, before: PNG1 }], results: MODELS.map(m => ({ model: m.id, ms: 900, items: [{ after: PNG1, problem: '' }, { after: m.id === 'realesr-animevideov3' ? '' : PNG1, problem: m.id === 'realesr-animevideov3' ? 'noise' : '' }] })) }, error: null }); });
     case 'upscaler/start': return { data: { phase: 'running', done: 0, total: 462, startedAt: 1 }, error: null };
     case 'main/init': return { data: { mods: [...MODS, { ...mk('newup', 'Test Mod upscale 2x', ['8_UPSCALE']), path: 'C:\\Doom\\8_UPSCALE\\Test Mod upscale 2x.pk3' }], iwads: [] }, error: null };
     default: return { data: true, error: null };
@@ -179,8 +181,28 @@ const MODS = [mk('bp', 'Test Mod', ['1_BP']), mk('w', 'old maps', ['2_X'], { kin
   const slider = q('figure input[type=range]')[0];
   Simulate.change(slider, { target: { value: '20' } }); await wait(30);
   check('...the slider moves the line', q('figure .before')[0].style.width === '20%');
-  Simulate.click(btn('Try another model')); await wait(150);
-  check('"Try another model": the next model, a new preview', calls.filter(c => c[0] === 'upscaler/preview').pop()[1].model === 'realesrgan-x4plus' && q('input').find(i => i.name === 'upscaleModel').value.indexOf('realesrgan-x4plus') > -1);
+  // ---- Look ---------------------------------------------------------------------------------
+  check('Look: "Smooth - no visible pixels" by default, explained in plain words', q('input').find(i => i.name === 'upscaleLook').value === 'smooth' && /Like a neural upscale pack/.test(text()));
+  check('...the previews use the Look and the model of every kind', pv[0][1].look === 'smooth' && JSON.stringify(pv[0][1].models) === '{}');
+  check('...Smooth: monsters, weapons, items and HUD use the drawn-art model, textures the chosen one', /textures realesrgan-x4plus-anime - monsters, weapons, items realesrgan-x4plus-anime - HUD and menus realesrgan-x4plus-anime/.test(text()));
+
+  // ---- Compare models ------------------------------------------------------------------------
+  Simulate.click(btn('Compare models')); await wait(50);
+  const cmp = calls.filter(c => c[0] === 'upscaler/compare').pop();
+  check('Compare models: asks the main part with the mod, the kinds, the size and the Look', cmp && /Test Mod\.pk3$/.test(cmp[1].source) && cmp[1].scale === 2 && cmp[1].look === 'smooth');
+  emit('upscaler/compare-progress', { done: 1, total: 3, model: 'realesrgan-x4plus' }); await wait(30);
+  check('...while it works: "Comparing models: 2 of 3 (realesrgan-x4plus)..." and Cancel', /Comparing models: 2 of 3 \(realesrgan-x4plus\)/.test(text()) && !!host.querySelector('[data-comparing]'));
+  compareDone(); await wait(100);
+  check('...then every sample: the original (its pixels shown) and one picture per model, side by side', q('[data-compare-sample]').length === 2 && q('[data-compare-sample="sprite"] [data-compare-cell]').length === 4 && !!host.querySelector('[data-compare-sample="sprite"] [data-compare-cell="original"] img.pixels') && /Original \(pixels shown\)/.test(text()));
+  check('...a result that looked wrong says so (and cannot be chosen)', /looked wrong/.test(host.querySelector('[data-compare-sample="sprite"] [data-compare-cell="realesr-animevideov3"]').textContent));
+  check('...checkerboard background first, "Dark" can be chosen', q('input').find(i => i.name === 'compareBg').value === 'checker');
+  check('...the model in use is marked "Chosen" (sprite: the smooth model)', host.querySelector('[data-compare-sample="sprite"] [data-chosen="yes"]').getAttribute('data-compare-cell') === 'realesrgan-x4plus-anime');
+  Simulate.click(host.querySelector('[data-compare-sample="sprite"] [data-compare-cell="realesrgan-x4plus"]')); await wait(50);
+  const saved = calls.filter(c => c[0] === 'upscaler/saveSettings').pop()[1];
+  check('a click chooses that model for its kind and it is remembered (sprites only)', JSON.stringify(saved.models) === '{"sprite":"realesrgan-x4plus"}' && host.querySelector('[data-compare-sample="sprite"] [data-chosen="yes"]').getAttribute('data-compare-cell') === 'realesrgan-x4plus' && host.querySelector('[data-compare-sample="texture"] [data-chosen="yes"]').getAttribute('data-compare-cell') === 'realesrgan-x4plus-anime');
+  check('...the list of models per kind shows the new choice', /monsters, weapons, items realesrgan-x4plus - HUD and menus realesrgan-x4plus-anime/.test(text()));
+  Simulate.click(host.querySelector('[data-compare-sample="sprite"] [data-compare-cell="realesr-animevideov3"]')); await wait(30);
+  check('...a picture that looked wrong cannot be chosen', host.querySelector('[data-compare-sample="sprite"] [data-chosen="yes"]').getAttribute('data-compare-cell') === 'realesrgan-x4plus');
 
   // ---- start: big result is asked first ------------------------------------------------------
   estimate = { bytes: 900 * 1024 * 1024, big: true, free: 50 * 1024 * 1024 * 1024 };
@@ -188,7 +210,7 @@ const MODS = [mk('bp', 'Test Mod', ['1_BP']), mk('w', 'old maps', ['2_X'], { kin
   check('over 500 MB: an SSGL question first ("about 900 MB")', /A big new mod/.test(document.body.textContent) && /900 MB/.test(document.body.textContent) && !calls.some(c => c[0] === 'upscaler/start'));
   Simulate.click(Array.from(document.body.querySelectorAll('button')).find(b => b.textContent.trim() === 'Go on')); await wait(150);
   const started = calls.find(c => c[0] === 'upscaler/start');
-  check('..."Go on" starts it with the mod, the size, the model and the folder', started && started[1].modName === 'Test Mod' && started[1].scale === 2 && started[1].destFolder === '8_UPSCALE' && started[1].small === true && /Test Mod\.pk3$/.test(started[1].source));
+  check('..."Go on" starts it with the mod, the size, the model and the folder', started && started[1].look === 'smooth' && started[1].models.sprite === 'realesrgan-x4plus' && started[1].modName === 'Test Mod' && started[1].scale === 2 && started[1].destFolder === '8_UPSCALE' && started[1].small === true && /Test Mod\.pk3$/.test(started[1].source));
   emit('upscaler/progress', { phase: 'running', done: 12, total: 340, eta: 125, current: 'sprites/TROOA1.png', startedAt: 1 }); await wait(30);
   check('running: "Picture 12 of 340", a bar, the time left, Cancel -> state "running"', state() === 'running' && /Picture 12 of 340/.test(text()) && /Time left: about 2:05/.test(text()) && !!btn('Cancel'));
   check('...it says it goes on in the background', /goes on in the background/.test(text()));
@@ -218,6 +240,14 @@ const MODS = [mk('bp', 'Test Mod', ['1_BP']), mk('w', 'old maps', ['2_X'], { kin
   mount(React.createElement(Tools)); await wait(150);
   emit('upscaler/progress', { phase: 'error', startedAt: 2, error: { code: 'noVulkan', detail: 'vkCreateInstance failed -9' } }); await wait(50);
   check('error: state "error", a clear reason and the engine\'s own words', state() === 'error' && /does not offer Vulkan/.test(text()) && /vkCreateInstance failed -9/.test(text()));
+
+  // ---- remembered: the Look and the model of every kind come back --------------------------------
+  const keep = answer;
+  answer = async (ch, d) => (ch === 'upscaler/status' ? { data: { ...status(), settings: { ...status().settings, look: 'sharp', models: { graphic: 'realesr-animevideov3' } }, job: null }, error: null } : ch === 'upscaler/state' ? { data: null, error: null } : keep(ch, d));
+  mount(React.createElement(Tools)); await wait(150);
+  if (!state()) { Simulate.click(q('[data-tool] button')[0]); await wait(150); }
+  check('remembered: Look "Sharp" and the HUD model chosen before', q('input').find(i => i.name === 'upscaleLook').value === 'sharp' && /Keeps more of the original pixels/.test(text()) && /HUD and menus realesr-animevideov3/.test(text()) && /monsters, weapons, items realesrgan-x4plus-anime -/.test(text()));
+  answer = keep;
 
   // ---- four languages: no English left, nothing mirrored --------------------------------------------
   answer = (orig => async (ch, d) => (ch === 'upscaler/status' ? { data: { ...status(), job: null }, error: null } : ch === 'upscaler/state' ? { data: null, error: null } : orig(ch, d)))(answer);

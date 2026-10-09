@@ -273,6 +273,15 @@ const upAnswer = st => {
           { path: 'sprites/monsters/TROOA1.png', kind: 'sprite', width: 40, height: 50, bytesFull: 18 * 1024, bytesSmall: 6 * 1024, small: true, ...drawSample(40, 50, imp) },
           { path: 'graphics/TITLEPIC.png', kind: 'graphic', width: 160, height: 100, bytesFull: 74 * 1024, bytesSmall: 26 * 1024, small: true, ...drawSample(160, 100, title) }
         ] } };
+      case 'upscaler/compare': {
+        const smp = [
+          { path: 'textures/walls/BRICK7.png', kind: 'texture', width: 64, height: 32, ...drawSample(64, 32, bricks) },
+          { path: 'sprites/monsters/TROOA1.png', kind: 'sprite', width: 40, height: 50, ...drawSample(40, 50, imp) },
+          { path: 'STBAR.png', kind: 'graphic', width: 160, height: 100, ...drawSample(160, 100, title) }
+        ];
+        return { error: null, data: { look: d.look, samples: smp.map(x => ({ path: x.path, kind: x.kind, width: x.width, height: x.height, before: x.before })),
+          results: UP_MODELS.map(m => ({ model: m.id, ms: 3100, items: smp.map(x => ({ after: x.after, problem: '' })) })) } };
+      }
       case 'upscaler/state': return { error: null, data: null };
       default: return { error: null, data: st || true };
     }
@@ -318,6 +327,13 @@ const ToolsScene = () => {
       if (scene === 'up-preview') {
         button(t('tools:makePreview')).click();
         await wait(300);
+      }
+      if (scene === 'up-compare') {
+        button(t('tools:compareModels')).click();
+        await wait(400);
+        // the Compare panel at the top of the screen
+        const panel = document.querySelector('[data-compare="models"]');
+        if (panel) panel.scrollIntoView();
       }
       const job = { phase: 'running', done: 1214, total: 4650, eta: 1130, current: 'sprites/monsters/TROOA1.png', startedAt: 1 };
       if (scene === 'up-running') emit('upscaler/progress', job);

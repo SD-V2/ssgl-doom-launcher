@@ -419,7 +419,6 @@ export default {
     preview: 'Ön izleme',
     previewHint: 'Önce bir ön izleme deneyin: üç örnek resim birkaç saniyede yapılır.',
     makePreview: 'Ön izleme yap',
-    tryAnother: 'Başka bir model dene',
     previewing: 'Ön izleme yapılıyor...',
     before: 'Önce',
     after: 'Sonra',
