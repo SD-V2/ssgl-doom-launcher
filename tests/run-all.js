@@ -20,6 +20,7 @@ if (!fs.existsSync(path.join(__dirname, '..', 'app', 'node_modules', 'react'))) 
 
 const only = process.argv[2];
 let failed = 0;
+const notes = [];
 let total = 0;
 console.log('file          ok   miss  result');
 SUITES.filter(s => !only || s.indexOf(only) > -1).forEach(name => {
@@ -30,17 +31,12 @@ SUITES.filter(s => !only || s.indexOf(only) > -1).forEach(name => {
     maxBuffer: 50 * 1024 * 1024
   });
   const out = (r.stdout || '') + (r.stderr || '');
-  let ok = (out.match(/^OK\s/gm) || []).length;
+  const ok = (out.match(/^OK\s/gm) || []).length;
   const miss = (out.match(/^MISS\s/gm) || []).length;
-  let problem = '';
-  if (name === 'i18ncheck') {
-    // this one prints texts, not OK lines
-    const bad = out.split('\n').filter(l => /(missing|extra|problems): (?!none)/.test(l));
-    ok = bad.length ? 0 : 1;
-    if (bad.length) problem = bad[0];
-  }
-  const crashed = r.status !== 0 && !(name === 'i18ncheck' && r.status === 0);
-  const result = miss === 0 && ok > 0 && !crashed && !problem ? 'ok' : 'FAILED';
+  // only reported, never a failure (e.g. "12 texts not translated yet")
+  out.split('\n').filter(l => /^NOTE\s/.test(l)).forEach(l => notes.push(l.slice(5)));
+  const crashed = r.status !== 0;
+  const result = miss === 0 && ok > 0 && !crashed ? 'ok' : 'FAILED';
   if (result !== 'ok') {
     failed++;
     console.log(out.split('\n').filter(l => /^MISS|Error|error:/.test(l)).slice(0, 8).join('\n'));
@@ -48,8 +44,8 @@ SUITES.filter(s => !only || s.indexOf(only) > -1).forEach(name => {
   total += ok;
   console.log(
     name.padEnd(12) + String(ok).padStart(4) + String(miss).padStart(7) + '  ' + result +
-      (r.error ? ' (' + r.error.message + ')' : '') + (problem ? ' ' + problem : '')
+      (r.error ? ' (' + r.error.message + ')' : '')
   );
 });
-console.log('\n' + total + ' checks passed, ' + failed + ' file(s) failed');
+console.log('\n' + total + ' checks passed, ' + failed + ' file(s) failed' + (notes.length ? ' | ' + notes.join(' | ') : ''));
 process.exit(failed ? 1 : 0);

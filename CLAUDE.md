@@ -1,5 +1,25 @@
 # SSGL fork - notes for Claude Code
 
+## Working rules (newest, they win over everything else in this file)
+
+1. **English only for now.** New or changed texts go only into `app/client/locales/en.js` (the app shows English where a
+   translation is missing). Do not write or test Turkish / Arabic / Russian texts, do not take pictures in other languages,
+   do not write new tests that loop over languages, and do not talk about languages in pull requests.
+   (This replaces rule 1 of "Texts and languages" below; the rest of that rule - Arabic layout, `dir="auto"` - still describes
+   how the app works.)
+2. **Translations later, in one job.** `cd tests && node missing-translations.js` writes `docs/TODO-TRANSLATIONS.md`
+   (key, English text, which languages lack it). Run it only when the owner asks for the translation job.
+   `i18ncheck` only *reports* untranslated texts ("12 texts not translated yet"); it still fails on English texts the code
+   uses but `en.js` lacks, keys that exist in another language but not in English, and broken `{{placeholders}}`
+   in existing translations.
+3. **Save tokens.**
+   - Tests: run only the check files of your change (`node run-all.js <part of name>`); run the whole suite **once**,
+     before you open the pull request.
+   - Pictures only for visual changes: English, Classic plus the one style you changed, one color theme (hell), a few key
+     screens; look at each picture once. (This replaces "check it with every color theme" below.)
+   - Do not re-read big files, do not paste long logs.
+   - Pull request text short: what is new, how to try it, what is not done.
+
 Read this first. It was written at the end of a long working session in the Claude chat app
 (which is where this fork was built, with zip files, before moving to Claude Code).
 
@@ -67,7 +87,7 @@ client/assets/fonts, sounds                  fonts (+ FONTS-LICENSE.txt) and sou
 ## Rules learned the hard way (each one cost a bug - please keep them)
 
 **Texts and languages**
-1. Every new text goes into **all four** locale files (`en`, `tr`, `ar`, `ru`) with the same key. `tests/i18ncheck.js` checks it.
+1. *(Replaced by Working rule 1 at the top: new texts go only into `en.js`.)*
    Arabic: the owner wants the **English layout, not mirrored** (html stays `dir="ltr"`); only the text reads right to left.
    `utils/textDirection.js` gives every text-only block `dir="auto"` (not flex/grid boxes, texts starting with a number keep
    the English order) and global.css keeps each text on the side it has in English. Do not set `dir="rtl"` on the page again.

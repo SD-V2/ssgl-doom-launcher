@@ -28,7 +28,7 @@ What they cover (a short map):
 | `native` | the requests the screens send to the main part (links, show in folder, Recycle Bin, file picker, right-click menus) - they replaced Electron's old `remote` module |
 | `startup` | faster start: the startup log, the scanner (skipped folders, broken links, speed), the library cache (added / removed / renamed files, broken cache, other folders), the wallpaper copy |
 | `loading` | the loading screen in 3 styles x 4 languages, the background check line, the start with the cache, no white window, the start time in About |
-| `i18ncheck` | every text exists in all four languages |
+| `i18ncheck` | every text the code uses exists in English; no keys only in other languages; `{{placeholders}}` kept in existing translations. Texts not translated yet are only reported ("12 texts not translated yet" on the last line) |
 
 When you add a feature: add checks for it in the file that fits (or a new file, and add its name to
 `SUITES` in `run-all.js`).
@@ -37,3 +37,5 @@ Tip: a failing check prints `MISS <what was expected>`. Run the one file with `n
 
 On GitHub, `.github/workflows/checks.yml` runs `yarn build` and `node run-all.js` for every pull request
 (job "Build and checks"), with no screen (the checks use jsdom).
+
+`node missing-translations.js` (not part of run-all) writes `docs/TODO-TRANSLATIONS.md`: every English text that Turkish, Arabic or Russian do not have yet. Run it only for the translation job.
