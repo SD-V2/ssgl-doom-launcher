@@ -47,6 +47,12 @@ Base: Electron 44 (Chromium 152), runs on Windows 10 and 11 (64-bit). Upgraded f
   keeps the original for any result that looks wrong. WAD pictures = step 2.
   Details and the plan: `docs/UPSCALER.md`.
 
+## Faster start (see docs/PERFORMANCE.md)
+- The window appears at once (dark, SSGL logo, thin line, "Scanning 560 mods..."); the list comes from a cache of the
+  last scan and the folders are checked in the background (thin line at the top). Changes made while SSGL was closed are applied.
+- A big wallpaper is shown from a screen-sized copy (`wallpaper-cache`, the original is never changed) and fades in.
+- About shows the time of the last start; `startup-log.txt` in the data folder keeps the last 10 starts.
+
 ## Updates
 - Update notice for newer releases and for **new uploads to the fork** (compares the commit the program was built from with the
   newest commit). Settings > Update notifier: Beta and Stable / Stable only / Off. Checks at start and when the window gets focus

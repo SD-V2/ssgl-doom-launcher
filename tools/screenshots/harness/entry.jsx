@@ -15,6 +15,7 @@ import Settings from '../client/views/Settings';
 import Tools from '../client/views/Tools';
 import Head from '../client/components/Head';
 import UpscaleWatcher from '../client/components/Upscaler/Watcher';
+import { CheckingLine, LoadingScreen } from '../client/components/Startup';
 import { reducer } from '../client/state/reducer';
 import { BrokenFilesModal, ConflictsModal, FixPackagesModal, FolderNameModal, TwinsModal } from '../client/components';
 import i18n from '../client/i18n';
@@ -344,8 +345,17 @@ const ToolsScene = () => {
     </StoreContext.Provider>
   );
 };
+// the loading screen of the start ("loading" = with the number of mods of the last start,
+// "loading-first" = the very first start)
+const LoadingScene = () => (
+  <ThemeProvider theme={applyStyle(themed, styleName)}><>
+    <StyleLayer style={styleName} />
+    <LoadingScreen count={scene === 'loading' ? 560 : 0} />
+  </></ThemeProvider>
+);
 
 const App = () => {
+  if (scene === 'loading' || scene === 'loading-first') return <LoadingScene />;
   if (scene === 'markers') return <MarkersScene />;
   if (scene === 'settings') return <SettingsScene />;
   if (scene === 'tools' || scene.indexOf('up-') === 0) return <ToolsScene />;

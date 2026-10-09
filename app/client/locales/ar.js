@@ -348,6 +348,9 @@ export default {
     startView: 'الشاشة التي تُفتح عند تشغيل SSGL'
   },
   common: {
+    startScanning: 'جارٍ فحص {{n}} مود...',
+    startReading: 'جارٍ قراءة مودّاتك...',
+    startChecking: 'جارٍ التحقق من مجلدات المودات...',
     iwad: 'iWad',
     sourceport: 'المحرك',
     close: 'إغلاق',
@@ -589,6 +592,8 @@ export default {
     codeLicense: 'الكود مرخّص بموجب',
     copyright: 'حقوق النشر (c) 2015 Thomas Petrovic',
     trademark: 'DOOM علامة تجارية مسجلة لشركة id Software LLC، وهي شركة تابعة لـ Zenimax Media في الولايات المتحدة و/أو دول أخرى، وتُستخدم دون إذن. جميع العلامات التجارية الأخرى ملك لأصحابها. لا ترتبط SSGL بأي شكل بشركة id Software ولا تحظى بتأييدها.',
+    startTime: 'البدء: النافذة بعد {{window}} ث، جاهز للاستخدام بعد {{usable}} ث.',
+    startLog: 'إظهار ملف السجل',
     forkBuild: 'إصدار النسخة المعدّلة: {{date}}',
     crafted: 'صُنع يدوياً في فيينا، النمسا'
   }

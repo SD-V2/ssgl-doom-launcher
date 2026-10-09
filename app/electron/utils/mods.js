@@ -1,5 +1,4 @@
 import byteSize from 'byte-size';
-import klaw from 'klaw';
 import path from 'path';
 
 import fs from 'fs';
@@ -7,6 +6,57 @@ import fs from 'fs';
 import { AVAILABLE_IWADS, MAP_ID_PREFIX, MOD_EXTENSIONS } from '../constants';
 import { getExt } from './common';
 import { isInside } from './safepath';
+
+// folders that never hold mods (and can be huge): not looked into
+const SKIP_DIRS = new Set(['node_modules', '.git', '.svn', '__macosx', '$recycle.bin', 'system volume information']);
+
+const statOrNull = file =>
+  new Promise(resolve => fs.stat(file, (err, st) => resolve(err ? null : st)));
+
+// The folders are walked like before (breadth first, in the order the disk lists them),
+// but only the files that can be mods or IWADs are asked for their size and date: a
+// folder with thousands of loose files (an unpacked mod) costs a directory listing,
+// not one disk request per file. All disk requests are asynchronous, so the main part
+// stays free for the window.
+const BATCH = 64;
+
+const walk = async (root, onDir, onFiles) => {
+  const queue = [{ full: path.resolve(root), dirent: null }];
+  // an index instead of shift(): shift() on a long list is slow (every item moves)
+  for (let next = 0; next < queue.length; next++) {
+    const { full, dirent } = queue[next];
+    queue[next] = null;
+    let isDir = dirent ? dirent.isDirectory() : true;
+    if (dirent && dirent.isSymbolicLink()) {
+      const st = await statOrNull(full);
+      if (!st) continue;
+      isDir = st.isDirectory();
+    }
+    if (!isDir) {
+      // this file and the files right after it: asked together, kept in order
+      const files = [full];
+      while (files.length < BATCH && next + 1 < queue.length && queue[next + 1].dirent && queue[next + 1].dirent.isFile()) {
+        next++;
+        files.push(queue[next].full);
+        queue[next] = null;
+      }
+      await onFiles(files);
+      continue;
+    }
+    if (dirent) onDir(full);
+    let entries;
+    try {
+      entries = await fs.promises.readdir(full, { withFileTypes: true });
+    } catch (e) {
+      if (!dirent) throw e; // the WAD folder itself cannot be read
+      continue;
+    }
+    entries.forEach(d => {
+      if (d.name[0] === '.' || SKIP_DIRS.has(d.name.toLowerCase())) return;
+      queue.push({ full: path.join(full, d.name), dirent: d });
+    });
+  }
+};
 
 // options.isMap: the folder holds maps - they get their own ids and a flag
 const walkWadDir = (dir, options = {}) => {
@@ -18,39 +68,42 @@ const walkWadDir = (dir, options = {}) => {
   const mods = [];
   const iwads = [];
   const folders = [];
-  const filter = item => {
-    const basename = path.basename(item);
-    return basename === '.' || basename[0] !== '.';
-  };
+  const root = path.resolve(dir);
 
   return new Promise((resolve, reject) => {
-    return klaw(dir, { depthLimit: -1, filter })
-      .on('readable', function() {
-        let item;
-        while ((item = this.read())) {
-          if (item.stats.isDirectory()) {
-            const rel = path.relative(dir, item.path);
-            if (rel) folders.push(rel.split(path.sep));
-          } else if (item.stats.isFile()) {
-            const checkname = path
-              .parse(item.path)
-              .name.replace(/_/g, ' ')
-              .toLowerCase();
-
-            if (AVAILABLE_IWADS.indexOf(checkname) > -1) {
-              iwads.push(IWADItem(item));
-            } else if (isModFile(item.path)) {
-              mods.push(modItem(item, dir, isMap));
-            }
-          }
-        }
+    const isIwad = file =>
+      AVAILABLE_IWADS.indexOf(
+        path
+          .parse(file)
+          .name.replace(/_/g, ' ')
+          .toLowerCase()
+      ) > -1;
+    const onFiles = async files => {
+      const wanted = files.filter(f => isIwad(f) || isModFile(f));
+      const stats = await Promise.all(wanted.map(statOrNull));
+      wanted.forEach((file, i) => {
+        if (!stats[i] || !stats[i].isFile()) return;
+        const item = { path: file, stats: stats[i] };
+        if (isIwad(file)) iwads.push(IWADItem(item));
+        else mods.push(modItem(item, dir, isMap));
+      });
+    };
+    const onDir = full => {
+      const rel = path.relative(root, full);
+      if (rel) folders.push(rel.split(path.sep));
+    };
+    walk(root, onDir, onFiles)
+      .then(() => {
         iwads.sort((a, b) => {
           if (a.name.toLowerCase() < b.name.toLowerCase()) return -1;
           if (a.name.toLowerCase() > b.name.toLowerCase()) return 1;
           return 0;
         });
+        finish();
       })
-      .on('end', () => {
+      .catch(err => reject(err.message));
+
+    const finish = () => {
         // same id (name + size + type) found more than once = exact duplicate
         const byId = new Map();
         mods.forEach(m => {
@@ -94,8 +147,7 @@ const walkWadDir = (dir, options = {}) => {
           .sort(natural);
 
         return resolve({ mods: unique, iwads, duplicates, versions, folders });
-      })
-      .on('error', err => reject(err.message));
+    };
   });
 };
 

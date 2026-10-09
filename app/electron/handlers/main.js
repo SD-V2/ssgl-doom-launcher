@@ -1,7 +1,9 @@
-import { app, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain } from 'electron';
+import { mark } from '../utils/startup';
 import got from 'got';
 
 import { getJSON, takeRecovered } from '../utils/json';
+import { readCache, sameLibrary, writeCache } from '../utils/libraryCache';
 import { scanLibrary } from '../utils/mods';
 import { DEFAULT_UPDATE_REPO } from '../constants';
 import { findNewerCommit, findUpdate } from '../utils/versions';
@@ -82,25 +84,58 @@ ipcMain.handle('main/checkupdate', async () => {
   }
 });
 
-ipcMain.handle('main/init', async () => {
+const sendAll = (channel, data) =>
+  BrowserWindow.getAllWindows().forEach(w => {
+    if (!w.isDestroyed()) w.webContents.send(channel, data);
+  });
+
+// the folder watcher starts a moment after the list is on the screen
+let watchTimer = null;
+const watchLater = settings => {
+  clearTimeout(watchTimer);
+  watchTimer = setTimeout(() => watchModDir([settings.modpath, settings.mappath]), 1500);
+};
+
+const timedScan = async settings => {
+  const from = mark('scanStart');
+  const result = await scanLibrary(settings);
+  const to = mark('scanDone');
+  mark('scanDone', 0, { scanMs: to - from, mods: result.mods.length });
+  return result;
+};
+
+// options.quick (only at the start): the list of the last start is answered at once,
+// the folders are read again in the background ("library/updated" when something
+// changed while SSGL was closed, "library/checked" when not)
+ipcMain.handle('main/init', async (e, options) => {
   try {
     const settings = await getJSON('settings');
     const sourceports = (await getJSON('sourceports')) || [];
     const packages = (await getJSON('packages')) || [];
+    const rest = { sourceports, settings, packages, recovered: takeRecovered() };
 
     try {
-      const walkedFiles = await scanLibrary(settings);
-      watchModDir([settings.modpath, settings.mappath]);
-      return {
-        error: null,
-        data: {
-          ...walkedFiles,
-          sourceports: sourceports,
-          settings: settings,
-          packages: packages,
-          recovered: takeRecovered()
-        }
-      };
+      const cached = options && options.quick ? await readCache(settings) : null;
+      if (cached) {
+        mark('cacheUsed', 0, { cache: cached.mods.length });
+        setTimeout(async () => {
+          try {
+            const fresh = await timedScan(settings);
+            writeCache(settings, fresh);
+            if (sameLibrary(cached, fresh)) sendAll('library/checked', { changed: false });
+            else sendAll('library/updated', fresh);
+          } catch (err) {
+            sendAll('library/checked', { changed: false, error: String(err) });
+          }
+          watchLater(settings);
+        }, 200);
+        return { error: null, data: { ...cached, ...rest, fromCache: true } };
+      }
+
+      const walkedFiles = await timedScan(settings);
+      writeCache(settings, walkedFiles);
+      watchLater(settings);
+      return { error: null, data: { ...walkedFiles, ...rest } };
     } catch (e) {
       console.log(e);
       return {

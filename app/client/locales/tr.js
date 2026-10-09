@@ -318,6 +318,9 @@ export default {
     startView: 'SSGL açılınca gösterilecek ekran'
   },
   common: {
+    startScanning: '{{n}} mod taranıyor...',
+    startReading: 'Modlarınız okunuyor...',
+    startChecking: 'Mod klasörleriniz kontrol ediliyor...',
     iwad: 'iWad',
     sourceport: 'Sourceport',
     close: 'Kapat',
@@ -551,6 +554,8 @@ export default {
     codeLicense: 'Kod lisansı:',
     copyright: 'Telif hakkı (c) 2015 Thomas Petrovic',
     trademark: 'DOOM, ABD’de ve/veya diğer ülkelerde bir Zenimax Media şirketi olan id Software LLC’nin tescilli ticari markasıdır ve izin alınmadan kullanılmaktadır. Diğer tüm ticari markalar ilgili sahiplerinin mülkiyetindedir. SSGL, id Software ile hiçbir şekilde bağlantılı değildir ve id Software tarafından onaylanmamıştır.',
+    startTime: 'Başlangıç: pencere {{window}} sn sonra, kullanılabilir {{usable}} sn sonra.',
+    startLog: 'Kayıt dosyasını göster',
     forkBuild: 'Fork sürümü: {{date}}',
     crafted: 'Viyana, Avusturya’da el yapımı'
   }
