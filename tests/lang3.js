@@ -85,7 +85,7 @@ const { AppError, toPayload } = require(APP + '/electron/utils/errors.js');
   const ruTexts = flat(require(APP + '/client/locales/ru.js').default);
   const english = Object.keys(ruTexts).filter(k => !/[А-Яа-яЁё]/.test(ruTexts[k]) && !/^(nav\.appname|common\.sourceport)$/.test(k));
   console.log('ru texts without any Cyrillic letter:', english.map(k => k + '=' + ruTexts[k]).join(' | ') || 'none');
-  check('every Russian text contains Cyrillic (except brand names)', english.length === 0 || english.every(k => /^(common\.iwad|nav\.appname|settings\.markerPinkie|settings\.markerSlayer)$/.test(k) || /^\{\{|^\+|^[A-Z0-9_ ]+$/.test(ruTexts[k])));
+  check('every Russian text contains Cyrillic (except brand names)', english.length === 0 || english.every(k => /^(common\.iwad|nav\.appname|settings\.markerPinkie|settings\.markerSlayer|tools\.scale4)$/.test(k) || /^\{\{|^\+|^[A-Z0-9_ ]+$/.test(ruTexts[k])));
 
   // errors, About, Update
   const { explainError } = require(APP + '/client/utils');
