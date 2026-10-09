@@ -3,9 +3,10 @@
 Makes the pictures of a mod bigger with an AI program (the **engine**) on the graphics card and saves them as a
 **new mod** (PK3) in the WAD folder. The source mod is never changed. Everything runs on the PC; nothing is uploaded.
 
-**Step 1 (this version):** mods whose pictures are PNG or JPG files - PK3 / ZIP files and mod folders.
-Mods that keep their pictures in Doom's own picture format inside a WAD are listed as "Not supported yet - coming next"
-(step 2). See the plan at the end.
+**Step 1:** mods whose pictures are PNG or JPG files - PK3 / ZIP files and mod folders.
+**Step 2:** Doom's own formats too - WAD files, and Doom lumps without `.png` inside PK3s (sprites, flats, wall
+textures built from patches, HUD and menu graphics), plus **Tools > Graphics viewer** to see them first.
+See "Step 2: Doom's own formats" below.
 
 ## Where the code is
 
@@ -18,8 +19,10 @@ Mods that keep their pictures in Doom's own picture format inside a WAD are list
 | zip | `electron/utils/archive.js` (reading, also used by the conflict and broken-file checkers), `electron/utils/zipwrite.js` (writing, with zip64) |
 | download | `electron/utils/engineDownload.js` |
 | "a game started" | `electron/utils/games.js` (called from `utils/play.js`) |
-| checks | `tests/upscaler.js` (the whole pipeline with `tests/fixtures/fake-esrgan.js`), `tests/sprites.js` (the sprite bug: every PNG kind, the engine never gets alpha, layout, smaller files, safety net; tiny made-up PNGs from `tests/fixtures/pngs.js`), `tests/tools.js` (screens) |
-| pictures | `tools/screenshots`: scenes `tools`, `up-none`, `up-dlg`, `up-download`, `up-ready`, `up-wad`, `up-preview`, `up-running`, `up-paused`, `up-done`, `up-error` |
+| Doom formats (step 2) | `electron/utils/doom/`: `wad.js` (WAD header and directory, lumps read when needed), `picture.js` (Doom pictures, flats, PLAYPAL, PNG with `grAb` offsets), `textures.js` (PNAMES, TEXTURE1/2 incl. Strife, simple ZDoom TEXTURES, putting textures together), `library.js` (one scan of a WAD or PK3: every picture with kind, type, size, offsets; palette of the mod or the IWAD) |
+| Graphics viewer | `client/components/Viewer/index.jsx` (grid that draws only the rows on screen, big view), `electron/handlers/viewer.js` (channels `viewer/...`, thumbnails on demand, Save as PNG, SLADE) |
+| checks | `tests/wad.js` (the readers with tiny made-up WADs from `tests/fixtures/wadmaker.js`), `tests/upscalewad.js` (a WAD mod through the whole job), `tests/viewer.js` (viewer screen + main part), `tests/upscaler.js` (the whole pipeline with `tests/fixtures/fake-esrgan.js`), `tests/sprites.js` (the sprite bug: every PNG kind, the engine never gets alpha, layout, smaller files, safety net; tiny made-up PNGs from `tests/fixtures/pngs.js`), `tests/tools.js` (screens) |
+| pictures | `tools/screenshots`: scenes `viewer`, `viewer-big` (a made-up WAD), `tools`, `up-none`, `up-dlg`, `up-download`, `up-ready`, `up-wad`, `up-preview`, `up-running`, `up-paused`, `up-done`, `up-error` |
 
 All pure JavaScript (Node's own `zlib`), no native modules. The heavy parts run outside the screen: the engine is its
 own process (at **below-normal priority**), and PNG packing/unpacking runs in zlib's worker threads.
@@ -37,13 +40,9 @@ image  = { kind: 'texture' | 'flat' | 'sprite' | 'graphic' | 'other', name, path
 - `zip` (PK3, ZIP) and `folder` read PNG/JPG files. The kind comes from the top folder: `textures/` and `patches/` =
   texture, `flats/` = flat, `sprites/` = sprite, `graphics/` = graphic, everything else = other. `name` is the name
   GZDoom uses: the file name without extension, at most 8 letters, upper case.
-- Files in those folders that are **not** PNG/JPG (Doom's own picture format, `.lmp`, no extension) are listed in
-  `doomFormat` and shown as "coming next".
-- `wad` exists already and says `supported: false`. **Step 2 only fills it in**: it reads the WAD directory
-  (`archive.js` already lists lumps), finds pictures between the markers (`S_START`/`S_END`, `F_START`/`F_END`,
-  `P_START`/`P_END`, `TEXTURE1/2` + `PNAMES`, and graphics by name), and its `readPng()` turns a Doom picture into a PNG
-  (with the palette from `PLAYPAL` of the mod or the IWAD, and the picture's offsets as a `grAb` chunk). Nothing
-  after `readPng()` needs to change.
+- Files in those folders that are **not** PNG/JPG (Doom's own picture format, `.lmp`, no extension) are read by
+  `doom/library.js` (step 2); only lumps it cannot read stay in `doomFormat` ("skipped").
+- `wad` uses `doom/library.js`: its `readPng()` turns a Doom picture into a PNG. Nothing after `readPng()` changed.
 
 ## The engine
 
@@ -258,13 +257,80 @@ Check in GZDoom (a small mod with PNG sprites and textures, for example a weapon
 4. Menus / status bar (graphics): same place and size.
 5. Edges of monsters: no dark or coloured outline.
 
-## Plan
+## Step 2: Doom's own formats
 
-**Step 2 - pictures in WAD files.** Fill in the `wad` reader: lump directory (done in `archive.js`), markers for sprites
-/ flats / patches, `PNAMES` + `TEXTURE1/2` for wall textures, the Doom picture format (columns of posts) and flats
-(64 x 64 raw bytes) -> PNG with the palette (`PLAYPAL` of the mod, else of the IWAD chosen in SSGL) and the offsets as
-`grAb`. Patch-built textures (`TEXTURE1`) are composed from their patches first, then upscaled as one texture.
-Also: PNG files inside a WAD, and Doom-format pictures inside PK3s (the "skipped for now" count).
+**Where the knowledge comes from.** SSGL's own JavaScript, written from the public descriptions of the formats
+(Doom Wiki: WAD, Picture format, Flat, PLAYPAL, PNAMES, TEXTURE1 and TEXTURE2; ZDoom Wiki: TEXTURES, namespaces).
+Those wikis could not be reached from the machine this was written on, so where GZDoom's behaviour mattered it was
+checked by **reading** GZDoom's source (texturemanager.cpp, multipatchtexturebuilder.cpp, patchtexture.cpp,
+flattexture.cpp) - no code was copied from GZDoom, SLADE or any other GPL project. **No new library** was added
+(PNG stays pngjs + UPNG.js, both MIT). No game palette or game picture is in the code or the repository: the checks
+make tiny WADs with a made-up palette (`tests/fixtures/wadmaker.js`).
+
+**Reading a WAD.** The 12-byte header and the directory only; a lump is read when it is needed (a 20 MB WAD with
+3300 sprites is listed in about 0.15 s). Every position and size is checked: a lump outside the file is skipped and
+counted, a directory longer than the file is cut to what fits (a header claiming 2 billion lumps is harmless), a
+picture whose post runs past its end gives a clear error. Nothing loops forever: every post moves forward.
+
+**Finding the pictures** (by namespace, then by content - never by name or extension):
+
+| where | kind |
+|---|---|
+| `S_START`/`S_END`, `SS_START`/`SS_END` | sprite |
+| `F_START`/`F_END`, `FF_START`/`FF_END` (inner `F1_START`... skipped) | flat |
+| `P_START`/`P_END`, `PP_`, `P1_`... | patch (shown in the viewer; not upscaled - see below) |
+| `TX_START`/`TX_END` | wall texture (one picture) |
+| `HI_START`/`HI_END` | hires (already big, viewer only) |
+| outside any namespace | a graphic if its content is a Doom picture or PNG (TITLEPIC, STBAR, M_..., STCFN...); map lumps (THINGS, LINEDEFS..., the map marker), sounds, music and text are not |
+| PK3: `sprites/`, `flats/`, `patches/`, `textures/`, `graphics/`, `hires/` | the same kinds; files without `.png` are checked by content (PNG signature, else the Doom picture header test) |
+
+The Doom picture test is GZDoom's: width and height 1..2048, offsets under 4096, the first column right after the
+column list, every column inside the lump. "Tall" pictures (posts that start at or above the last one count from it)
+are read too. Flats: GZDoom takes the size from the lump length - 64, 256, 1024, 4096, 16384, 65536 bytes = 8, 16, 32,
+64, 128, 256 pixels square; **any other length is shown as 64 x 64** (Heretic's 4160, and 8192 for "64 x 128") - SSGL
+does the same, so the upscaled flat matches what the game shows.
+
+**Palette.** `PLAYPAL` of the mod (WAD lump, or `playpal.*` at the top of a PK3); else the one of the game (IWAD)
+chosen in the screen ("Game (for the colors)", the IWADs SSGL knows). Without either the pictures are listed but
+Start / Preview stay off ("choose the game"). The chosen game also gives `PNAMES` and patches that a mod's wall
+textures use but the mod does not contain.
+
+**Wall textures.** `TEXTURE1` / `TEXTURE2` + `PNAMES`: every patch is put on the canvas at its x, y (negative and
+outside the canvas are clipped; later patches cover earlier ones; see-through pixels stay see-through). The Strife
+layout is found as GZDoom finds it. ZDoom's scale bytes are read. The first texture of TEXTURE1 (the "null" texture)
+is never drawn by Doom and is left out. **TEXTURES** (text): the simple cases are built - `Texture`, `WallTexture`,
+`Flat`, `Sprite`, `Graphic` with `Patch` / `Graphic` / `Sprite` lines, `XScale`, `YScale`, `Offset`, `WorldPanning`,
+`NoDecals`, `NoTrim`, `optional`. Everything else is listed as "cannot be built yet" with its reason and keeps its
+original: patch options (`FlipX`, `FlipY`, `Rotate`, `Translation`, `Blend`, `Alpha`, `Style`, `UseOffsets`), old
+`define` lines, `#include`, `WallPatch`, unknown properties. Nothing is guessed.
+
+**Why patches are not upscaled.** GZDoom builds a wall texture from its patches' own pictures; a hires picture with a
+patch's name does not change the walls. So SSGL upscales the **built** wall textures (by their texture names) - that is
+what the player sees.
+
+**What goes into the new PK3** (same rules as step 1): every picture in `hires/<kind folder>/<NAME>.png` (`.lmp` and
+other lump extensions are dropped from the name). **A flat and a wall texture with the same name:** GZDoom replaces
+*every* texture of a name with a `hires/` picture (texturemanager.cpp `AddHiresTextures` lists all textures of that
+name, of any type), so one picture would land on both. A TEXTURES definition replaces only its own type: SSGL writes
+the two pictures to `upscaled/flats/NAME.png` and `upscaled/textures/NAME.png` and adds `Flat "NAME"` and
+`WallTexture "NAME"` entries at the new size with `XScale` / `YScale` = the scale (in GZDoom a bigger scale shows the
+picture smaller, so 2x pixels at scale 2 are the original size in the game) and `WorldPanning` (offsets in world units,
+as the original). The guess in the job description ("TEXTURES with Flat / WallTexture and XScale / YScale") was right;
+it was checked in GZDoom's source as described.
+
+**Graphics viewer** (Tools > Graphics viewer). Pick a game or mod SSGL knows, or open any WAD / PK3. A grid of
+thumbnails with name, type (Doom graphic / Flat / Texture / PNG / JPG), size and offset; filter by kind, search by
+name; only the rows on screen are drawn and their thumbnails are made when they come into view (200 at most per
+request). A click shows the picture big (whole-pixel zoom, up to 8x, on a checkerboard) with **Save as PNG** (with its
+offsets as `grAb`). **Open in SLADE** appears when the SLADE program is set ("SLADE program..."); SLADE is started as
+its own program with the file (`viewer.json` keeps the program and the game for the colours).
+
+**Not done in step 2:** Doom lumps in mod *folders* (only PK3 / WAD); WADs inside a PK3; fonts in `fonts/<name>/`
+folders (letters share names between fonts); JPG lumps inside a WAD; TEXTURES features listed above.
+
+
+
+**Step 2 - pictures in WAD files: done** (see above).
 
 **Step 3 - finer control.** Read the mod's own TEXTURES lumps (composite textures, sprites defined there with their own
 offsets) and write matching scaled definitions; per-picture choices (skip, other model), a light "sharpen / no

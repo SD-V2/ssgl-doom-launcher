@@ -26,7 +26,7 @@ downloaded the first time it is used (not during `yarn install`): the first run 
 `scene,language,color-theme,extra,...` - for example `settings,en,hell,classic`:
 
 - scene: `settings`, `wads`, `wads-sections`, `wads-sections-few`, `markers`, `loading` (the loading screen, 560 mods), `loading-first` (first start, no count), `dlg-discard` (and the other `dlg-...` windows),
-  `tools` (Tools page + menu), `up-none`, `up-dlg`, `up-download`, `up-ready`, `up-wad`, `up-preview`, `up-compare` (Compare models), `up-running`, `up-paused`,
+  `tools` (Tools page + menu), `viewer`, `viewer-big` (Graphics viewer with a made-up WAD), `up-none`, `up-dlg`, `up-download`, `up-ready`, `up-wad`, `up-preview`, `up-compare` (Compare models), `up-running`, `up-paused`,
   `up-done`, `up-error` (the states of Tools > Upscaler; bigger pictures: `SIZE=1600x900`), ...
   (see `harness/entry.jsx`).
 - language: `en`, `tr`, `ar`, `ru`.

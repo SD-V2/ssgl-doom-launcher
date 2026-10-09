@@ -385,3 +385,41 @@ export const mixColors = (a, b, part) => {
     for (let c = 0; c < 3; c++) a.data[i + c] = Math.round(a.data[i + c] * (1 - part) + b.data[i + c] * part);
   return a;
 };
+
+// a picture made to fit in size x size: bigger with whole pixels, smaller by averaging
+export const fit = (img, size) => {
+  const k = Math.min(size / img.width, size / img.height);
+  const W = Math.max(1, Math.round(img.width * k));
+  const H = Math.max(1, Math.round(img.height * k));
+  const out = Buffer.alloc(W * H * 4);
+  for (let y = 0; y < H; y++)
+    for (let x = 0; x < W; x++) {
+      const x0 = Math.floor((x * img.width) / W);
+      const x1 = Math.max(x0 + 1, Math.floor(((x + 1) * img.width) / W));
+      const y0 = Math.floor((y * img.height) / H);
+      const y1 = Math.max(y0 + 1, Math.floor(((y + 1) * img.height) / H));
+      let r = 0;
+      let g = 0;
+      let b = 0;
+      let a = 0;
+      let n = 0;
+      for (let sy = y0; sy < y1; sy++)
+        for (let sx = x0; sx < x1; sx++) {
+          const p = (sy * img.width + sx) * 4;
+          const al = img.data[p + 3];
+          r += img.data[p] * al;
+          g += img.data[p + 1] * al;
+          b += img.data[p + 2] * al;
+          a += al;
+          n++;
+        }
+      const o = (y * W + x) * 4;
+      if (a) {
+        out[o] = Math.round(r / a);
+        out[o + 1] = Math.round(g / a);
+        out[o + 2] = Math.round(b / a);
+      }
+      out[o + 3] = Math.round(a / n);
+    }
+  return { width: W, height: H, data: out };
+};

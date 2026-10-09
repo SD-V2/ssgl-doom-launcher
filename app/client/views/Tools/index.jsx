@@ -5,11 +5,12 @@ import styled from 'styled-components';
 import { Box } from '../../components';
 import { Button } from '../../components/Form';
 import Upscaler from '../../components/Upscaler';
+import Viewer from '../../components/Viewer';
 import { setTitle, useTranslation } from '../../utils';
 import { isBusy } from '../../utils/upscale';
 import AnimatedView from '../AnimatedView';
 
-// Tools: one card per tool. The first one is the Upscaler.
+// Tools: one card per tool: the Upscaler and the Graphics viewer.
 
 const Intro = styled.p`
   font-size: 16px;
@@ -72,6 +73,18 @@ const UpscaleIcon = () => (
   </svg>
 );
 
+// a grid of little pictures with a magnifier
+const ViewerIcon = () => (
+  <svg viewBox="0 0 54 54" aria-hidden="true">
+    <rect x="3" y="3" width="12" height="12" strokeWidth="2" />
+    <rect x="19" y="3" width="12" height="12" strokeWidth="2" />
+    <rect x="3" y="19" width="12" height="12" strokeWidth="2" />
+    <rect x="19" y="19" width="12" height="12" strokeWidth="2" />
+    <circle cx="37" cy="37" r="9" strokeWidth="2.5" />
+    <path d="M44 44l7 7" strokeWidth="3" />
+  </svg>
+);
+
 // the tool that was open stays open when you come back
 let lastOpen = '';
 
@@ -100,9 +113,9 @@ const Tools = () => {
 
   return (
     <AnimatedView>
-      {open === 'upscaler' ? (
-        <Upscaler onBack={() => setOpen('')} />
-      ) : (
+      {open === 'upscaler' ? <Upscaler onBack={() => setOpen('')} /> : null}
+      {open === 'viewer' ? <Viewer onBack={() => setOpen('')} /> : null}
+      {open !== 'upscaler' && open !== 'viewer' ? (
         <Box>
           <Intro>{t('tools:intro')}</Intro>
           <Cards data-tools="cards">
@@ -117,9 +130,20 @@ const Tools = () => {
                 </Button>
               </div>
             </Card>
+            <Card data-tool="viewer">
+              <ViewerIcon />
+              <h2>{t('tools:viewerName')}</h2>
+              <p>{t('tools:viewerText')}</p>
+              <p className="steps">{t('tools:viewerSteps')}</p>
+              <div>
+                <Button onClick={() => setOpen('viewer')} width="150px">
+                  {t('tools:open')}
+                </Button>
+              </div>
+            </Card>
           </Cards>
         </Box>
-      )}
+      ) : null}
     </AnimatedView>
   );
 };
