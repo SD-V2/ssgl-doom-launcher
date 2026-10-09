@@ -1,12 +1,13 @@
 import PropTypes from 'prop-types';
-import React from 'react';
+import { ipcRenderer } from 'electron';
+import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 
 import { BoxStyle } from '../../components/Box';
 import Flex from '../../components/Flex';
 import Logo from '../../components/Logo';
 import { useTranslation } from '../../utils';
-import { appVersion, openExternal } from '../../utils/native';
+import { appVersion, openExternal, showItemInFolder } from '../../utils/native';
 import AnimatedView from '../AnimatedView';
 import { contact, techs, testers } from './data';
 
@@ -85,6 +86,38 @@ Link.propTypes = {
 const BUILD_DATE =
   typeof __BUILD_TIME__ === 'undefined' ? '' : __BUILD_TIME__.slice(0, 10);
 
+// how long the last start took (startup-log.txt in the data folder)
+const StartTime = () => {
+  const { t } = useTranslation(['about']);
+  const [last, setLast] = useState(null);
+  useEffect(() => {
+    let alive = true;
+    ipcRenderer
+      .invoke('startup/last')
+      .then(res => alive && res && res.data && setLast(res.data))
+      .catch(() => null);
+    return () => {
+      alive = false;
+    };
+  }, []);
+  if (!last) return null;
+  const sec = ms => (typeof ms === 'number' ? (ms / 1000).toFixed(1) : '?');
+  return (
+    <p style={{ textAlign: 'center', opacity: 0.7 }} data-start-time>
+      {t('about:startTime', { window: sec(last.window), usable: sec(last.usable) })}{' '}
+      <a
+        href="#"
+        onClick={e => {
+          e.preventDefault();
+          showItemInFolder(last.file);
+        }}
+      >
+        {t('about:startLog')}
+      </a>
+    </p>
+  );
+};
+
 const About = () => {
   const { t } = useTranslation(['about']);
   return (
@@ -101,6 +134,7 @@ const About = () => {
                   {t('about:forkBuild', { date: BUILD_DATE })}
                 </p>
               ) : null}
+              <StartTime />
               <Logo height="90px" center />
               <br /> <br />
               <Flex.Grid>

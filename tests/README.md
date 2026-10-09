@@ -26,6 +26,8 @@ What they cover (a short map):
 | `order`, `maps`, `twins`, `hide`, `closeguard`, `unsaved`, `json` | load order moves, maps folder, twin mods, minimize while playing, closing, unsaved changes, safe saving |
 | `upd`, `notice` | the update notice (GitHub answers are faked) |
 | `native` | the requests the screens send to the main part (links, show in folder, Recycle Bin, file picker, right-click menus) - they replaced Electron's old `remote` module |
+| `startup` | faster start: the startup log, the scanner (skipped folders, broken links, speed), the library cache (added / removed / renamed files, broken cache, other folders), the wallpaper copy |
+| `loading` | the loading screen in 3 styles x 4 languages, the background check line, the start with the cache, no white window, the start time in About |
 | `i18ncheck` | every text exists in all four languages |
 
 When you add a feature: add checks for it in the file that fits (or a new file, and add its name to

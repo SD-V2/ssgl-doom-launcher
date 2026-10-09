@@ -26,12 +26,10 @@ module.exports = {
         exclude: /node_modules/,
         use: ['babel-loader']
       },
+      // pictures are separate files (the IWAD covers were packed into the script as
+      // text before: 2 MB of the 3 MB the window had to read at every start)
       {
-        test: /.*ssgl-iwad-covers.*jpg$/i,
-        loader: 'url-loader'
-      },
-      {
-        test: /^((?!ssgl-iwad-covers).)*\.(png|jpe?g|gif)$/i,
+        test: /\.(png|jpe?g|gif)$/i,
         loader: 'file-loader',
         options: {
           name: '[path][name].[ext]'
