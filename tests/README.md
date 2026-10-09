@@ -28,6 +28,9 @@ What they cover (a short map):
 | `native` | the requests the screens send to the main part (links, show in folder, Recycle Bin, file picker, right-click menus) - they replaced Electron's old `remote` module |
 | `upscaler` | Tools > Upscaler, main part: pictures of a mod, engine command line and messages, PNG offsets (grAb), the new PK3 (hires + TEXTURES), names, never overwrite, cancel / pause, out of memory, temp folders. The engine is faked: `fixtures/fake-esrgan.js` |
 | `upscalelook` | Upscaler "Look" (Smooth / Natural / Sharp) and its command lines, the model of every kind (Compare models, remembered), the Compare models flow with the fake engine, HUD and menu pictures as graphics, sprite edges: no pixel stairs at 2x / 4x, no dark or light halos, thin details kept (made-up pictures only) |
+| `wad` | Upscaler step 2, Doom's own formats with tiny made-up WADs: directory, pictures (posts, gaps, offsets, tall pictures), flats, palette of the mod or the game, namespaces, PNG in WAD, TEXTURE1 / Strife / TEXTURES, PK3 lumps without extension, broken and huge files, a 20 MB WAD |
+| `upscalewad` | a WAD mod and a PK3 with Doom lumps through the whole Upscaler job (fake engine): hires/ names, sizes, a flat and a wall texture with the same name |
+| `viewer` | Tools > Graphics viewer: the screen with the real main part, only visible rows drawn, thumbnails on demand (also after a resize), kinds, search, big view, Save as PNG, palette, SLADE |
 | `tools` | the Tools page and every state of the Upscaler screen, the menu item, four languages |
 | `startup` | faster start: the startup log, the scanner (skipped folders, broken links, speed), the library cache (added / removed / renamed files, broken cache, other folders), the wallpaper copy |
 | `loading` | the loading screen in 3 styles x 4 languages, the background check line, the start with the cache, no white window, the start time in About |
