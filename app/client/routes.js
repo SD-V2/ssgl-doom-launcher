@@ -2,6 +2,7 @@ import About from './views/About';
 import Packages from './views/Packages';
 import Settings from './views/Settings';
 import SourcePorts from './views/Sourceports';
+import Tools from './views/Tools';
 import Wads from './views/Wads';
 
 const routes = [
@@ -25,6 +26,13 @@ const routes = [
     component: SourcePorts,
     hide: false,
     shortcut: 'F3'
+  },
+  {
+    label: 'tools',
+    href: '/tools',
+    component: Tools,
+    hide: false,
+    shortcut: ''
   },
   {
     label: 'settings',

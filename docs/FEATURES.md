@@ -38,6 +38,18 @@ Base: Electron 44 (Chromium 152), runs on Windows 10 and 11 (64-bit). Upgraded f
 - Languages: English, Turkish, Arabic, Russian (Settings > Language). Arabic keeps the English layout (nothing is
   mirrored); only the text reads right to left (utils/textDirection.js + global.css).
 
+## Tools (menu item between Sourceports and Settings)
+- **Upscaler** (step 1): makes the PNG/JPG pictures of a mod (PK3, ZIP, folder) 2x or 4x bigger with the AI program
+  realesrgan-ncnn-vulkan (downloaded on click from the official Real-ESRGAN page, or a folder you choose) and saves a new
+  mod `<mod> upscale 2x.pk3` in `8_UPSCALE` (section "Textures and upscales"). Preview with a before/after slider,
+  runs in the background (progress, time left, cancel, pauses while a game runs). Everything goes to `hires/`;
+  monsters/weapons/items are experimental (off by default), saved as palette PNGs ("Smaller files"); a safety net
+  keeps the original for any result that looks wrong. WAD pictures = step 2.
+  **Look**: Smooth (default: no visible pixels, smooth sprite outlines without halos), Natural, Sharp. **Compare models**:
+  the samples through up to 4 models side by side; a click picks the model for textures / sprites / HUD (remembered).
+  HUD and menu pictures at the top of a PK3 (STBAR, numbers, M_..., fonts) count as graphics.
+  Details and the plan: `docs/UPSCALER.md`.
+
 ## Faster start (see docs/PERFORMANCE.md)
 - The window appears at once (dark, SSGL logo, thin line, "Scanning 560 mods..."); the list comes from a cache of the
   last scan and the folders are checked in the background (thin line at the top). Changes made while SSGL was closed are applied.

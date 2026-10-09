@@ -41,7 +41,10 @@ const Nav = () => {
       return false;
     }
 
-    if (label === 'sourceports' && settings.savepath === '') {
+    if (
+      (label === 'sourceports' || label === 'tools') &&
+      settings.savepath === ''
+    ) {
       return false;
     }
 

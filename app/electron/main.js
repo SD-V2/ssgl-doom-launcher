@@ -82,4 +82,5 @@ require('./handlers/sourceports');
 require('./handlers/settings');
 require('./handlers/packages');
 require('./handlers/oblige');
+require('./handlers/upscaler');
 require('./handlers/wallpaper');

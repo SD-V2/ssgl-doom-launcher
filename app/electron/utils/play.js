@@ -3,6 +3,7 @@ import { existsSync, readdirSync, statSync } from 'fs';
 import { platform } from 'os';
 import { join } from 'path';
 
+import { gameStarted } from './games';
 import { getJSON } from './json';
 
 const getLastSaveGame = dir => {
@@ -138,12 +139,14 @@ const play = async (
         stdio: 'ignore'
       });
       proc.unref();
+      gameStarted(null);
     } else {
       const proc = spawn(sourceport.binary, COMMAND, {
         detached: true,
         stdio: 'ignore'
       });
       proc.unref();
+      gameStarted(proc);
 
       if (settings.hideWhilePlaying) hideWhilePlaying(win, proc);
     }

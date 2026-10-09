@@ -11,6 +11,7 @@ import AudioProvider from './components/Audio';
 import { DialogProvider } from './components/Dialog';
 import PackageTransfer from './components/PackageTransfer';
 import UnsavedGuard from './components/UnsavedGuard';
+import UpscaleWatcher from './components/Upscaler/Watcher';
 import { isDismissed } from './utils/dismissed';
 import { canCheck, isVisible, noticeKey, shouldAnnounce } from './utils/updateNotice';
 import { rememberUpdates } from './utils/fixes';
@@ -205,6 +206,7 @@ const App = () => {
           <ToastContainer>
             <PackageTransfer />
             <UnsavedGuard />
+            <UpscaleWatcher />
             {!ready ? (
               <LoadingScreen count={savedCount()} />
             ) : (

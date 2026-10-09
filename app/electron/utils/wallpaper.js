@@ -100,9 +100,11 @@ export const save = async (dataDir, key, bytes) => {
   await fs.promises.rename(tmp, file);
   const all = (await fs.promises.readdir(dir)).filter(n => /\.jpg$/.test(n) && n !== key);
   const dated = await Promise.all(all.map(async n => ({ n, t: (await fs.promises.stat(path.join(dir, n))).mtimeMs })));
-  dated
-    .sort((a, b) => b.t - a.t)
-    .slice(KEEP - 1)
-    .forEach(({ n }) => fs.promises.unlink(path.join(dir, n)).catch(() => {}));
+  await Promise.all(
+    dated
+      .sort((a, b) => b.t - a.t)
+      .slice(KEEP - 1)
+      .map(({ n }) => fs.promises.unlink(path.join(dir, n)).catch(() => {}))
+  );
   return file;
 };

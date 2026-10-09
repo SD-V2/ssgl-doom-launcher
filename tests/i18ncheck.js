@@ -25,7 +25,8 @@ files.forEach(f => {
   const groups = Array.from(new Set((src.match(/useTranslation\(\s*'([a-zA-Z0-9_]+)'/g) || []).map(m => m.replace(/^.*'(.*)'$/, '$1'))));
   if (groups.length === 1) (src.match(/\bt\(\s*'[a-zA-Z0-9_.]+'/g) || []).forEach(m => used.add(groups[0] + '.' + m.replace(/^t\(\s*'|'$/g, '')));
 });
-const noEnglish = Array.from(used).filter(k => E[k] === undefined && E[k + '_plural'] === undefined && E[k + '_0'] === undefined);
+// a key that ends in '.' or '_' is only the start of a key built in the code ('tools:errors.' + code)
+const noEnglish = Array.from(used).filter(k => !/[._]$/.test(k) && E[k] === undefined && E[k + '_plural'] === undefined && E[k + '_0'] === undefined);
 check(`every text the code uses exists in English (${used.size} used)`, noEnglish.length === 0, list(noEnglish));
 const empty = Object.keys(E).filter(k => typeof E[k] !== 'string' || !E[k].trim());
 check('no empty English texts', empty.length === 0, list(empty));
