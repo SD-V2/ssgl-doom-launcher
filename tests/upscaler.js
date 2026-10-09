@@ -98,7 +98,7 @@ const makeEngine = dir => {
   check('collect folder: the same pictures as the PK3', fromFolder.supported && fromFolder.images.length === found.images.length && fromFolder.type === 'folder');
   check('...and the pictures can be read (readPng)', (await fromFolder.images[0].readPng()).length > 0 && png.isPng(await found.images.find(i => i.format === 'png').readPng()));
   const w = await up.collect(wad);
-  check('a WAD: shown as "not supported yet" (Doom\'s own picture format = step 2)', w.supported === false && w.reason === 'wad' && w.type === 'wad');
+  check('a WAD is read now (step 2; the details are checked in wad.js)', w.supported === true && w.type === 'wad');
   check('a missing file: a clear reason', (await up.collect(path.join(TMP, 'gone.pk3'))).reason === 'missing');
   check('every reader has the same small interface (listImages)', up.READERS.map(r => r.id).join(',') === 'zip,folder,wad' && up.READERS.every(r => typeof r.listImages === 'function'));
 

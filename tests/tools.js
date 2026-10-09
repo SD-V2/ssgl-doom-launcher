@@ -66,17 +66,18 @@ const kinds = { texture: { count: 120, pixels: 120 * 64 * 64 }, flat: { count: 3
 const PNG1 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
 let downloadDone = null;
 let compareDone = null;
+let chosenPalette = '';
 let estimate = { bytes: 300 * 1024 * 1024, big: false, free: 50 * 1024 * 1024 * 1024 };
 answer = async (ch, d) => {
   switch (ch) {
     case 'upscaler/status': return { data: status(), error: null };
     case 'upscaler/state': return { data: null, error: null };
     case 'upscaler/test': return { data: { ...status(), test: { ok: true } }, error: null };
-    case 'upscaler/saveSettings': return { data: status(), error: null };
+    case 'upscaler/saveSettings': if (d && d.palette) chosenPalette = d.palette; return { data: status(), error: null };
     case 'upscaler/release': return { data: { tag: 'v0.2.5.0', name: 'realesrgan-ncnn-vulkan-20220424-windows.zip', size: 45 * 1024 * 1024, url: 'https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/realesrgan-ncnn-vulkan-20220424-windows.zip' }, error: null };
     case 'upscaler/download': return new Promise(r => { downloadDone = () => { engine = engineOk; r({ data: { ...status(), test: { ok: true } }, error: null }); }; });
     case 'upscaler/collect':
-      if (/\.wad$/i.test(d)) return { data: { type: 'wad', supported: false, reason: 'wad', kinds: {}, doomFormat: 0, total: 0 }, error: null };
+      if (/\.wad$/i.test(d)) return { data: { type: 'wad', supported: true, reason: '', kinds: { texture: { count: 40, pixels: 40 * 64 * 128 }, flat: { count: 20, pixels: 20 * 4096 }, sprite: { count: 90, pixels: 90 * 2000 }, graphic: { count: 8, pixels: 8 * 64000 }, other: { count: 0, pixels: 0 } }, doomFormat: 0, total: 158, doomCount: 158, palette: chosenPalette ? 'iwad' : '', needsPalette: !chosenPalette, unsupported: [{ name: 'FANCY', reason: 'patchOptions: FlipX' }], unsupportedCount: 1, bad: 2 }, error: null };
       return { data: { type: 'zip', supported: true, reason: '', kinds, doomFormat: 7, total: 466 }, error: null };
     case 'upscaler/estimate': return { data: estimate, error: null };
     case 'upscaler/preview': return { data: { model: d.model, ms: 2300, samples: [{ path: 'textures/STARTAN3.png', kind: 'texture', width: 64, height: 64, before: PNG1, after: PNG1, bytesFull: 300 * 1024, bytesSmall: 90 * 1024, small: false }, { path: 'sprites/TROOA1.png', kind: 'sprite', width: 40, height: 60, before: PNG1, after: PNG1, bytesFull: 120 * 1024, bytesSmall: 40 * 1024, small: true }, { path: 'graphics/TITLEPIC.png', kind: 'graphic', width: 320, height: 200, before: PNG1, after: PNG1 }] }, error: null };
@@ -101,7 +102,7 @@ const MODS = [mk('bp', 'Test Mod', ['1_BP']), mk('w', 'old maps', ['2_X'], { kin
   // ---- the menu ------------------------------------------------------------------
   const labels = routes.filter(r => !r.hide).map(r => r.label);
   check('menu: Tools is between Sourceports and Settings', labels.indexOf('tools') === labels.indexOf('sourceports') + 1 && labels.indexOf('settings') === labels.indexOf('tools') + 1);
-  const st = { ...initState, mods: MODS, sourceports: [{ id: 's' }], packages: [{ id: 'p' }], folders: [['1_BP'], ['2_X']], settings: { ...initState.settings, showTools: true, modpath: 'C:\\Doom', savepath: 'C:\\SSGL' } };
+  const st = { ...initState, iwads: [{ id: 'd2', name: 'DOOM2', kind: 'WAD', path: 'C:\\Doom\\DOOM2.WAD' }], mods: MODS, sourceports: [{ id: 's' }], packages: [{ id: 'p' }], folders: [['1_BP'], ['2_X']], settings: { ...initState.settings, showTools: true, modpath: 'C:\\Doom', savepath: 'C:\\SSGL' } };
   const host = document.createElement('div'); document.body.appendChild(host);
   let latest = null;
   const App = ({ init, children }) => { const [g, d] = React.useReducer(reducer, init); latest = g; return React.createElement(ThemeProvider, { theme: themes.hell }, React.createElement(StoreContext.Provider, { value: { gstate: g, dispatch: d } }, React.createElement(AudioProvider, null, React.createElement(ToastContext.Provider, { value: { addToast: (...a) => (global.__toasts = global.__toasts || []).push(a), toasts: [] } }, React.createElement(DialogProvider, null, children))))); };
@@ -130,7 +131,7 @@ const MODS = [mk('bp', 'Test Mod', ['1_BP']), mk('w', 'old maps', ['2_X'], { kin
   // ---- the Tools page -------------------------------------------------------------
   await i18n.changeLanguage('en');
   mount(React.createElement(React.Fragment, null, React.createElement(Tools), React.createElement(Watcher))); await wait(150);
-  check('Tools page: a card per tool, the first one is the Upscaler', q('[data-tool]').length === 1 && q('[data-tool]')[0].getAttribute('data-tool') === 'upscaler' && /Upscaler/.test(text()) && !!btn('Open'));
+  check('Tools page: a card per tool, the first one is the Upscaler, then the Graphics viewer', q('[data-tool]').length === 2 && q('[data-tool]')[1].getAttribute('data-tool') === 'viewer' && q('[data-tool]')[0].getAttribute('data-tool') === 'upscaler' && /Upscaler/.test(text()) && !!btn('Open'));
   check('...it says what works now and what comes next (WAD = next step)', /Coming next: pictures inside WAD files/.test(text()));
   check('...the card has the style hook of panels (looks right in every style)', q('[data-tool]')[0].className.indexOf('ssgl-panel') > -1);
 
@@ -160,8 +161,12 @@ const MODS = [mk('bp', 'Test Mod', ['1_BP']), mk('w', 'old maps', ['2_X'], { kin
   const options = q('li').map(li => li.textContent.trim());
   check('source: the mods of the list (not the maps)', options.indexOf('Test Mod (PK3)') > -1 && options.indexOf('old maps (WAD)') > -1 && !options.some(o => /castle/.test(o)));
   await pick('upscaleSource', 'old maps (WAD)');
-  check('a mod with only a WAD: greyed "Not supported yet - coming next" with a short explanation', !!host.querySelector('[data-unsupported="wad"]') && /Not supported yet - coming next/.test(text()) && /Doom's own format inside a WAD/.test(text()));
-  check('...Start and Preview stay off', btn('Start').disabled && btn('Make a preview').disabled);
+  check('a WAD mod (step 2): its pictures are counted by kind; Doom pictures are named', /158 pictures in Doom's own format/.test(text()) && /Chosen: 158 pictures/.test(text()) && !host.querySelector('[data-unsupported="wad"]'));
+  check('...no palette of its own: "choose the game", with the IWADs SSGL knows; Start and Preview stay off', host.querySelector('[data-palette]').getAttribute('data-palette') === 'need' && /no palette of its own/.test(text()) && !!q('input').find(i => i.name === 'upscalePalette') && btn('Start').disabled && btn('Make a preview').disabled);
+  check('...wall textures SSGL cannot build yet and broken pictures are named', /1 wall textures use things SSGL cannot build yet; they keep their originals: FANCY/.test(text()) && /2 broken pictures were skipped/.test(text()));
+  const collects = calls.filter(c => c[0] === 'upscaler/collect').length;
+  await pick('upscalePalette', 'DOOM2 (WAD)');
+  check('choosing the game: saved, the mod is read again, colours "from the game", Start is on', chosenPalette === 'C:\\Doom\\DOOM2.WAD' && calls.filter(c => c[0] === 'upscaler/collect').length === collects + 1 && host.querySelector('[data-palette]').getAttribute('data-palette') === 'iwad' && /Colors: from the game/.test(text()) && !btn('Start').disabled);
   await pick('upscaleSource', 'Test Mod (PK3)');
   const rows = q('tr[data-group]');
   check('PK3: pictures per kind with checkboxes (textures+floors 150, sprites 300, graphics 12, other 4)', rows.length === 4 && /150 pictures/.test(rows[0].textContent) && /300 pictures/.test(rows[1].textContent) && /12 pictures/.test(rows[2].textContent) && /4 pictures/.test(rows[3].textContent));

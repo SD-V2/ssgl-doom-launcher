@@ -82,6 +82,7 @@ client/components/Mods/*                     ModItem, ModBox, SectionFrame, Sect
 client/components/MarkerPicker.jsx           marker picture picker (Settings)
 client/views/Tools/, components/Upscaler/     Tools page + the Upscaler screen (see docs/UPSCALER.md)
 electron/utils/upscaler.js, png.js, zipwrite.js, engineDownload.js   the Upscaler's work (readers, engine, PK3 writer)
+electron/utils/doom/*.js, handlers/viewer.js, client/components/Viewer/   WAD / Doom picture readers (own code) and the Graphics viewer
 client/locales/{en,tr,ar,ru}.js              all texts; en.js is the master
 client/assets/fonts, sounds                  fonts (+ FONTS-LICENSE.txt) and sound files (original, made for this fork)
 ```

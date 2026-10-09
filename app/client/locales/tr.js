@@ -394,7 +394,6 @@ export default {
     megapixels: 'MP',
     total: 'Seçilen: {{n}} resim, {{mp}} megapiksel',
     wadOnly: 'Henüz desteklenmiyor - sırada',
-    wadOnlyText: 'Bu mod resimlerini bir WAD dosyasının içinde Doom\'un kendi biçiminde tutuyor. Büyütücü bunları bir sonraki adımda okumayı öğrenecek.',
     doomInside: 'Doom\'un kendi biçimindeki resimler şimdilik atlanıyor (sırada): {{n}}',
     nothingFound: 'Bu modda PNG veya JPG resim bulunamadı.',
     otherNote: 'Diğer resimler (modeller, yazı tipleri...) adlarıyla "hires" klasörüne konur; GZDoom hepsini kullanmayabilir.',

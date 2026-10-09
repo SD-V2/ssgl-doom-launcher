@@ -49,6 +49,9 @@ Base: Electron 44 (Chromium 152), runs on Windows 10 and 11 (64-bit). Upgraded f
   **Look**: Smooth (default: no visible pixels, smooth sprite outlines without halos), Natural, Sharp. **Compare models**:
   the samples through up to 4 models side by side; a click picks the model for textures / sprites / HUD (remembered).
   HUD and menu pictures at the top of a PK3 (STBAR, numbers, M_..., fonts) count as graphics.
+  **Step 2**: WAD mods and Doom lumps in PK3s (sprites, flats, wall textures from TEXTURE1/TEXTURES, HUD) are read by
+  SSGL's own code; palette of the mod or the chosen game (IWAD).
+- **Graphics viewer**: every picture of a WAD / PK3 as a grid (kinds, search, big view, Save as PNG, Open in SLADE).
   Details and the plan: `docs/UPSCALER.md`.
 
 ## Faster start (see docs/PERFORMANCE.md)

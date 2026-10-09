@@ -17,6 +17,8 @@ import Head from '../client/components/Head';
 import UpscaleWatcher from '../client/components/Upscaler/Watcher';
 import { CheckingLine, LoadingScreen } from '../client/components/Startup';
 import { reducer } from '../client/state/reducer';
+import { scan as scanDoom } from '../electron/utils/doom/library';
+import { encode as encodePng, fit as fitPng } from '../electron/utils/png';
 import { BrokenFilesModal, ConflictsModal, FixPackagesModal, FolderNameModal, TwinsModal } from '../client/components';
 import i18n from '../client/i18n';
 import { StoreContext } from '../client/state';
@@ -264,7 +266,7 @@ const upAnswer = st => {
       case 'upscaler/release': return { error: null, data: { tag: 'v0.2.5.0', size: 45 * 1024 * 1024, name: 'realesrgan-ncnn-vulkan-20220424-windows.zip', url: 'https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/realesrgan-ncnn-vulkan-20220424-windows.zip' } };
       case 'upscaler/download': return new Promise(() => {});
       case 'upscaler/collect':
-        if (/\.wad$/i.test(d)) return { error: null, data: { type: 'wad', supported: false, reason: 'wad', kinds: {}, doomFormat: 0, total: 0 } };
+        if (/\.wad$/i.test(d)) return { error: null, data: { type: 'wad', supported: true, reason: '', kinds: { texture: { count: 182, pixels: 182 * 64 * 128 }, flat: { count: 54, pixels: 54 * 4096 }, sprite: { count: 640, pixels: 640 * 2400 }, graphic: { count: 96, pixels: 96 * 9000 }, other: { count: 0, pixels: 0 } }, doomFormat: 0, total: 972, doomCount: 972, palette: '', needsPalette: true, unsupported: [{ name: 'SKYFANCY', reason: 'patchOptions: FlipX' }], unsupportedCount: 1, bad: 0 } };
         return { error: null, data: { type: 'zip', supported: true, reason: '', kinds, doomFormat: 36, total: 4672 } };
       case 'upscaler/estimate': return { error: null, data: { bytes: 1.8 * 1024 * 1024 * 1024, big: true, free: 400 * 1024 * 1024 * 1024 } };
       case 'upscaler/preview':
@@ -290,7 +292,7 @@ const upAnswer = st => {
 
 const ToolsScene = () => {
   const isUp = scene.indexOf('up-') === 0;
-  const init = { ...initState, mods: UP_MODS, sourceports: [{ id: 's' }], packages: [{ id: 'p' }], folders: [['1_BP'], ['3_MONSTERS'], ['8_UPSCALE'], ['2_X']],
+  const init = { ...initState, iwads: [{ id: 'd2', name: 'DOOM2', kind: 'WAD', path: 'C:\\Doom\\DOOM2.WAD' }, { id: 'd1', name: 'DOOM', kind: 'WAD', path: 'C:\\Doom\\DOOM.WAD' }], mods: UP_MODS, sourceports: [{ id: 's' }], packages: [{ id: 'p' }], folders: [['1_BP'], ['3_MONSTERS'], ['8_UPSCALE'], ['2_X']],
     settings: { ...initState.settings, language: lng, theme: themeName, style: styleName, modpath: 'C:\\Doom', savepath: 'C:\\SSGL_DOOM LAUNCHER\\DATA' } };
   const [gstate, dispatch] = useReducer(reducer, init);
   useEffect(() => {
@@ -370,11 +372,130 @@ const LoadingScene = () => (
   </></ThemeProvider>
 );
 
+// ---------------------------------------------------------------------------
+// Tools > Graphics viewer: "viewer" (the grid) and "viewer-big" (one picture big). The
+// pictures come from a WAD made here (made-up shapes, an RGB 3-3-2 palette - no game data),
+// read by SSGL's own reader.
+// ---------------------------------------------------------------------------
+const demoWad = () => {
+  const W = require('../../tests/fixtures/wadmaker.js');
+  const fs = require('fs');
+  const file = require('path').join(require('os').tmpdir(), 'ssgl-viewer-demo.wad');
+  const c = (r, g, b) => ((r >> 5) << 5) | ((g >> 5) << 2) | (b >> 6);
+  const pal = Buffer.alloc(768 * 14);
+  for (let i = 0; i < 256; i++) {
+    pal[i * 3] = Math.round(((i >> 5) & 7) * 255 / 7);
+    pal[i * 3 + 1] = Math.round(((i >> 2) & 7) * 255 / 7);
+    pal[i * 3 + 2] = Math.round((i & 3) * 255 / 3);
+  }
+  const grid = (w, h, f) => Array.from({ length: h }, (_, y) => Array.from({ length: w }, (__, x) => f(x, y)));
+  const blob = (hue, eyes) => grid(36, 48, (x, y) => {
+    const dx = (x - 18) / 15;
+    const dy = (y - 26) / 20;
+    const d = dx * dx + dy * dy;
+    if (d > 1) return -1;
+    if (eyes && Math.abs(y - 18) < 2 && (Math.abs(x - 12) < 2 || Math.abs(x - 24) < 2)) return c(255, 220, 40);
+    return d > 0.8 ? c(40, 20, 20) : hue(d, x, y);
+  });
+  const lumps = [{ name: 'PLAYPAL', data: pal }, { name: 'S_START' }];
+  [
+    ['BLOBA1', (d) => c(200 - d * 120, 60, 40)],
+    ['BLOBB1', (d) => c(60, 180 - d * 100, 60)],
+    ['BLOBC1', (d) => c(60, 80, 220 - d * 120)],
+    ['BLOBD1', (d, x) => c(160 + (x % 4) * 20, 120, 40)]
+  ].forEach(([n, h], i) => lumps.push({ name: n, data: W.picture(blob(h, i % 2 === 0), { left: 18, top: 44 }) }));
+  lumps.push({ name: 'GUNXA0', data: W.picture(grid(60, 26, (x, y) => (y > 6 && y < 14 && x < 50) || (x > 30 && x < 44 && y >= 14) ? (y === 7 || x === 0 ? c(30, 30, 40) : c(140 + (y % 3) * 30, 140 + (y % 3) * 30, 160)) : -1), { left: -100, top: -120 }) });
+  lumps.push({ name: 'BOLTA0', data: W.picture(grid(16, 16, (x, y) => (Math.abs(x - 8) + Math.abs(y - 8) < 7 ? c(255, 200 - (Math.abs(x - 8) + Math.abs(y - 8)) * 25, 40) : -1)), { left: 8, top: 8 }) });
+  lumps.push({ name: 'S_END' }, { name: 'F_START' });
+  lumps.push({ name: 'FLOOR01', data: Buffer.from(grid(64, 64, (x, y) => (x % 16 === 0 || y % 16 === 0 ? c(60, 60, 60) : c(120 + ((x * 7 + y * 3) % 20), 110, 90))).flat()) });
+  lumps.push({ name: 'LAVA1', data: Buffer.from(grid(64, 64, (x, y) => c(220 + Math.sin(x / 5 + y / 7) * 30, 80 + Math.sin((x + y) / 6) * 60, 0)).flat()) });
+  lumps.push({ name: 'GRASS1', data: Buffer.from(grid(64, 64, (x, y) => c(40, 120 + ((x * 13 + y * 7) % 5) * 25, 40)).flat()) });
+  lumps.push({ name: 'F_END' }, { name: 'P_START' });
+  lumps.push({ name: 'BRICKP', data: W.picture(grid(32, 32, (x, y) => (y % 8 === 0 || (x + (Math.floor(y / 8) % 2) * 8) % 16 === 0 ? c(80, 70, 60) : c(160 + (x % 3) * 20, 70, 50)))) });
+  lumps.push({ name: 'METALP', data: W.picture(grid(32, 32, (x, y) => ((x === 3 || x === 28) && y % 8 === 3 ? c(220, 220, 220) : c(100 + (y % 4) * 10, 110 + (y % 4) * 10, 130)))) });
+  lumps.push({ name: 'P_END' });
+  lumps.push({ name: 'TITLEPIC', data: W.picture(grid(160, 100, (x, y) => (Math.abs(y - 50) < 12 && x > 20 && x < 140 && (x % 20 < 14) ? c(255, 200, 40) : c(40 + y, 0, 0)))) });
+  lumps.push({ name: 'STBAR', data: W.picture(grid(160, 16, (x, y) => (y === 0 ? c(200, 200, 200) : x % 40 < 2 ? c(60, 60, 60) : c(100, 100, 110)))) });
+  lumps.push({ name: 'M_LOGO', data: W.picture(grid(80, 24, (x, y) => (Math.abs(x - 40) + Math.abs(y - 12) * 3 < 38 ? c(220, 40, 30) : -1)), { left: -4, top: -2 }) });
+  lumps.push({ name: 'PNAMES', data: W.pnames(['BRICKP', 'METALP']) });
+  lumps.push({ name: 'TEXTURE1', data: W.textureLump([
+    { name: 'AASHITTY', width: 32, height: 32, patches: [{ x: 0, y: 0, patch: 0 }] },
+    { name: 'BRICKS1', width: 64, height: 64, patches: [{ x: 0, y: 0, patch: 0 }, { x: 32, y: 0, patch: 0 }, { x: 0, y: 32, patch: 0 }, { x: 32, y: 32, patch: 0 }] },
+    { name: 'BRIKMETL', width: 64, height: 32, patches: [{ x: 0, y: 0, patch: 0 }, { x: 32, y: 0, patch: 1 }] },
+    { name: 'METAL2', width: 32, height: 64, patches: [{ x: 0, y: 0, patch: 1 }, { x: 0, y: 32, patch: 1 }] }
+  ]) });
+  fs.writeFileSync(file, W.wad(lumps));
+  return file;
+};
+const VIEWER_FILE = scene.indexOf('viewer') === 0 ? demoWad() : '';
+let viewerScan = null;
+const viewerAnswer = async (ch, d) => {
+  const dataUrl = b => 'data:image/png;base64,' + b.toString('base64');
+  if (!viewerScan) viewerScan = await scanDoom(VIEWER_FILE);
+  switch (ch) {
+    case 'viewer/settings': return { error: null, data: { palette: '', slade: 'C:\\Program Files\\SLADE\\SLADE.exe' } };
+    case 'viewer/open': return { error: null, data: { ...viewerScan, readRgba: undefined, readPng: undefined } };
+    case 'viewer/thumbs': {
+      const out = [];
+      for (const id of d.ids) {
+        try {
+          out.push({ id, url: dataUrl(encodePng(fitPng(await viewerScan.readRgba(id), d.size), { rgb: false })) });
+        } catch (e) {
+          console.error('thumb ' + id + ': ' + (e.stack || e));
+          out.push({ id, error: 'broken' });
+        }
+      }
+      return { error: null, data: out };
+    }
+    case 'viewer/picture': return { error: null, data: { url: dataUrl(await viewerScan.readPng(d.id)) } };
+    default: return { error: null, data: null };
+  }
+};
+const ViewerScene = () => {
+  const init = { ...initState, iwads: [], mods: [{ id: 'demo', name: 'viewer demo', kind: 'WAD', path: VIEWER_FILE, folders: [], folder: '', tags: [] }],
+    settings: { ...initState.settings, language: lng, theme: themeName, style: styleName, modpath: 'C:\\Doom' } };
+  const [gstate, dispatch] = useReducer(reducer, init);
+  useEffect(() => {
+    const wait = ms => new Promise(r => setTimeout(r, ms));
+    (async () => {
+      await wait(150);
+      document.querySelector('[data-tool="viewer"] button').click();
+      await wait(200);
+      const hidden = Array.from(document.querySelectorAll('input')).find(i => i.name === 'viewerSource');
+      hidden.parentElement.querySelector('input[type=text]').focus();
+      await wait(80);
+      const li = Array.from(hidden.parentElement.querySelectorAll('li')).find(x => x.textContent.trim() === 'viewer demo (WAD)');
+      if (li) li.click();
+      if (document.activeElement) document.activeElement.blur();
+      await wait(600);
+      if (scene === 'viewer-big') {
+        const cell = document.querySelector('[data-entry="BLOBA1"]');
+        if (cell) cell.click();
+        await wait(300);
+      }
+    })();
+  }, []);
+  return (
+    <StoreContext.Provider value={{ gstate, dispatch }}>
+      <ThemeProvider theme={applyStyle(themed, styleName)}><>
+        <StyleLayer style={styleName} />
+        <DialogProvider>
+          <Body background={bgPath} fit={fitName} dim={0} blur={0}>
+            <Head />
+            <div style={{ margin: 15 }}><Tools /></div>
+          </Body>
+        </DialogProvider>
+      </></ThemeProvider>
+    </StoreContext.Provider>
+  );
+};
+
 const App = () => {
   if (scene === 'loading' || scene === 'loading-first') return <LoadingScene />;
   if (scene === 'markers') return <MarkersScene />;
   if (scene === 'settings') return <SettingsScene />;
   if (scene === 'tools' || scene.indexOf('up-') === 0) return <ToolsScene />;
+  if (scene.indexOf('viewer') === 0) return <ViewerScene />;
   if (scene.indexOf('dlg-') === 0) {
     return (
       <StoreContext.Provider value={{ gstate: { ...initState, settings: { ...initState.settings, language: lng } }, dispatch() {} }}>
@@ -397,7 +518,9 @@ const App = () => {
   );
 };
 
-ipcRenderer.invoke = scene === 'tools' || scene.indexOf('up-') === 0
+ipcRenderer.invoke = scene.indexOf('viewer') === 0
+  ? viewerAnswer
+  : scene === 'tools' || scene.indexOf('up-') === 0
   ? upAnswer()
   : async ch => (ch === 'mods/conflicts' ? { error: null, data: { checked: 3, skipped: [], conflicts: [] } } : { error: null, data: null });
 // window.__remount() draws the scene again from the start (for "node run.js tab": the
