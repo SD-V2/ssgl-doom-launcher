@@ -740,7 +740,7 @@ const Upscaler = ({ onBack }) => {
                 <Note>{t('tools:compareHint')}</Note>
                 <Dropdown
                   name="compareBg"
-                  label={t('tools:background')}
+                  label={t('tools:compareBackground')}
                   value={bg}
                   options={[{ label: t('tools:bgChecker'), value: 'checker' }, { label: t('tools:bgDark'), value: 'dark' }]}
                   onChange={({ value }) => setBg(value)}

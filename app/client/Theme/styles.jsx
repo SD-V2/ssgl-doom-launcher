@@ -71,9 +71,6 @@ const cut = n =>
 // top-left cut by a pixels, bottom-right by b pixels
 const cutTwo = (a, b) =>
   `polygon(${a}px 0, 100% 0, 100% calc(100% - ${b}px), calc(100% - ${b}px) 100%, 0 100%, 0 ${a}px)`;
-// only the bottom-right corner is cut
-const cutOne = n =>
-  `polygon(0 0, 100% 0, 100% calc(100% - ${n}px), calc(100% - ${n}px) 100%, 0 100%)`;
 
 // ---- drawings made of gradients (no clipping, so nothing can hide a dropdown) ----
 

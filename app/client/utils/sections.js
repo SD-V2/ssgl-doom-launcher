@@ -42,8 +42,6 @@ export const SECTION_ORDER = [
 // "other" catches everything else and "maps" is for the maps: they stay
 const FIXED = ['other', 'maps'];
 
-export const MOD_SECTIONS = SECTION_ORDER.filter(id => id !== 'maps');
-
 // the more specific ones first ("soundtrack" is music, not sounds)
 const KEYWORDS = [
   ['patches', ['patch', 'compat', 'fixes', '\\bfix\\b']],
@@ -86,17 +84,6 @@ export const DEFAULT_WORDS = {
 //   custom:  [{ id, name, note, words }]   sections you made
 //   names / notes / words: { sectionId: text }   changed texts of built-in sections
 //   hidden:  [sectionId, ...]              built-in sections you removed
-
-export const emptyRules = () => ({
-  folders: {},
-  mods: {},
-  order: [],
-  custom: [],
-  names: {},
-  notes: {},
-  words: {},
-  hidden: []
-});
 
 const isObject = x => !!x && typeof x === 'object' && !Array.isArray(x);
 const text = (value, max) => (typeof value === 'string' ? value.slice(0, max) : '');

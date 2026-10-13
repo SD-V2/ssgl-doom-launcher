@@ -479,7 +479,7 @@ export default {
     compareOriginal: 'Original (pixels shown)',
     compareChosen: 'Chosen',
     compareFailed: 'looked wrong',
-    background: 'Background',
+    compareBackground: 'Background',
     bgChecker: 'Checkerboard',
     bgDark: 'Dark',
     kindShort_texture: 'Textures and floors',

@@ -31,6 +31,17 @@ check(`every text the code uses exists in English (${used.size} used)`, noEnglis
 const empty = Object.keys(E).filter(k => typeof E[k] !== 'string' || !E[k].trim());
 check('no empty English texts', empty.length === 0, list(empty));
 
+// 1b. the same key twice in one group: the second one silently wins (a dropdown once showed
+// a whole sentence as its label this way)
+const { Linter } = require(APP + '/node_modules/eslint');
+const linter = new Linter();
+['en', 'tr', 'ar', 'ru'].forEach(lng => {
+  const src = fs.readFileSync(path.join(APP, 'client', 'locales', lng + '.js'), 'utf8');
+  const dupes = linter.verify(src, { parserOptions: { ecmaVersion: 2018, sourceType: 'module' }, rules: { 'no-dupe-keys': 2 } })
+    .map(m => 'line ' + m.line + ': ' + m.message);
+  check(`${lng}.js: no key twice in the same group`, dupes.length === 0, list(dupes));
+});
+
 // 2. keys in another language that English does not have
 Object.keys(OTHER).forEach(lng => {
   const ok = new Set(need(lng));

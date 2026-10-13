@@ -33,9 +33,6 @@ export const AVAILABLE_LOCALES = [
   }
 ];
 
-// languages that are written from right to left
-export const RTL_LOCALES = ['ar'];
-
 export default {
   en,
   de,
