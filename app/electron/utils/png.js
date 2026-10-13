@@ -109,43 +109,57 @@ export const meanColor = img => {
 export const fillHidden = img => {
   const { width: w, height: h, data } = img;
   const known = new Uint8Array(w * h);
-  let todo = 0;
-  for (let i = 0; i < w * h; i++) {
-    known[i] = data[i * 4 + 3] > 0 ? 1 : 0;
-    if (!known[i]) todo++;
-  }
-  while (todo) {
-    const add = [];
-    for (let y = 0; y < h; y++)
-      for (let x = 0; x < w; x++) {
-        const i = y * w + x;
-        if (known[i]) continue;
-        let r = 0;
-        let g = 0;
-        let b = 0;
-        let n = 0;
-        for (let dy = -1; dy <= 1; dy++)
-          for (let dx = -1; dx <= 1; dx++) {
-            const xx = x + dx;
-            const yy = y + dy;
-            if (xx < 0 || yy < 0 || xx >= w || yy >= h) continue;
-            const j = yy * w + xx;
-            if (!known[j]) continue;
-            r += data[j * 4];
-            g += data[j * 4 + 1];
-            b += data[j * 4 + 2];
-            n++;
-          }
-        if (n) add.push([i, r / n, g / n, b / n]);
+  const queued = new Uint8Array(w * h);
+  // the next ring: hidden pixels next to the ones just known (each pixel is handled once;
+  // the result is the same as filling the whole picture ring by ring)
+  let ring = [];
+  const queueAround = i => {
+    const x = i % w;
+    const y = (i - x) / w;
+    for (let dy = -1; dy <= 1; dy++)
+      for (let dx = -1; dx <= 1; dx++) {
+        const xx = x + dx;
+        const yy = y + dy;
+        if (xx < 0 || yy < 0 || xx >= w || yy >= h) continue;
+        const j = yy * w + xx;
+        if (known[j] || queued[j]) continue;
+        queued[j] = 1;
+        ring.push(j);
       }
-    if (!add.length) break; // nothing visible at all
+  };
+  for (let i = 0; i < w * h; i++) known[i] = data[i * 4 + 3] > 0 ? 1 : 0;
+  for (let i = 0; i < w * h; i++) if (known[i]) queueAround(i);
+  while (ring.length) {
+    const add = [];
+    ring.forEach(i => {
+      const x = i % w;
+      const y = (i - x) / w;
+      let r = 0;
+      let g = 0;
+      let b = 0;
+      let n = 0;
+      for (let dy = -1; dy <= 1; dy++)
+        for (let dx = -1; dx <= 1; dx++) {
+          const xx = x + dx;
+          const yy = y + dy;
+          if (xx < 0 || yy < 0 || xx >= w || yy >= h) continue;
+          const j = yy * w + xx;
+          if (!known[j]) continue;
+          r += data[j * 4];
+          g += data[j * 4 + 1];
+          b += data[j * 4 + 2];
+          n++;
+        }
+      add.push([i, r / n, g / n, b / n]);
+    });
     add.forEach(([i, r, g, b]) => {
       data[i * 4] = Math.round(r);
       data[i * 4 + 1] = Math.round(g);
       data[i * 4 + 2] = Math.round(b);
       known[i] = 1;
     });
-    todo -= add.length;
+    ring = [];
+    add.forEach(([i]) => queueAround(i));
   }
   return img;
 };

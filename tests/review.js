@@ -19,6 +19,9 @@ const { reducer, initState } = require(APP + '/client/state/reducer.js');
 const { isInside } = require(APP + '/electron/utils/safepath.js');
 const { walkWadDir } = require(APP + '/electron/utils/mods.js');
 const { copyfile, createPath } = require(APP + '/electron/utils/common.js');
+const up = require(APP + '/electron/utils/upscaler.js');
+const png = require(APP + '/electron/utils/png.js');
+const library = require(APP + '/electron/utils/doom/library.js');
 
 (async () => {
   // ---- reducer -------------------------------------------------------------------------------
@@ -59,6 +62,24 @@ const { copyfile, createPath } = require(APP + '/electron/utils/common.js');
   check('copying a file that is not there returns false (no crash)', (await copyfile(path.join(TMP, 'nope.ini'), path.join(dest, 'x.ini'))) === false);
   fs.writeFileSync(path.join(TMP, 'cfg.ini'), 'abc');
   check('...and a real copy is finished when it returns', (await copyfile(path.join(TMP, 'cfg.ini'), path.join(dest, 'x.ini'))) === true && fs.readFileSync(path.join(dest, 'x.ini'), 'utf8') === 'abc');
+
+  // ---- Upscaler -----------------------------------------------------------------------------
+  const job = up.createJob({ source: 'x', modName: 'x', images: [], kinds: ['sprite'], scale: 2, model: null, engine: null, destDir: path.join(TMP, 'up') });
+  job.pause('game');
+  const end = await job.run();
+  job.resume();
+  check('a job that ended while a game was running stays ended when the game closes', end.phase === 'error' && job.state.phase === 'error');
+  const soft = { width: 4, height: 4, data: Buffer.alloc(64, 128) };
+  const soft2 = { width: 8, height: 8, data: Buffer.alloc(256, 128) };
+  check('a soft see-through picture with no fully clear pixel is not rejected as "no see-through"', up.checkResult({ width: 4, height: 4, alpha: 'alpha', orig: soft }, soft2, 2) !== 'noAlpha');
+  const holed = { width: 2, height: 1, data: Buffer.from([9, 9, 9, 255, 0, 0, 0, 0]) };
+  check('...one that had a hole and lost it still is', up.checkResult({ width: 2, height: 1, alpha: 'alpha', orig: holed }, { width: 4, height: 2, data: Buffer.alloc(32, 255) }, 2) === 'noAlpha');
+  const hidden = { width: 3, height: 1, data: Buffer.from([0, 0, 0, 0, 90, 60, 30, 255, 0, 0, 0, 0]) };
+  png.fillHidden(hidden);
+  check('fillHidden: clear pixels get the colour of their visible neighbour', hidden.data[0] === 90 && hidden.data[9] === 60 && hidden.data[3] === 0);
+  let code = '';
+  try { await library.scan(root); } catch (e) { code = e.code; }
+  check('the Graphics viewer says "folder" for a folder', code === 'folder');
 
   fs.rmSync(TMP, { recursive: true, force: true });
   process.exit(0);

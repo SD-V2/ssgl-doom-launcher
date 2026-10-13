@@ -55,7 +55,7 @@ const download = (asset, file, onProgress, hold) =>
       reject(new Error('not the official address'));
       return;
     }
-    const stream = got.stream(asset.url, { headers: { 'user-agent': 'SSGL' }, timeout: 60000 });
+    const stream = got.stream(asset.url, { headers: { 'user-agent': 'SSGL' }, timeout: { connect: 20000, socket: 60000 } }); // idle limits: a slow line may take longer than a minute
     const out = fs.createWriteStream(file);
     let failed = false;
     hold.stop = () => {
@@ -110,8 +110,17 @@ export const install = async (asset, folder, onProgress = () => {}, hold = {}) =
   fs.mkdirSync(path.dirname(folder), { recursive: true });
   removeDir(fresh);
   try {
+    // Cancel after the download: unpacking and the folder swap must not go on
+    const stopped = () => {
+      if (!hold.stopped) return;
+      const err = new Error('stopped');
+      err.code = 'stopped';
+      throw err;
+    };
     await download(asset, zip, onProgress, hold);
+    stopped();
     await unpack(zip, fresh);
+    stopped();
     const found = findEngine(fresh);
     if (!found.ok) {
       const err = new Error('the download has no ' + (found.problem === 'noExe' ? EXE : 'models folder'));
@@ -122,7 +131,13 @@ export const install = async (asset, folder, onProgress = () => {}, hold = {}) =
     const old = folder + '.old';
     removeDir(old);
     if (fs.existsSync(folder)) fs.renameSync(folder, old);
-    fs.renameSync(fresh, folder);
+    try {
+      fs.renameSync(fresh, folder);
+    } catch (e) {
+      // (on Windows a virus scanner can hold the new files) keep the engine that worked
+      if (fs.existsSync(old) && !fs.existsSync(folder)) fs.renameSync(old, folder);
+      throw e;
+    }
     removeDir(old);
     return findEngine(folder);
   } finally {

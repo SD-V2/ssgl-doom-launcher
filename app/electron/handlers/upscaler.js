@@ -265,8 +265,11 @@ ipcMain.handle('upscaler/download', async (e, asset) => {
 });
 
 ipcMain.handle('upscaler/cancelDownload', async () => {
-  if (downloading && downloading.stop) downloading.stop();
-  downloading = null;
+  // "downloading" stays set until the install has really ended (no second one meanwhile)
+  if (downloading) {
+    downloading.stopped = true;
+    if (downloading.stop) downloading.stop();
+  }
   return ok(true);
 });
 
@@ -342,7 +345,10 @@ ipcMain.handle('upscaler/start', async (e, options) => {
       { onUpdate: report }
     );
     if (gamesRunning()) job.pause('game');
-    job.run().then(state => send('upscaler/progress', state));
+    job
+      .run()
+      .then(state => send('upscaler/progress', state))
+      .catch(err => send('upscaler/progress', { ...job.state, phase: 'error', error: { code: 'failed', detail: String((err && err.message) || err) } }));
     return ok(job.state);
   } catch (err) {
     return fail(err);
@@ -376,7 +382,15 @@ games.on('end', () => {
 
 app.on('will-quit', () => {
   if (job) job.cancel();
-  if (downloading && downloading.stop) downloading.stop();
+  if (downloading) {
+    downloading.stopped = true;
+    if (downloading.stop) downloading.stop();
+  }
+  // a preview or compare must not keep the engine running after SSGL is closed
+  if (previewHold && previewHold.job) {
+    previewHold.job.stopped = true;
+    killTree(previewHold.job.child);
+  }
 });
 
 // what an earlier run left behind (a crash): away with it

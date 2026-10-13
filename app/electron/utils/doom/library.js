@@ -135,6 +135,7 @@ const baseOf = async iwad => {
 // ---- the scan ---------------------------------------------------------------------------------
 export const scan = async (source, options = {}) => {
   const st = fs.statSync(source);
+  if (st.isDirectory()) throw Object.assign(new Error('folder'), { code: 'folder' });
   const fd = fs.openSync(source, 'r');
   let head;
   try {
@@ -144,7 +145,6 @@ export const scan = async (source, options = {}) => {
     fs.closeSync(fd);
   }
   const isWad = /^[IP]WAD$/.test(head.toString('latin1'));
-  if (st.isDirectory()) throw Object.assign(new Error('folder'), { code: 'folder' });
   const src = isWad ? wadLumps(source) : zipLumps(source);
   const base = await baseOf(options.palette);
 

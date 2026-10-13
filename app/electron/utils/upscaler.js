@@ -133,10 +133,19 @@ const zipReader = {
       const entries = listZipEntries(fd, fs.fstatSync(fd).size);
       const images = [];
       const doom = [];
+      // the size of a PNG is in its first 33 bytes: read a little first, more only when
+      // that is not enough (a JPG keeps its size further in)
+      const headOf = e => {
+        const small = peekZipEntry(fd, e, 1024);
+        if (small && isPng(small) && pngInfo(small)) return small;
+        if (small && isJpg(small) && jpgInfo(small)) return small;
+        if (small && e.compressedSize <= 1024) return small;
+        return peekZipEntry(fd, e);
+      };
       entries.forEach(e => {
         const kind = kindOf(e.name);
         if (PICTURE.test(e.name)) {
-          const head = peekZipEntry(fd, e);
+          const head = headOf(e);
           const img = head
             ? imageOf(e.name, head, e.size, () => {
                 const f = fs.openSync(source, 'r');
@@ -149,7 +158,7 @@ const zipReader = {
           // a picture in Doom's own format (step 2), or a PNG without .png
           const head = peekZipEntry(fd, e, 64);
           if (head && (isPng(head) || isJpg(head))) {
-            const full = peekZipEntry(fd, e);
+            const full = headOf(e);
             const img = imageOf(e.name, full, e.size, () => {
               const f = fs.openSync(source, 'r');
               return readZipEntry(f, e).finally(() => fs.closeSync(f));
@@ -718,12 +727,19 @@ export const roughness = img => {
   return n ? sum / n : 0;
 };
 
+const hasClearPixel = img => {
+  for (let i = 3; i < img.data.length; i += 4) if (!img.data[i]) return true;
+  return false;
+};
+
 export const checkResult = (meta, img, scale) => {
   if (img.width !== meta.width * scale || img.height !== meta.height * scale) return 'size';
   let visible = 0;
   for (let i = 3; i < img.data.length; i += 4) if (img.data[i]) visible++;
   if (meta.alpha !== 'opaque' && !visible && meta.orig && !isFullyClear(meta.orig)) return 'empty';
-  if (meta.alpha !== 'opaque' && visible === img.width * img.height) return 'noAlpha';
+  // "no see-through left" only counts when the original had fully clear pixels
+  // (soft glass or smoke without one stays visible everywhere, which is right)
+  if (meta.alpha !== 'opaque' && visible === img.width * img.height && (!meta.orig || hasClearPixel(meta.orig))) return 'noAlpha';
   if (meta.orig) {
     // the result made small again must look like the original (not noise)
     const small = shrinkTo(img, meta.width, meta.height);
@@ -902,6 +918,8 @@ export const createJob = (options, hooks = {}) => {
   job.resume = () => {
     if (!job.paused) return;
     job.paused = false;
+    // a job that already ended stays ended (a game closed after Cancel / done)
+    if (['done', 'error', 'cancelled'].indexOf(job.state.phase) > -1) return;
     job.pausedMs += Date.now() - job.pausedAt;
     update({ phase: 'running', pausedReason: '' });
     if (resumeNow) resumeNow();
@@ -938,14 +956,13 @@ export const createJob = (options, hooks = {}) => {
       return job.state;
     }
 
-    fs.mkdirSync(destDir, { recursive: true });
-    cleanPartials(destDir);
-    const finalFile = resultName(destDir, modName, scale);
-    const partial = partialName(finalFile);
-    const zip = new ZipWriter(partial);
-    job.temp = makeTemp();
+    let zip = null;
+    let finalFile = '';
+    let partial = '';
     const defs = [];
     const failed = [];
+    // a picture that could not be read is counted once, also when its round runs again after a pause
+    const failedPaths = new Set();
     const rejected = [];
     let added = 0;
     // "smaller files": palette PNGs for monsters, weapons, items and graphics
@@ -965,6 +982,13 @@ export const createJob = (options, hooks = {}) => {
     };
 
     try {
+      // inside the try: a read-only or missing folder ends the job with an error (it stayed "running")
+      fs.mkdirSync(destDir, { recursive: true });
+      cleanPartials(destDir);
+      finalFile = resultName(destDir, modName, scale);
+      partial = partialName(finalFile);
+      zip = new ZipWriter(partial);
+      job.temp = makeTemp();
       // the pictures of one model together, in batches
       const list = [];
       used.forEach(u =>
@@ -989,8 +1013,11 @@ export const createJob = (options, hooks = {}) => {
               const meta = await prepare(e.image, path.join(dir, 'prep', String(i).padStart(5, '0')));
               metas.push({ e, meta });
             } catch (err) {
-              failed.push({ path: e.image.path, reason: 'unreadable' });
-              step(e);
+              if (!failedPaths.has(e.image.path)) {
+                failedPaths.add(e.image.path);
+                failed.push({ path: e.image.path, reason: 'unreadable' });
+                step(e);
+              }
             }
           }
           if (job.stopped) break;
@@ -1060,15 +1087,16 @@ export const createJob = (options, hooks = {}) => {
       });
       return job.state;
     } catch (err) {
-      zip.abort();
+      if (zip) zip.abort();
       update({
         phase: job.stopped ? 'cancelled' : 'error',
         error: { code: err.code || 'failed', detail: err.detail || err.message || String(err) }
       });
       return job.state;
     } finally {
+      job.paused = false;
       killTree(job.child);
-      removeDir(job.temp);
+      if (job.temp) removeDir(job.temp);
     }
   };
   return job;
@@ -1191,6 +1219,8 @@ export const compare = async ({ images, kinds, scale, look = DEFAULT_LOOK, model
   })) || { samples: [], results: [] };
 
 // a tiny picture through the engine: does it start at all on this PC?
+const TEST_TIMEOUT = 60000;
+
 export const testEngine = async (engine, model) => {
   const temp = makeTemp();
   try {
@@ -1199,9 +1229,16 @@ export const testEngine = async (engine, model) => {
     fs.writeFileSync(file, encode(img, { rgb: true }));
     const how = engineScaleFor(model, model.scales[0]) || { engineScale: model.scales[0] };
     const out = path.join(temp, 'out.png');
+    // a hanging graphics driver must not hang the test for ever: stop it after a minute
+    let timer = null;
     const res = await runEngine(
-      buildCommand({ exe: engine.exe, models: engine.models, model: model.id, engineScale: how.engineScale, input: file, output: out })
+      buildCommand({ exe: engine.exe, models: engine.models, model: model.id, engineScale: how.engineScale, input: file, output: out }),
+      undefined,
+      child => {
+        timer = setTimeout(() => killTree(child), TEST_TIMEOUT);
+      }
     );
+    clearTimeout(timer);
     const made = fs.existsSync(out) ? pngInfo(fs.readFileSync(out)) : null;
     if (made && made.width === 16 * how.engineScale) return { ok: true, reason: '', detail: '' };
     const detail = res.lines.slice(-6).join('\n') || res.startError || '';
