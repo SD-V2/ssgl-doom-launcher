@@ -1,7 +1,7 @@
 import { ipcRenderer } from 'electron';
 import { useEffect, useState } from 'react';
 
-import image from './image';
+import image, { fileUrl } from './image';
 import { startupMark } from './startup';
 
 // The wallpaper: decoded before it is shown (then it fades in, the first picture of the
@@ -85,7 +85,7 @@ export const useWallpaper = (file, late) => {
           // the original then
         }
       }
-      const ok = pick.show ? await decoded(`file://${image(pick.show)}`) : true;
+      const ok = pick.show ? await decoded(image(fileUrl(pick.show))) : true;
       if (!alive) return;
       startupMark('wallpaperDecoded', { wallpaperCopy: !!(file && pick.show !== file) });
       setState({ src: ok ? pick.show : file || '', ready: true, make: pick.make ? pick : null });

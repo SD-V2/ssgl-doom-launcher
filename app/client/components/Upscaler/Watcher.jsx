@@ -37,12 +37,14 @@ const Watcher = () => {
   const dialog = useDialog();
   const showNewMod = useShowNewMod();
   const told = useRef({});
-  const show = useRef(showNewMod);
-  show.current = showNewMod;
+  // the listener is set once: it reads the newest texts, toast (sound settings) and dialog from here
+  const latest = useRef({});
+  latest.current = { t, toast, dialog, showNewMod };
 
   useEffect(() => {
     const onProgress = async (e, state) => {
       if (!state) return;
+      const { t, toast, dialog, showNewMod } = latest.current;
       if (state.phase === 'paused' && state.pausedReason === 'game') {
         if (!told.current.paused) toast('ok', t('tools:toastPaused'), t('tools:paused'));
         told.current.paused = true;
@@ -72,7 +74,7 @@ const Watcher = () => {
           cancelText: t('common:close'),
           wide: true
         });
-        if (go) show.current(state.result.file);
+        if (go) showNewMod(state.result.file);
       }
       if (state.phase === 'error' && state.error && told.current.error !== state.startedAt) {
         told.current.error = state.startedAt;

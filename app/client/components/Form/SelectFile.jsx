@@ -47,6 +47,8 @@ const SelectFile = ({
         : { properties: ['openFile'] };
 
       showOpenDialog(openSettings).then(res => {
+        // Cancel: nothing changes
+        if (!res || res.canceled || !res.filePaths || !res.filePaths[0]) return;
         setFile(res.filePaths[0]);
         onFile({ name: name, value: res.filePaths[0] });
       });

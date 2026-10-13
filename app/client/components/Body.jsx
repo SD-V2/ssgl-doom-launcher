@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import background from '#/assets/ssglwall.png';
 
 import { image } from '../utils';
+import { fileUrl } from '../utils/image';
 
 const clamp = (value, min, max) => {
   const n = Number(value);
@@ -21,7 +22,7 @@ const SIZES = { cover: 'cover', contain: 'contain', stretch: '100% 100%' };
 
 const wallUrl = p =>
   p.background && p.background.trim() !== ''
-    ? `url("file://${image(p.background)}")`
+    ? `url("${image(fileUrl(p.background))}")`
     : `url(${background})`;
 
 const isGif = p => /\.gif$/i.test(p.background || '');

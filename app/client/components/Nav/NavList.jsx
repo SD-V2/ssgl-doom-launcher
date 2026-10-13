@@ -19,42 +19,45 @@ const NavList = styled.ul`
   padding: 15px 15px 0 0;
 `;
 
+// is a page in the menu? (the F-keys use the same rule)
+export const isRouteShown = (item, gstate) => {
+  const { packages, mods, settings, sourceports } = gstate;
+  const { label, hide } = item;
+
+  if (hide) {
+    return false;
+  }
+
+  if (label === 'packages' && packages.length < 1) {
+    return false;
+  }
+  if (
+    (label === 'wads' && mods.length < 1) ||
+    (label === 'wads' && sourceports.length < 1)
+  ) {
+    return false;
+  }
+
+  if (
+    (label === 'sourceports' || label === 'tools') &&
+    settings.savepath === ''
+  ) {
+    return false;
+  }
+
+  // Tools only when it is turned on in Settings (off by default; '' = unticked)
+  if (label === 'tools' && !settings.showTools) {
+    return false;
+  }
+
+  return true;
+};
+
 const Nav = () => {
   const { gstate } = useContext(StoreContext);
   const { t } = useTranslation('nav');
 
-  const r = routes.filter(item => {
-    const { packages, mods, settings, sourceports } = gstate;
-    const { label, hide } = item;
-
-    if (hide) {
-      return false;
-    }
-
-    if (label === 'packages' && packages.length < 1) {
-      return false;
-    }
-    if (
-      (label === 'wads' && mods.length < 1) ||
-      (label === 'wads' && sourceports.length < 1)
-    ) {
-      return false;
-    }
-
-    if (
-      (label === 'sourceports' || label === 'tools') &&
-      settings.savepath === ''
-    ) {
-      return false;
-    }
-
-    // Tools only when it is turned on in Settings (off by default; '' = unticked)
-    if (label === 'tools' && !settings.showTools) {
-      return false;
-    }
-
-    return true;
-  });
+  const r = routes.filter(item => isRouteShown(item, gstate));
 
   return (
     <NavList>

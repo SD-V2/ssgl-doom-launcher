@@ -62,7 +62,8 @@ const PlayOverlay = ({ active, setActive }) => {
     } else if (gstate.sourceports[0]) {
       setSourceport(gstate.sourceports[0].id);
     }
-  }, [gstate]);
+    // only when these change: a picked sourceport is not reset by other changes (a folder rescan)
+  }, [gstate.package.sourceport, gstate.settings.defaultsourceport, gstate.sourceports]);
 
   const options = gstate.sourceports.map(item => ({
     label: item.name,
@@ -96,7 +97,7 @@ const PlayOverlay = ({ active, setActive }) => {
       'ok',
       t('common:toastStart'),
       t('common:toastStartText', {
-        sourceport: useSourceport.name,
+        sourceport: useSourceport ? useSourceport.name : '?',
         num: gstate.package.selected.length
       })
     );
@@ -114,7 +115,7 @@ const PlayOverlay = ({ active, setActive }) => {
           value={sourceport}
         />
         <IWad.List>
-          {gstate.iwads.length &&
+          {gstate.iwads.length > 0 &&
             gstate.iwads.map(item => (
               <IWad.Item
                 name={item.name}

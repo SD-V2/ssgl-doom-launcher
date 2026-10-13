@@ -1,6 +1,8 @@
 import PropTypes from 'prop-types';
 import React, { useContext } from 'react';
 
+import { fileUrl } from '../../utils/image';
+
 import click from '../../assets/sounds/click.ogg';
 import cyberDrawer from '../../assets/sounds/cyberpunk-drawer.ogg';
 import cyberError from '../../assets/sounds/cyberpunk-error.ogg';
@@ -50,6 +52,12 @@ export const soundsFor = settings => {
   return (matchStyle && SOUND_PACKS[settings.style]) || SOUND_PACKS.classic;
 };
 
+// play() answers later: a deleted sound file must not give an uncaught error
+const quietPlay = a => {
+  const p = a.play();
+  if (p && p.catch) p.catch(e => console.log(e));
+};
+
 const AudioProvider = ({ children }) => {
   const { gstate } = useContext(StoreContext);
   const play = name => {
@@ -60,9 +68,9 @@ const AudioProvider = ({ children }) => {
     // a sound file chosen by hand for this event always wins
     if (gstate.settings[name] && gstate.settings[name].trim() !== '') {
       try {
-        const a = new Audio(`file://${gstate.settings[name]}`);
+        const a = new Audio(fileUrl(gstate.settings[name]));
         a.volume = gstate.settings.volume;
-        a.play();
+        quietPlay(a);
       } catch (e) {
         console.log(e);
       }
@@ -70,7 +78,7 @@ const AudioProvider = ({ children }) => {
       try {
         const a = new Audio(soundsFor(gstate.settings)[name]);
         a.volume = gstate.settings.volume;
-        a.play();
+        quietPlay(a);
       } catch (e) {
         console.log(e);
       }

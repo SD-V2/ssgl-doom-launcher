@@ -90,12 +90,17 @@ ToastMotion.propTypes = {
   })
 };
 
+let toastId = 0;
+
 const ToastContainer = ({ children }) => {
   const [toasts, setToasts] = useState([]);
   const [play] = useSound();
 
   const addToast = (scope, title, text) => {
-    setToasts([{ title, scope, text }, ...toasts]);
+    // from the newest list (several toasts in a row all stay), each with its own key
+    toastId += 1;
+    const id = toastId;
+    setToasts(prev => [{ id, title, scope, text }, ...prev]);
     scope === 'danger' ? play('soundToastError') : play('soundToastSuccess');
     if (currentTimeout) {
       clearTimeout(currentTimeout);
@@ -111,8 +116,8 @@ const ToastContainer = ({ children }) => {
       {createPortal(
         <ToastPortalStyle>
           <AnimatePresence>
-            {toasts.map((t, i) => (
-              <ToastMotion key={`toast_${i}`} toast={t} />
+            {toasts.map(t => (
+              <ToastMotion key={`toast_${t.id}`} toast={t} />
             ))}
           </AnimatePresence>
         </ToastPortalStyle>,

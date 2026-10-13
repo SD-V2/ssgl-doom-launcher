@@ -183,6 +183,7 @@ const Viewer = ({ onBack }) => {
   const [saved, setSaved] = useState("");
   const [view, setView] = useState({ top: 0, width: 0, height: 0 });
   const scroller = useRef(null);
+  const openReq = useRef(0);
   const asked = useRef(new Set());
   const alive = useRef(true);
 
@@ -214,6 +215,9 @@ const Viewer = ({ onBack }) => {
   );
 
   const open = async file => {
+    // a newer open (another file or palette) wins over an answer that comes late
+    const req = ++openReq.current;
+    const current = () => alive.current && req === openReq.current;
     setSource(file);
     setList(null);
     setThumbs({});
@@ -224,11 +228,11 @@ const Viewer = ({ onBack }) => {
     setReading(true);
     try {
       const l = await call("viewer/open", file);
-      if (alive.current) setList(l);
+      if (current()) setList(l);
     } catch (e) {
-      if (alive.current) setError(e.code || "failed");
+      if (current()) setError(e.code || "failed");
     }
-    if (alive.current) setReading(false);
+    if (current()) setReading(false);
     if (scroller.current) scroller.current.scrollTop = 0;
   };
 
@@ -314,13 +318,14 @@ const Viewer = ({ onBack }) => {
       const want = visible.map(e => e.id).filter(id => !asked.current.has(id));
       if (!want.length) return;
       want.forEach(id => asked.current.add(id));
+      const req = openReq.current;
       try {
         const got = await call("viewer/thumbs", {
           source,
           ids: want,
           size: THUMB
         });
-        if (!alive.current) return;
+        if (!alive.current || req !== openReq.current) return;
         setThumbs(prev => {
           const next = { ...prev };
           (got || []).forEach(g => {
@@ -338,11 +343,13 @@ const Viewer = ({ onBack }) => {
   const showBig = async e => {
     setSaved("");
     setBig({ entry: e, url: "" });
+    const req = openReq.current;
+    const current = () => alive.current && req === openReq.current;
     try {
       const p = await call("viewer/picture", { source, id: e.id });
-      if (alive.current) setBig({ entry: e, url: p.url });
+      if (current()) setBig({ entry: e, url: p.url });
     } catch (err) {
-      if (alive.current) setBig({ entry: e, url: "", error: err.code });
+      if (current()) setBig({ entry: e, url: "", error: err.code });
     }
   };
 

@@ -21,7 +21,7 @@ export const createPackage = (form, state, copy) => {
               ? form.cover
               : `file://${form.cover}`
         }
-      : { isFile: false, use: iwad.name.toLowerCase() };
+      : { isFile: false, use: iwad ? iwad.name.toLowerCase() : 'doom2' }; // the IWAD may have been moved
 
   const newPackage = {
     id: copy ? null : form.id,

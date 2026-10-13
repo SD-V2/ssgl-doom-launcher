@@ -2,7 +2,7 @@
 const startup = require('./utils/startup');
 startup.mark('mainStart');
 const path = require('path');
-const { app, BrowserWindow, Menu } = require('electron');
+const { app, BrowserWindow, Menu, shell } = require('electron');
 const createMenu = require('./menu');
 const { installCloseGuard } = require('./utils/closeGuard');
 
@@ -50,6 +50,19 @@ function createWindow() {
   setTimeout(showNow, 800);
   mainWindow.loadURL(url);
   installCloseGuard(mainWindow);
+  // a link (e.g. in the update notes) never replaces SSGL itself: web pages open in the browser
+  const toBrowser = target => {
+    if (/^https?:\/\//i.test(target)) shell.openExternal(target);
+  };
+  mainWindow.webContents.on('will-navigate', (event, target) => {
+    if (target.split('#')[0] === url.split('#')[0]) return;
+    event.preventDefault();
+    toBrowser(target);
+  });
+  mainWindow.webContents.setWindowOpenHandler(({ url: target }) => {
+    toBrowser(target);
+    return { action: 'deny' };
+  });
   mainWindow.on('closed', function() {
     mainWindow = null;
   });

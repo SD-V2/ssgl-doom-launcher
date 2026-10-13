@@ -87,8 +87,8 @@ const PackageAreaNew = () => {
 
   const onModalSubmit = async e => {
     e.preventDefault();
-    const pack = createPackage(form, gstate, copy);
     try {
+      const pack = createPackage(form, gstate, copy);
       const data = await ipc('packages/save', pack);
       dispatch({
         type: 'packages/save',
@@ -96,12 +96,14 @@ const PackageAreaNew = () => {
         package: data.package
       });
       setModalOpen(false);
+      setTimeout(() => {
+        toast('ok', t('common:success'), t('packages:toastSave'));
+      }, 300);
     } catch (e) {
+      // "saved" only when it was
       console.log(e);
+      toast('danger', t('common:error'), String((e && e.message) || e));
     }
-    setTimeout(() => {
-      toast('ok', t('common:success'), t('packages:toastSave'));
-    }, 300);
   };
 
   return (

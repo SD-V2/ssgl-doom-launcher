@@ -157,20 +157,25 @@ const Dropdown = ({
 
           return index < options.length - 1 ? setIndex(index + 1) : null;
         case K.ENTER:
-          onSelect(options[index])();
+          // the list may have changed since the arrows were used
+          if (options[index]) onSelect(options[index])();
           return e.currentTarget.blur();
       }
     }
   };
   const onFocus = () => {
+    setIndex(0);
     setOpen(true);
   };
 
   const onIcon = () =>
     open ? inputRef.current.blur() : inputRef.current.focus();
 
+  const blurTimer = useRef(null);
+  useEffect(() => () => clearTimeout(blurTimer.current), []);
   const onBlur = () => {
-    setTimeout(() => {
+    clearTimeout(blurTimer.current);
+    blurTimer.current = setTimeout(() => {
       setOpen(false);
     }, 250);
   };

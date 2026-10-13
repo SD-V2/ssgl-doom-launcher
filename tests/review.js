@@ -37,6 +37,9 @@ const library = require(APP + '/electron/utils/doom/library.js');
   check('a re-scan that restored a damaged file brings its notice along', reducer(base, { type: 'mods/refresh', data: { ...lib, recovered: ['packages.json'] } }).recovered.join() === 'packages.json');
   check('...a re-scan without one keeps the notice that is waiting', reducer({ ...base, recovered: ['x'] }, { type: 'mods/refresh', data: lib }).recovered.join() === 'x');
 
+  const { fileUrl } = require(APP + '/client/utils/image.js');
+  check('a file link keeps # and % in folder names (sounds, wallpaper)', fileUrl('C:\\My #1 100%\\a.ogg') === 'file://C:\\My %231 100%25\\a.ogg');
+
   // ---- main part -----------------------------------------------------------------------------
   const root = path.join(TMP, 'lib');
   check('a folder named "..stuff" inside the library is inside', isInside(root, path.join(root, '..stuff', 'a.wad')));
