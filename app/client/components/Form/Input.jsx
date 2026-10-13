@@ -68,6 +68,35 @@ export const InputContainerStyle = styled.div.attrs({
   }
 `;
 
+// the clear (x) icon; outside Input so it is not made again on every key
+const Checked = ({ size, ...rest }) => (
+  <svg
+    className="fu"
+    width={size}
+    height={size}
+    viewBox="0 0 12 12"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    {...rest}
+  >
+    <path
+      d="M1 1.00003L11 11"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M1.00003 11L11 1"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+Checked.propTypes = {
+  size: PropTypes.number
+};
+
 const Input = ({
   width = '250px',
   label,
@@ -89,35 +118,6 @@ const Input = ({
 
   const onChangeWrap = e => onChange(e, inputRef.current);
 
-  const Checked = ({ size, ...rest }) => (
-    <svg
-      className="fu"
-      width={size}
-      height={size}
-      viewBox="0 0 12 12"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      {...rest}
-    >
-      <path
-        d="M1 1.00003L11 11"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M1.00003 11L11 1"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-
-  Checked.propTypes = {
-    size: PropTypes.number
-  };
-
   return (
     <>
       {label ? <Label info={info}>{label}</Label> : null}
@@ -132,7 +132,7 @@ const Input = ({
           {...rest}
         />
         {onClear && value.length ? (
-          <Checked size="14" onClick={onClear} />
+          <Checked size={14} onClick={onClear} />
         ) : null}
       </InputContainerStyle>
     </>

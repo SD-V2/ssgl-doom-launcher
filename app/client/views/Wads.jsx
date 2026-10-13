@@ -226,6 +226,8 @@ const Wads = () => {
   const [rawFilter, setFilter] = useState('');
   const [filter] = useDebounce(rawFilter, 200);
   const favSet = useMemo(() => new Set(favorites), [favorites]);
+  // mod by id, for the load order (a search per entry was slow with many mods)
+  const modById = useMemo(() => new Map(gstate.mods.map(m => [m.id, m])), [gstate.mods]);
   // mods SSGL saw for the first time within the last week
   const recentIds = useMemo(() => trackFirstSeen(gstate.mods), [gstate.mods]);
   // mods that packages use but that were updated / replaced in the mod list
@@ -663,7 +665,7 @@ const Wads = () => {
 
   // one entry of the load order (same in the list and in the sections view)
   const renderLoadItem = (id, itemindex) => {
-    const item = gstate.mods.find(i => i.id === id);
+    const item = modById.get(id);
     return item ? (
       <ModItem
         key={`selected_${item.id}`}
