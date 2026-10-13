@@ -37,7 +37,6 @@ function createWindow() {
 
   startup.mark('windowCreated');
   mainWindow.once('show', () => startup.mark('windowShown'));
-  if (mainWindow.isVisible()) startup.mark('windowShown');
   const showNow = () => {
     if (mainWindow && !mainWindow.isDestroyed() && !mainWindow.isVisible()) mainWindow.show();
   };

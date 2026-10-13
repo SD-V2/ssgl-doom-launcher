@@ -33,8 +33,9 @@ const MAP_LUMPS = new Set(['THINGS', 'LINEDEFS', 'SIDEDEFS', 'VERTEXES', 'SEGS',
 
 // ---- PK3 folders ----------------------------------------------------------------------------
 const ZIP_FOLDER = { sprites: 'sprite', flats: 'flat', patches: 'patch', textures: 'texture', graphics: 'graphic', hires: 'hires' };
-const shortName = file => {
-  const base = path.posix.basename(file);
+// GZDoom's name of a file in a PK3: up to the last dot, 8 letters, upper case
+export const shortName = inner => {
+  const base = path.posix.basename(String(inner).replace(/\\/g, '/'));
   const dot = base.lastIndexOf('.');
   return (dot > 0 ? base.slice(0, dot) : base).slice(0, 8).toUpperCase();
 };
@@ -72,7 +73,7 @@ const zipLumps = file => {
     const entries = listZipEntries(fd, fs.fstatSync(fd).size);
     const lumps = [];
     entries.forEach(e => {
-      if (/\/$/.test(e.name) || !e.size) return;
+      if (!e.size) return; // (folders are already left out by listZipEntries)
       const parts = e.name.split('/');
       const top = parts.length > 1 ? ZIP_FOLDER[parts[0].toLowerCase()] : '';
       // the start of a file is unpacked only as far as needed

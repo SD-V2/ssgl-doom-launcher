@@ -10,7 +10,7 @@ const LIMIT = 0xffffffff;
 
 // CRC32 (zlib.crc32 is there since Node 22.2; the table is the fallback)
 let TABLE = null;
-const crc32 = buf => {
+export const crc32 = buf => {
   if (typeof zlib.crc32 === 'function') return zlib.crc32(buf) >>> 0;
   if (!TABLE) {
     TABLE = new Int32Array(256);

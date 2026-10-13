@@ -30,8 +30,10 @@ import {
   shrinkTo,
   smoothAlpha
 } from './png';
-import { scan as scanDoom } from './doom/library';
+import { scan as scanDoom, shortName } from './doom/library';
 import ZipWriter from './zipwrite';
+
+export { shortName };
 
 // The Upscaler (Tools > Upscaler): makes the pictures of a mod bigger with the
 // "realesrgan-ncnn-vulkan" program (the engine, runs on the graphics card) and
@@ -61,14 +63,6 @@ export const kindOf = inner => {
   const base = parts[parts.length - 1].replace(/\.[^.]*$/, '');
   if (parts.length < 2) return HUD_NAME.test(base) ? 'graphic' : 'other';
   return FOLDER_KIND[parts[0].toLowerCase()] || (HUD_NAME.test(base) && parts.length === 2 && /^(hud|menu|statusbar)$/i.test(parts[0]) ? 'graphic' : 'other');
-};
-
-// the name GZDoom knows a picture by: the file name up to its last dot, at most
-// 8 letters, upper case (filesystem.cpp in GZDoom)
-export const shortName = inner => {
-  const base = path.posix.basename(String(inner).replace(/\\/g, '/'));
-  const dot = base.lastIndexOf('.');
-  return (dot > 0 ? base.slice(0, dot) : base).slice(0, 8).toUpperCase();
 };
 
 const PICTURE = /\.(png|jpe?g)$/i;

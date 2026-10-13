@@ -14,7 +14,6 @@ const MOD_EXTENSIONS = [
   'DEH',
   'BEX',
   'BEH',
-  'DEH',
   'CLD',
   'ZIP',
   'RAR',

@@ -74,7 +74,7 @@ ipcMain.handle('packages/delete', async (e, id) => {
       const DATAPATH = path.join(settings.savepath, removedPack.datapath);
       const newPackages = packages.filter(i => i.id !== id);
 
-      if (DATAPATH && DATAPATH && existsSync(DATAPATH)) {
+      if (DATAPATH && existsSync(DATAPATH)) {
         rimraf.sync(DATAPATH);
       }
 

@@ -16,9 +16,6 @@ const t0 = (() => {
 })();
 
 const marks = {};
-const watchers = [];
-// call fn(name) for every moment that comes in (main.js shows the window on "htmlLoaded")
-export const onMark = fn => watchers.push(fn);
 const extra = {};
 let written = false;
 let timer = null;
@@ -99,7 +96,6 @@ export const listen = () => {
   ipcMain.on('startup/mark', (e, data) => {
     if (!data || !data.name) return;
     mark(data.name, data.at, data.extra);
-    watchers.forEach(fn => fn(data.name));
     // "usable" is in: wait a little for the late ones (fonts, wallpaper), then write
     if (data.name === 'usable' && !timer) timer = setTimeout(write, 4000);
   });

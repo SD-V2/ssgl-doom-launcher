@@ -1,4 +1,5 @@
 import { encode, isJpg, isPng, jpgInfo, pngInfo } from '../png';
+import { crc32 } from '../zipwrite';
 
 // Doom's own picture formats, written from the public descriptions (Doom Wiki "Picture
 // format", "Flat", "PLAYPAL"). Every read is checked against the length of the lump: a
@@ -104,21 +105,6 @@ export const toRgba = (pic, palette) => {
 };
 
 // ---- PNG with the offsets: a grAb chunk (x, y), as GZDoom and SLADE read it ----------------
-let CRC = null;
-const crc32 = buf => {
-  if (!CRC) {
-    CRC = new Int32Array(256);
-    for (let n = 0; n < 256; n++) {
-      let c = n;
-      for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
-      CRC[n] = c;
-    }
-  }
-  let c = -1;
-  for (let i = 0; i < buf.length; i++) c = CRC[(c ^ buf[i]) & 0xff] ^ (c >>> 8);
-  return (c ^ -1) >>> 0;
-};
-
 export const withOffsets = (png, left, top) => {
   if (!left && !top) return png;
   const body = Buffer.alloc(12);

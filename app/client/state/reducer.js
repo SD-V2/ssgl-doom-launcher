@@ -2,7 +2,6 @@
 import { act } from './middlewares';
 
 import {
-  isSectionSorted,
   moveSection,
   normalizeOrder,
   resolveSection,
@@ -350,9 +349,6 @@ function baseReducer(state, action) {
     case 'sections/mode':
       return act({ ...state, sectionMode: !!action.on });
 
-    case 'sections/normalize':
-      return act({ ...state });
-
     // move a whole section one place up / down (the numbers follow)
     case 'sections/move': {
       const order = sectionOrder(state.sectionRules);
@@ -466,7 +462,6 @@ const KEEP_ORDER = [
   'mod/toSection',
   'sections/load',
   'sections/mode',
-  'sections/normalize',
   'sections/move',
   'sections/resetOrder',
   'sections/saveConfig',
@@ -491,4 +486,3 @@ export function reducer(state, action) {
     : { ...next, package: { ...next.package, selected: fixed } };
 }
 
-export { isSectionSorted };

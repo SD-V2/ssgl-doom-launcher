@@ -5,7 +5,6 @@ import Flex from './Flex';
 import Head from './Head';
 import iWad from './IWad';
 import Logo from './Logo';
-import MainLoader from './MainLoader';
 import Modal from './Modal';
 import ModFilter from './ModFilter';
 import ErrorItem from './Mods/ErrorItem';
@@ -32,7 +31,6 @@ export {
   ErrorItem,
   BackDrop,
   PlayIcon,
-  MainLoader,
   Logo,
   Head,
   Flex,

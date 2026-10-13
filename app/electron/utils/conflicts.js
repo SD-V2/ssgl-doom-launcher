@@ -37,7 +37,7 @@ const MAP_NAME = /^(MAP\d\d|E\dM\d+)$/;
 const MAP_LUMPS = new Set([
   'THINGS', 'LINEDEFS', 'SIDEDEFS', 'VERTEXES', 'SEGS', 'SSECTORS', 'NODES',
   'SECTORS', 'REJECT', 'BLOCKMAP', 'BEHAVIOR', 'SCRIPTS', 'TEXTMAP', 'ENDMAP',
-  'ZNODES', 'DIALOGUE', 'SCRIPTS'
+  'ZNODES', 'DIALOGUE'
 ]);
 
 const WAD_START = {

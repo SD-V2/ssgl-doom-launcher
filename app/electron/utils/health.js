@@ -30,8 +30,7 @@ const checkFile = (file, kind) => {
     if (type === 'zip' && entries.length === 0) {
       return { status: 'problem', code: 'noFiles' };
     }
-    // a zip with another name than .pk3 / .zip, or a wad that is a zip: loadable
-    if (type === 'zip' && kind === 'WAD') return { status: 'ok' };
+    // anything else (also a zip with another name than .pk3 / .zip, or a wad that is a zip): loadable
     return { status: 'ok' };
   } catch (err) {
     if (err.code === 'unsupported') {

@@ -16,7 +16,6 @@ const IconButtonStyle = styled(ButtonStyle)`
     transition: ${({ theme }) => theme.transition.out};
     margin-left: -1px;
     height: 21px;
-    filter: drop-shadow(-2px -2px 5px #{styles.button.idle});
   }
 
   &.load svg {

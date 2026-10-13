@@ -9,6 +9,9 @@ import { DEFAULT_UPDATE_REPO } from '../constants';
 import { findNewerCommit, findUpdate } from '../utils/versions';
 import { watchModDir } from '../utils/watcher';
 
+// the update question never hangs: no answer in 10 s = no notice this time
+const NET = { timeout: 10000 };
+
 ipcMain.handle('main/checkupdate', async () => {
   const none = {
     available: false,
@@ -32,7 +35,7 @@ ipcMain.handle('main/checkupdate', async () => {
 
     // 1) a published release that is newer than this program
     const releases = await got(
-      `https://api.github.com/repos/${repo}/releases`
+      `https://api.github.com/repos/${repo}/releases`, NET
     ).json();
 
     const release = findUpdate(releases, app.getVersion(), build);
@@ -54,7 +57,7 @@ ipcMain.handle('main/checkupdate', async () => {
     // 2) files uploaded to the repository after this program was built
     if (build.commit) {
       const commits = await got(
-        `https://api.github.com/repos/${repo}/commits?per_page=1`
+        `https://api.github.com/repos/${repo}/commits?per_page=1`, NET
       ).json();
       const newer = findNewerCommit(commits, build.commit);
       if (newer) {
