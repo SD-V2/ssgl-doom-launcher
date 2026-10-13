@@ -101,7 +101,7 @@ const walkWadDir = (dir, options = {}) => {
         });
         finish();
       })
-      .catch(err => reject(err.message));
+      .catch(err => reject(err));
 
     const finish = () => {
         // same id (name + size + type) found more than once = exact duplicate
@@ -155,11 +155,14 @@ const getMetaData = (item, dir) => {
   const name = path.parse(item.path).name.replace(/_/g, ' ');
   const ext = getExt(item.path);
 
-  const parts = item.path
-    .substring(0, item.path.lastIndexOf(path.sep))
-    .replace(`${dir}`, '')
-    .split(path.sep)
-    .filter(i => i.trim() !== '');
+  // folders between the library folder and the file (also right for a drive root like D:\)
+  // (IWADs come without a folder: no parts)
+  const parts = dir
+    ? path
+        .relative(path.resolve(dir), path.dirname(item.path))
+        .split(path.sep)
+        .filter(i => i.trim() !== '')
+    : [];
 
   let tags = parts.map(i => i.toLowerCase());
 

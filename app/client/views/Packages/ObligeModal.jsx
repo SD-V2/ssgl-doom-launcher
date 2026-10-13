@@ -41,13 +41,19 @@ const ObligeModal = ({ pack, toggle, active }) => {
     ipc('oblige/open', what);
   };
   const onPlay = async () => {
-    const newPackages = await ipc('packages/play', {
-      pack: pack,
-      selected: pack.selected.map(id => gstate.mods.find(mod => id === mod.id)),
-      load: false,
-      oblige: true
-    });
-    dispatch({ type: 'packages/save', packages: newPackages, package: null });
+    try {
+      const newPackages = await ipc('packages/play', {
+        pack: pack,
+        selected: pack.selected
+          .map(id => gstate.mods.find(mod => id === mod.id))
+          .filter(Boolean),
+        load: false,
+        oblige: true
+      });
+      dispatch({ type: 'packages/set', packages: newPackages });
+    } catch (e) {
+      console.log(e);
+    }
     onClose();
   };
 
@@ -57,11 +63,12 @@ const ObligeModal = ({ pack, toggle, active }) => {
       return setErrors(hasError);
     } else {
       setBuildState(true);
+      let interval = null;
       try {
-        const interval = setInterval(() => {
+        interval = setInterval(() => {
           const msg = ipcRenderer.sendSync('log', 'ping');
-          setMessage(msg);
-          logref.current.scrollTop = logref.current.scrollHeight;
+          if (msg !== undefined) setMessage(msg);
+          if (logref.current) logref.current.scrollTop = logref.current.scrollHeight;
         }, 2000);
 
         const data = await buildIpc('oblige/build', {
@@ -75,19 +82,18 @@ const ObligeModal = ({ pack, toggle, active }) => {
         const newPackages = await ipc('packages/play', {
           pack: pack,
           load: false,
-          selected: pack.selected.map(id =>
-            gstate.mods.find(mod => id === mod.id)
-          ),
+          selected: pack.selected
+            .map(id => gstate.mods.find(mod => id === mod.id))
+            .filter(Boolean),
           oblige: data.wad
         });
 
-        dispatch({
-          type: 'packages/save',
-          packages: newPackages,
-          package: null
-        });
+        dispatch({ type: 'packages/set', packages: newPackages });
       } catch (e) {
         console.log(e);
+      } finally {
+        // also when the build failed: stop asking for the log
+        clearInterval(interval);
       }
     }
   };

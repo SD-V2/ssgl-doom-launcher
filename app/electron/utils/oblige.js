@@ -10,10 +10,11 @@ export const open = async what => {
     const settings = await getJSON('settings');
     switch (what) {
       case 'binary':
+        // a missing program must not crash the app
         spawn(settings.obligeBinary, [
           '--install',
           dirname(settings.obligeBinary)
-        ]);
+        ]).on('error', e => console.log(e.message));
         break;
       default:
         shell.openPath(settings.obligeConfigPath);
@@ -71,6 +72,11 @@ export const build = async (config, pack) => {
       ];
 
       const procObl = spawn(settings.obligeBinary, params);
+
+      procObl.on('error', e => {
+        ipcMain.removeAllListeners('log');
+        resolve({ data: null, error: e.message });
+      });
 
       procObl.stdout.on('data', data => {
         log += data;

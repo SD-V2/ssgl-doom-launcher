@@ -9,9 +9,14 @@ let hasSettings = false;
 let settings = {};
 const settingsPath = getDataFile('settings.json');
 
-if (fs.existsSync(settingsPath)) {
-  hasSettings = true;
-  settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+// a damaged settings.json must not stop SSGL from starting
+try {
+  if (fs.existsSync(settingsPath)) {
+    settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8')) || {};
+    hasSettings = true;
+  }
+} catch (e) {
+  settings = {};
 }
 
 
@@ -286,9 +291,15 @@ const createMenu = (win, url) => {
   return Menu.buildFromTemplate(template);
 };
 
-// rebuilds the menu when the language is changed in the settings
-createMenu.refresh = language => {
-  settings.language = language;
+// rebuilds the menu after the settings are saved (all of them, so the folder
+// entries are right too; a plain language text still works)
+createMenu.refresh = next => {
+  if (next && typeof next === 'object') {
+    settings = next;
+    hasSettings = true;
+  } else {
+    settings.language = next;
+  }
   if (lastWin) Menu.setApplicationMenu(createMenu(lastWin, lastUrl));
 };
 

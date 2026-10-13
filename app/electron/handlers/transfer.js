@@ -200,6 +200,7 @@ ipcMain.handle('packages/import', async (e, data) => {
         fs.existsSync(port.configDefault) &&
         !fs.existsSync(path.join(DATAPATH, port.configFilename))
       ) {
+        // runs on its own; a failed copy is only logged (the port starts with its own config)
         copyfile(port.configDefault, path.join(DATAPATH, port.configFilename));
       }
 

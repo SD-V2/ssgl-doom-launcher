@@ -196,6 +196,8 @@ function baseReducer(state, action) {
     case 'mod/move':
       const to =
         action.direction === 'up' ? action.index - 1 : action.index + 1;
+      // the first one cannot go up, the last one not down
+      if (to < 0 || to >= state.package.selected.length) return state;
 
       return act({
         ...state,
@@ -231,7 +233,7 @@ function baseReducer(state, action) {
         ? state.package.selected.filter(i => i !== action.id)
         : [...state.package.selected, action.id];
 
-      newItem.active = !newItem.active;
+      const toggled = { ...newItem, active: !newItem.active };
 
       return act({
         ...state,
@@ -239,7 +241,7 @@ function baseReducer(state, action) {
           ...state.package,
           selected: selected
         },
-        mods: state.mods.map(item => (item.id === action.id ? newItem : item))
+        mods: state.mods.map(item => (item.id === action.id ? toggled : item))
       });
 
     case 'mods/drop': {
@@ -275,6 +277,11 @@ function baseReducer(state, action) {
         versions: action.data.versions || [],
         folders: action.data.folders || state.folders,
         mapFolders: action.data.mapFolders || state.mapFolders,
+        // "a file was damaged and restored" found during this scan
+        recovered:
+          action.data.recovered && action.data.recovered.length
+            ? action.data.recovered
+            : state.recovered,
         mods: action.data.mods.map(m =>
           inOrder.has(m.id) ? { ...m, active: true } : m
         )
@@ -432,7 +439,8 @@ function baseReducer(state, action) {
     }
 
     default:
-      return initState;
+      // an unknown action changes nothing (it used to wipe everything)
+      return state;
   }
 }
 

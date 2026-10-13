@@ -27,7 +27,12 @@ export const splitFolderKey = key =>
 
 export const isInside = (dir, file) => {
   const rel = path.relative(path.resolve(dir), path.resolve(file));
-  return rel !== '' && !rel.startsWith('..') && !path.isAbsolute(rel);
+  return (
+    rel !== '' &&
+    rel !== '..' &&
+    !rel.startsWith('..' + path.sep) &&
+    !path.isAbsolute(rel)
+  );
 };
 
 // folder setting like "1_BP/new" -> parts, or null when empty / not usable

@@ -50,6 +50,11 @@ const SourcePorts = () => {
 
   const onOkDelete = async () => {
     if (!confirm.id) {
+      // a new sourceport that was never saved: just drop it from the list
+      const left = sourcePorts.filter(item => item.id);
+      setSourcePorts(left);
+      setConfirm({ id: null, open: false });
+      setSelected(left[0] || null);
       return;
     }
 
@@ -61,7 +66,7 @@ const SourcePorts = () => {
         id: null,
         open: false
       });
-      setSelected(sourcePorts[0]);
+      setSelected(newSourceports[0] || null);
     } catch (e) {
       toast('danger', t('common:error'));
     }
@@ -84,6 +89,12 @@ const SourcePorts = () => {
       const newSourcePorts = await ipc('sourceports/save', sourceport);
       setSourcePorts(newSourcePorts);
       dispatch({ type: 'sourceports/save', data: newSourcePorts });
+      if (!sourceport.id) {
+        // a new one got its id now: keep it selected, so a second Save does not add it twice
+        const known = new Set(sourcePorts.map(item => item.id));
+        const added = newSourcePorts.find(item => !known.has(item.id));
+        if (added) setSelected(added);
+      }
       toast('ok', t('common:success'), t('sourceports:toastSaved'));
     } catch (e) {
       console.log(e);

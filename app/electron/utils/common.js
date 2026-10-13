@@ -1,24 +1,21 @@
 import { app } from 'electron';
-import { createReadStream, createWriteStream, existsSync, mkdirSync } from 'fs';
-import { isAbsolute, join, parse, resolve, sep } from 'path';
+import { mkdirSync, promises } from 'fs';
+import { join, parse } from 'path';
 
 const getDataFile = file => join(app.getPath('userData'), file);
 
-const copyfile = (src, dest) => {
-  createReadStream(src).pipe(createWriteStream(dest));
+// copies a file; true when it worked (a missing or locked file must not crash the app)
+const copyfile = async (src, dest) => {
+  try {
+    await promises.copyFile(src, dest);
+    return true;
+  } catch (e) {
+    console.log('copy failed: ' + src + ' -> ' + dest + ' (' + e.message + ')');
+    return false;
+  }
 };
 
-const createPath = targetDir => {
-  const initDir = isAbsolute(targetDir) ? sep : '';
-  targetDir.split(sep).reduce((parentDir, childDir) => {
-    const curDir = resolve(parentDir, childDir);
-    if (!existsSync(curDir)) {
-      mkdirSync(curDir);
-    }
-
-    return curDir;
-  }, initDir);
-};
+const createPath = targetDir => mkdirSync(targetDir, { recursive: true });
 
 const getExt = str =>
   parse(str)

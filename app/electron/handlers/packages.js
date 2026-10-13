@@ -40,15 +40,16 @@ ipcMain.handle('packages/play', async (e, data) => {
       }
     });
 
-    setJSON('packages', newpacks);
+    await setJSON('packages', newpacks);
 
-    await play(
+    const started = await play(
       pack,
       selected,
       load,
       oblige,
       BrowserWindow.fromWebContents(e.sender)
     );
+    if (started && started.error) return { data: null, error: started.error };
 
     return {
       data: newpacks,
@@ -139,12 +140,18 @@ ipcMain.handle('packages/save', async (e, pack) => {
             pack.copy
           );
 
-          copyfile(
+          const copied = await copyfile(
             path.join(copyPath, sourceport.configFilename),
             path.join(DATAPATH, sourceport.configFilename)
           );
+          // the package to copy from has no config (yet): start from the default one
+          if (!copied)
+            await copyfile(
+              sourceport.configDefault,
+              path.join(DATAPATH, sourceport.configFilename)
+            );
         } else {
-          copyfile(
+          await copyfile(
             sourceport.configDefault,
             path.join(DATAPATH, sourceport.configFilename)
           );

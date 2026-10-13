@@ -74,16 +74,21 @@ const PlayOverlay = ({ active, setActive }) => {
   const onPlay = iwad => async () => {
     const useSourceport = gstate.sourceports.find(i => i.id === sourceport);
 
-    await ipc('sourceports/play', {
-      pack: {
-        ...gstate.package,
-        iwad: iwad.path,
-        sourceport
-      },
-      selected: gstate.package.selected.map(id =>
-        gstate.mods.find(mod => id === mod.id)
-      )
-    });
+    try {
+      await ipc('sourceports/play', {
+        pack: {
+          ...gstate.package,
+          iwad: iwad.path,
+          sourceport
+        },
+        selected: gstate.package.selected
+          .map(id => gstate.mods.find(mod => id === mod.id))
+          .filter(Boolean)
+      });
+    } catch (e) {
+      toast('danger', t('common:error'), String(e));
+      return;
+    }
 
     setActive(false);
 

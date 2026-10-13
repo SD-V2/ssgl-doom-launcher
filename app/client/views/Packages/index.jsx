@@ -62,20 +62,30 @@ const Packages = () => {
   };
 
   const onPlay = (pack, sourceport) => async () => {
-    const newPackages = await ipc('packages/play', {
-      pack: pack,
-      selected: pack.selected.map(id => gstate.mods.find(mod => id === mod.id)),
-      load: true,
-      oblige: null
-    });
+    let newPackages;
+    try {
+      newPackages = await ipc('packages/play', {
+        pack: pack,
+        // a mod that is gone from the library is left out
+        selected: pack.selected
+          .map(id => gstate.mods.find(mod => id === mod.id))
+          .filter(Boolean),
+        load: true,
+        oblige: null
+      });
+    } catch (e) {
+      toast('danger', t('common:error'), String(e));
+      return;
+    }
 
-    dispatch({ type: 'packages/save', packages: newPackages, package: null });
+    // only "last played" changes; the load order being worked on stays
+    dispatch({ type: 'packages/set', packages: newPackages });
 
     toast(
       'ok',
       t('common:toastStart'),
       t('common:toastStartText', {
-        sourceport: sourceport.name,
+        sourceport: sourceport ? sourceport.name : '?',
         num: newPackages.length
       })
     );
@@ -95,8 +105,8 @@ const Packages = () => {
     navigate('/');
   };
 
-  const show = sortList(gstate.packages, sort, filter, (i, fuzz) =>
-    fuzz(filter, i.name.toLowerCase())
+  const show = sortList([...gstate.packages], sort, filter, (i, fuzz) =>
+    fuzz(filter.toLowerCase(), i.name.toLowerCase())
   );
 
   return (

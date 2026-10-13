@@ -61,7 +61,7 @@ ipcMain.handle('sourceports/save', async (e, data) => {
         !existsSync(CONFIGPATH) &&
         data.hasConfig
       ) {
-        copyfile(data.configDefault, CONFIGPATH);
+        await copyfile(data.configDefault, CONFIGPATH);
       }
 
       const newSourceports = await setJSON('sourceports', [
@@ -89,13 +89,14 @@ ipcMain.handle('sourceports/play', async (e, data) => {
       pack.datapath = path.join(pack.sourceport, NAME_UNPURE_PACKAGE);
     }
 
-    await play(
+    const started = await play(
       pack,
       selected,
       false,
       null,
       BrowserWindow.fromWebContents(e.sender)
     );
+    if (started && started.error) return { data: null, error: started.error };
 
     return {
       data: [],

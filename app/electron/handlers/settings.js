@@ -8,7 +8,7 @@ ipcMain.handle('settings/save', async (e, data) => {
   try {
     const newSettings = await setJSON('settings', data);
     try {
-      createMenu.refresh(newSettings.language);
+      createMenu.refresh(newSettings);
     } catch (menuError) {
       // the menu stays as it was
     }

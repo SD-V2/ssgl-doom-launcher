@@ -143,7 +143,7 @@ const Pack = ({ pack, onUse, onData, onPlay, onDelete, onOblige }) => {
         </div>
         <h1>{pack.name}</h1>
         <div className="meta">
-          {sourceport.name} - {pack.selected.length} Mods <br />
+          {sourceport ? sourceport.name : '?'} - {pack.selected.length} Mods <br />
           {pack.lastplayed === 0
             ? t('packages:never')
             : t('packages:lastplayed', { value: pack.lastplayed })}
